@@ -51,7 +51,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const pad = 28;
   const even = (v: number) => Math.ceil(v) + (Math.ceil(v) % 2);
   const width = even(imgW + pad * 2);
-  const height = even(pad + imgH + 222);
+  const height = even(pad + imgH + 236);
   const sx = imgW / args.viewport.width;
   const sy = imgH / args.viewport.height;
   const sans = '"Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif';
@@ -179,13 +179,15 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const countBetween = (times: number[], from: number, to: number) =>
     times.reduce((k, t) => (t > from && t <= to ? k + 1 : k), 0);
   const droppedBetween = (from: number, to: number) => countBetween(droppedTimes, from, to);
+  // Frames per second while there's something to show: of the frames that had an update, the
+  // share presented, at 60Hz. When nothing on screen changes, Chrome makes no new frames, and
+  // that isn't a low frame rate, so it's null rather than zero.
   const fpsBetween = (from: number, to: number) => {
-    if (!presented.length) return null;
-    const span = Math.max(1, to - from);
-    return Math.min(60, Math.round((countBetween(presented, from, to) * 1000) / span));
+    const shown = countBetween(presented, from, to);
+    const missed = countBetween(droppedTimes, from, to);
+    return shown + missed === 0 ? null : Math.round((60 * shown) / (shown + missed));
   };
-  const fpsAt = (t: number) =>
-    fpsBetween(Math.max(0, Math.min(t, total) - FPS_WINDOW_MS), Math.max(t, FPS_WINDOW_MS));
+  const fpsAt = (t: number) => fpsBetween(t - FPS_WINDOW_MS, t);
   const GRAPH_COLS = 60;
   const colOf = (ms: number) => Math.min(GRAPH_COLS - 1, Math.floor((ms / (total || 1)) * GRAPH_COLS));
   const slices = Array.from({ length: GRAPH_COLS }, (_, cI) => {
@@ -243,12 +245,25 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     const col = (right - left) / 3;
     const fps = fpsAt(args.timesMs[i]!);
     const droppingNow = droppedBetween(args.timesMs[i]! - FPS_WINDOW_MS, args.timesMs[i]!) > 0;
-    label('Drawn', left, y);
+    const listWentBlank = blankCount > 0;
+    const droppedSoFar = droppedBetween(-1, args.timesMs[i]!);
+    label(listWentBlank ? 'Drawn' : 'Dropped', left, y);
     label('Frames per second', left + col, y);
     label('Time', left + col * 2, y);
     const cell = 3;
-    const endX = dotText(pct.padStart(4, ' '), left, y + 10, cell, blank ? c.blank : c.ink, c.off);
-    meter(endX + 6, y + 10, 21, drawn, blank);
+    if (listWentBlank) {
+      const endX = dotText(pct.padStart(4, ' '), left, y + 10, cell, blank ? c.blank : c.ink, c.off);
+      meter(endX + 6, y + 10, 21, drawn, blank);
+    } else {
+      dotText(
+        String(droppedSoFar).padStart(3, ' '),
+        left,
+        y + 10,
+        cell,
+        droppedSoFar ? c.blank : c.ink,
+        c.off,
+      );
+    }
     dotText(
       fps === null ? '  ' : String(fps).padStart(2, ' '),
       left + col,
@@ -260,32 +275,35 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     dotText(secs(args.timesMs[i]!), left + col * 2, y + 10, cell, c.ink, c.off);
 
     // LCD graph of the frame rate: a fixed grid of segments, unlit ones faintly visible. Each
-    // column covers a slice of the run, lit up to its frame rate (the top row is 60fps), orange
-    // where frames were dropped. A one-row strip underneath marks slices with blank frames.
-    // Slices still to come are pale.
-    const top = y + 54;
+    // column covers a slice of the run and lights the one segment at its frames per second, so
+    // the lit segments read as a line; orange where frames were dropped. It draws in as the
+    // replay plays. A one-row strip underneath marks slices with blank frames.
+    const top = y + 58;
     const gl = left + 36; // a gutter for the graph's labels
     const xAt = (ms: number) => gl + (ms / (total || 1)) * (right - gl);
-    const rows = 8;
-    const cellH = 4;
+    const rows = 12;
+    const cellH = 3;
     const gapY = 1.5;
+    const pitch = cellH + gapY;
     const colW = (right - gl) / GRAPH_COLS;
-    const base = top + rows * (cellH + gapY);
+    const base = top + rows * pitch;
     const playCol = colOf(args.timesMs[i]!);
     for (let cI = 0; cI < GRAPH_COLS; cI++) {
       const sl = slices[cI]!;
-      const lit = sl.fps === null ? 0 : Math.max(1, Math.round((sl.fps / 60) * rows));
-      const future = cI > playCol;
+      const played = cI <= playCol;
+      const level = sl.fps === null || !played ? -1 : Math.max(0, Math.round((sl.fps / 60) * rows) - 1);
       for (let r = 0; r < rows; r++) {
-        g.fillStyle = r >= lit ? c.off : future ? c.future : sl.dropped ? c.blank : c.ink;
-        g.fillRect(gl + cI * colW + 0.75, base - (r + 1) * (cellH + gapY), colW - 1.5, cellH);
+        g.fillStyle = r === level ? (sl.dropped ? c.blank : c.ink) : c.off;
+        g.fillRect(gl + cI * colW + 0.75, base - (r + 1) * pitch, colW - 1.5, cellH);
       }
-      g.fillStyle = !sl.blank ? c.off : future ? c.future : c.blank;
+      g.fillStyle = played && sl.blank ? c.blank : c.off;
       g.fillRect(gl + cI * colW + 0.75, base + 4, colW - 1.5, cellH);
     }
-    label('60', gl - 6, base - rows * (cellH + gapY) + 5, c.graphite, 'right', 7);
-    label('0', gl - 6, base - 1, c.graphite, 'right', 7);
-    label('Blank', gl - 6, base + 8.5, c.graphite, 'right', 6);
+    label('fps', gl - 6, top - 6, c.graphite, 'right', 7);
+    label('60', gl - 6, base - rows * pitch + 4, c.graphite, 'right', 7);
+    label('30', gl - 6, base - (rows / 2) * pitch + 3, c.graphite, 'right', 7);
+    label('0', gl - 6, base, c.graphite, 'right', 7);
+    label('Blank', gl - 6, base + 7.5, c.graphite, 'right', 6);
 
     // Playhead: a small triangle under the graph.
     const hx = xAt(args.timesMs[i]!);
