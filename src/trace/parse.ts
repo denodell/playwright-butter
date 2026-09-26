@@ -223,8 +223,7 @@ function parseFrames(events: TraceEvent[], marks: Marks, chrome: string, out: Pa
     } else if (state === DROPPED) {
       dropped++;
       out.frameTimeline.push({ ts: e.ts, dropped: true });
-    }
-    else if (state !== NO_UPDATE) unknown.set(state, (unknown.get(state) ?? 0) + 1);
+    } else if (state !== NO_UPDATE) unknown.set(state, (unknown.get(state) ?? 0) + 1);
   }
   if (unknown.size) {
     out.notes.push(
