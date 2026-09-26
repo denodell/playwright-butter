@@ -2,9 +2,9 @@
 
 `playwright-smoothness` fails the build when a web UI stops being smooth. It measures scripted interactions and list scrolling in Chromium, compares each one with a stored baseline, and names the element and the code responsible when it gets worse.
 
-![A replay of a social feed flung at 6,000px/s, played 4× slower than real time: the posts disappear, and 114 of 123 frames are marked blank](docs/replay.gif)
+![A replay of a demo article scrolled 3,000px, played 4× slower than real time: the frame rate falls to about 40 frames per second and 97 frames are dropped](docs/replay-frame-rate.gif)
 
-When a full-mode scroll check gets worse, the test gets a replay like this one, from a demo feed whose posts take too long to build. Most frames still arrived on time (86%), but the list was blank in 114 of 123 of them.
+When a full-mode scroll check gets worse, the test gets a replay like this one. The demo article has a smooth-scrolling script that moves the page itself on every frame, and the frame rate falls to about 40 frames per second. No single frame took 50ms, so the browser's Long Animation Frames API never reported one; the dropped frames came from Chrome's own frame timeline.
 
 If you're deciding whether to add it, [Before you adopt it](docs/faq.md) covers how much time it adds to your suite, how it keeps CI from going flaky, and how it differs from Lighthouse and RUM. It only warns until you switch a check to fail, it has no runtime dependencies, and it doesn't send data anywhere.
 
@@ -94,9 +94,9 @@ await smoothness.measure('add to cart', action, {
 
 ## Scroll a list
 
-![A virtualized list, flung at 6,000px/s: drawn in every frame (left), and blank in 92% of frames while 97% of frames are still on time (right)](docs/hero.png)
+![A replay of a demo feed flung at 6,000px/s: the page keeps 60 frames per second, but the posts disappear and 114 of 123 frames are blank](docs/replay-blank-rows.gif)
 
-Dropped frames don't show a list going blank. On the right, 97% of frames arrive on time, but the rows aren't there. `scroll()` measures both.
+Dropped frames don't show a list going blank. In this demo feed, whose posts take too long to build, the page keeps 60 frames per second while the list is empty in 114 of 123 frames. `scroll()` measures both.
 
 `smoothness.scroll(locator, options)` does the same repeated, reloaded runs as `measure()`, with the scroll as the action:
 
@@ -113,7 +113,7 @@ In full mode it also finds blank frames. It screenshots the list at rest, then c
 await smoothness.scroll(list, { mode: 'full', list: { placeholders: ['.skeleton-row', '#e5e7eb'] } });
 ```
 
-When a full-mode `scroll()` check gets worse, a video of the measured scroll is attached to the test in the Playwright report. It plays 4× slower than real time. Each frame shows how drawn the list was, blank frames are marked in red, and a timeline shows where they happened. `replay: 'on'` attaches one every time, and `'off'` never. The video is built from the frames the measurement already recorded, so making it doesn't change the numbers.
+When a full-mode `scroll()` check gets worse, a video of the measured scroll is attached to the test in the Playwright report. It plays 4× slower than real time. Each frame shows how drawn the list was and the frame rate at that moment. A graph of the whole run shows the frame rate, with dropped frames and blank frames in orange. `replay: 'on'` attaches one every time, and `'off'` never. The video is built from the frames the measurement already recorded, so making it doesn't change the numbers.
 
 [docs/list-detection.md](docs/list-detection.md) explains how blank frames are detected, and what the detection can't see.
 
