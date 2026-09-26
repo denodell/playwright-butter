@@ -403,6 +403,7 @@ async function analyzeListRun(
           timesMs: trace.screenshotTimes.map((t) => (t - t0) / 1000),
           drawn: analyzed.drawn,
           blankShare: BLANK_FRAME_SHARE,
+          frames: trace.frameTimeline.map((f) => ({ tMs: (f.ts - t0) / 1000, dropped: f.dropped })),
           rect: listPrepared.geometry.rect,
           viewport: listPrepared.geometry.viewport,
           title: ctx.label,
@@ -411,6 +412,7 @@ async function analyzeListRun(
     }
     trace.screenshots = []; // several MB per run; kept only in `replay`, if at all
     trace.screenshotTimes = [];
+    trace.frameTimeline = [];
   }
   return { list, replay };
 }
