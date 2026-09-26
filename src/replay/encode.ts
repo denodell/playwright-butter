@@ -315,7 +315,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     // measure(): a small mark above the graph where each input arrived.
     for (const t of inputs) {
       if (t > args.timesMs[i]!) continue;
-      const ix = Math.round(xAt(t)) + 0.5;
+      const ix = Math.round(xAt(Math.max(0, t))) + 0.5; // an input just before the first frame sits at the start
       g.fillStyle = c.ink;
       g.beginPath();
       g.moveTo(ix - 3, top - 9);
@@ -324,7 +324,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       g.closePath();
       g.fill();
     }
-    if (inputs.length) label('input', gl - 6, top - 4, c.graphite, 'right', 6);
+    if (inputs.length) label('input', gl - 12, top - 4, c.graphite, 'right', 6);
 
     // Playhead: a small triangle under the graph.
     const hx = xAt(args.timesMs[i]!);
