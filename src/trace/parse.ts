@@ -61,6 +61,8 @@ export interface ParsedTrace {
   screenshots: string[];
   /** Each screenshot's trace timestamp (µs), in step with `screenshots`. */
   screenshotTimes: number[];
+  /** Trace µs minus page ms × 1000, from the start mark; converts page times to trace times. */
+  pageOffsetUs: number | null;
   /** The page's presented and dropped frames inside the window, in time order (µs), for replays. */
   frameTimeline: { ts: number; dropped: boolean }[];
   unavailable: Unavailable[];
@@ -300,6 +302,7 @@ export function emptyTrace(): ParsedTrace {
     profile: null,
     screenshots: [],
     screenshotTimes: [],
+    pageOffsetUs: null,
     frameTimeline: [],
     unavailable: [],
     notes: [],
@@ -320,6 +323,8 @@ export function parseTrace(events: TraceEvent[], options: ParseOptions): ParsedT
       out.unavailable.push({ measurement: 'profile', reason: 'the trace could not be windowed' });
     return out;
   }
+  const markPageMs = Number((marks.start.args?.data as { startTime?: unknown } | undefined)?.startTime);
+  if (Number.isFinite(markPageMs)) out.pageOffsetUs = marks.start.ts - markPageMs * 1000;
   const window = marks.window;
   parseFrames(events, marks, options.browserVersion, out);
   if (options.budget120) parseAnimationFrames(events, window, options.browserVersion, out);

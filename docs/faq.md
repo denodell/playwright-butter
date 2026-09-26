@@ -34,7 +34,7 @@ Within one CI job, results on GitHub's runners varied by about ±2% from run to 
 - Chromium, which a Playwright project already has. New headless (`channel: 'chromium'`) is the one to run.
 - No runtime dependencies. The package is about 270KB.
 - Memory: 30–50MB in the test worker for a full-mode `scroll()` with a replay. The same check still passes with the worker's heap capped at 90MB. Full mode briefly opens a second page in the browser while it analyzes screenshots.
-- Disk: a result file of about 3KB per check, baselines and histories of a few KB each, and a replay video (about 430KB) only when a `scroll()` check gets worse. Traces are never written to disk.
+- Disk: a result file of about 3KB per check, baselines and histories of a few KB each, and a replay video (a few hundred KB) only when a full-mode check gets worse. Traces are never written to disk.
 
 ## Operating systems
 

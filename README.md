@@ -4,7 +4,7 @@
 
 ![A replay of a demo article scrolled 3,000px, played 4× slower than real time: the frame rate falls to about 30 frames per second as frames are dropped](docs/replay-frame-rate.gif)
 
-When a full-mode scroll check gets worse, the test gets a replay like this one. The demo article has a smooth-scrolling script that moves the page itself on every frame, and half its frames are dropped: about 30 frames per second. No single frame took 50ms, so the browser's Long Animation Frames API never reported one; the dropped frames came from Chrome's own frame timeline.
+When a full-mode check gets worse, the test gets a replay like this one. The demo article has a smooth-scrolling script that moves the page itself on every frame, and half its frames are dropped: about 30 frames per second. No single frame took 50ms, so the browser's Long Animation Frames API never reported one; the dropped frames came from Chrome's own frame timeline.
 
 If you're deciding whether to add it, [Before you adopt it](docs/faq.md) covers how much time it adds to your suite, how it keeps CI from going flaky, and how it differs from Lighthouse and RUM. It only warns until you switch a check to fail, it has no runtime dependencies, and it doesn't send data anywhere.
 
@@ -81,6 +81,8 @@ A measurement takes several times as long as the interaction itself, and a trace
 
 Only work caused by the interaction counts. Long frames during page load or from background timers are left out, and so is work that was already running when the input arrived. `setInterval` callbacks never count as an interaction's work, even when they run in the middle of one, because they run on a fixed schedule whatever the user does.
 
+In full mode, a check that got worse also gets a video replay of the interaction, described under [Scroll a list](#scroll-a-list).
+
 If your action can't be repeated after a plain reload, a `reset` function puts the page back into the state it needs:
 
 ```ts
@@ -113,7 +115,7 @@ In full mode it also finds blank frames. It screenshots the list at rest, then c
 await smoothness.scroll(list, { mode: 'full', list: { placeholders: ['.skeleton-row', '#e5e7eb'] } });
 ```
 
-When a full-mode `scroll()` check gets worse, a video of the measured scroll is attached to the test in the Playwright report. It plays 4× slower than real time. Each frame shows the frame rate at that moment and, when the list went blank, how drawn it was. A graph of the whole run draws the frame rate as it plays, orange where frames were dropped, with blank frames marked underneath. `replay: 'on'` attaches one every time, and `'off'` never. The video is built from the frames the measurement already recorded, so making it doesn't change the numbers.
+When a full-mode `scroll()` or `measure()` check gets worse, a video of one measured run is attached to the test in the Playwright report. It plays 4× slower than real time. Each frame shows the frame rate at that moment and, when a list went blank, how drawn it was. A graph of the whole run draws the frame rate as it plays, orange where frames were dropped, with blank frames (for `scroll()`) or long frames (for `measure()`) marked underneath; `measure()` replays also mark when each input arrived. `replay: 'on'` attaches one every time, and `'off'` never. `scroll()` replays are built from the screenshots blank-row detection already records. `measure()` records screenshots only for the replay, so `replay: 'off'` skips them.
 
 [docs/list-detection.md](docs/list-detection.md) explains how blank frames are detected, and what the detection can't see.
 
@@ -188,7 +190,7 @@ export default defineConfig<SmoothnessTestOptions>({
 | `gateTotalBlocking` | `false`                                    | Also gate total blocking time.                                                                                      |
 | `mode`              | see below                                  | `'quick'` or `'full'`. Full mode adds a Chrome trace: dropped frames, a CPU profile, and blank rows for `scroll()`. |
 | `list`              | `{ background: 'auto', placeholders: [] }` | `scroll()` in full mode: what counts as blank.                                                                      |
-| `replay`            | `'on-regression'`                          | `scroll()` in full mode: attach a video replay when a check got worse (`'on'`: always, `'off'`: never).             |
+| `replay`            | `'on-regression'`                          | Full mode: attach a video replay when a check got worse (`'on'`: always, `'off'`: never).                           |
 | `refreshRate`       | `60`                                       | `120` adds a reported-only 120Hz prediction in full mode.                                                           |
 
 The mode comes from the option, then `SMOOTHNESS_MODE`, then scheduled CI runs (`full`), then `quick`. See [docs/mode-detection.md](docs/mode-detection.md).

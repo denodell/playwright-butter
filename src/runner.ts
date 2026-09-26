@@ -82,7 +82,7 @@ interface RunData {
   profile: ProfileRun | null;
   /** scroll() in full mode only. */
   list: ListResult | { unavailable: string } | null;
-  /** scroll() in full mode: the frames, for a replay. */
+  /** Full mode: the frames, for a replay. */
   replay: ReplayInput | null;
 }
 
@@ -333,7 +333,10 @@ async function measureRun(
   let listPrepared: ListPrepared | { unavailable: string } | null = null;
   if (options.mode === 'full' && browser && ctx.list && run > 0) listPrepared = await ctx.list.prepare();
   if (options.mode === 'full' && browser) {
-    const screenshots = listPrepared !== null && !('unavailable' in listPrepared);
+    // Screenshots for blank-row detection, or for a replay of measure() (not on the warm-up).
+    const screenshots =
+      (listPrepared !== null && !('unavailable' in listPrepared)) ||
+      (!ctx.list && options.replay !== 'off' && run > 0);
     trace = await traceRun(
       browser,
       page,
@@ -370,7 +373,8 @@ async function measureRun(
   tally.overflow.scrolls += snapshot.overflow.scrolls;
   if (run === 0) return null; // warm-up, discarded
 
-  return summarizeRun(snapshot, trace, list, replay);
+  const measureReplay = !ctx.list && trace ? replayOfMeasure(ctx, trace, snapshot) : null;
+  return summarizeRun(snapshot, trace, list, replay ?? measureReplay);
 }
 
 /**
@@ -404,6 +408,7 @@ async function analyzeListRun(
           drawn: analyzed.drawn,
           blankShare: BLANK_FRAME_SHARE,
           frames: trace.frameTimeline.map((f) => ({ tMs: (f.ts - t0) / 1000, dropped: f.dropped })),
+          markers: { inputs: [], longFrames: [] },
           rect: listPrepared.geometry.rect,
           viewport: listPrepared.geometry.viewport,
           title: ctx.label,
@@ -415,6 +420,46 @@ async function analyzeListRun(
     trace.frameTimeline = [];
   }
   return { list, replay };
+}
+
+/**
+ * A measure() run's frames for a replay: its screenshots and frame timeline, with the inputs and
+ * long frames from the collector placed on the same clock. The screenshots are dropped from the
+ * trace afterwards.
+ */
+function replayOfMeasure(
+  ctx: MeasureContext,
+  trace: ParsedTrace,
+  snapshot: CollectorSnapshot,
+): ReplayInput | null {
+  const t0 = trace.screenshotTimes[0];
+  const offset = trace.pageOffsetUs;
+  const out =
+    t0 === undefined || offset === null || ctx.options.replay === 'off'
+      ? null
+      : {
+          jpegs: trace.screenshots,
+          timesMs: trace.screenshotTimes.map((t) => (t - t0) / 1000),
+          drawn: [],
+          blankShare: BLANK_FRAME_SHARE,
+          rect: null,
+          viewport: ctx.page.viewportSize() ?? { width: 1280, height: 720 },
+          title: ctx.label,
+          frames: trace.frameTimeline.map((f) => ({ tMs: (f.ts - t0) / 1000, dropped: f.dropped })),
+          markers: {
+            inputs: snapshot.events
+              .filter((e) => e.interactionId > 0)
+              .map((e) => (e.start * 1000 + offset - t0) / 1000),
+            longFrames: snapshot.loaf.map((f) => ({
+              tMs: (f.start * 1000 + offset - t0) / 1000,
+              durMs: f.duration,
+            })),
+          },
+        };
+  trace.screenshots = [];
+  trace.screenshotTimes = [];
+  trace.frameTimeline = [];
+  return out;
 }
 
 /** Classifies a run's frames and summarizes the ones the interaction caused. */
@@ -499,7 +544,7 @@ async function combineRuns(
 
   const classCount = (k: FrameClass) =>
     Math.round(median(runs.map((r) => r.classes.filter((c) => c === k).length)));
-  const replaySource = pickReplaySource(runs, list);
+  const replaySource = pickReplaySource(runs, list, input);
 
   const result: SmoothnessResult = {
     schemaVersion: SCHEMA_VERSION,
@@ -716,17 +761,29 @@ function combineBudget120(
 }
 
 /** The replay comes from the run whose blank-frame share is closest to the reported median. */
-function pickReplaySource(runs: RunData[], list: ListResult | null | undefined): ReplayInput | null {
+function pickReplaySource(
+  runs: RunData[],
+  list: ListResult | null | undefined,
+  input: InputResult | null,
+): ReplayInput | null {
+  // scroll(): the run whose blank-frame share is closest to the reported one. measure(): the run
+  // whose input-to-paint time is, or failing that, the first run with frames.
+  const score = (r: RunData): number | null => {
+    if (list)
+      return r.list && !('unavailable' in r.list)
+        ? Math.abs(r.list.blankFramePercent - list.blankFramePercent)
+        : null;
+    if (input && input.p95ToPaintMs !== null && r.input.p95ToPaintMs !== null)
+      return Math.abs(r.input.p95ToPaintMs - input.p95ToPaintMs);
+    return 0;
+  };
   let replaySource: ReplayInput | null = null;
-  if (list) {
-    let best = Infinity;
-    for (const r of runs) {
-      if (!r.replay || !r.list || 'unavailable' in r.list) continue;
-      const d = Math.abs(r.list.blankFramePercent - list.blankFramePercent);
-      if (d < best) {
-        best = d;
-        replaySource = r.replay;
-      }
+  let best = Infinity;
+  for (const r of runs) {
+    const d = r.replay ? score(r) : null;
+    if (d !== null && d < best) {
+      best = d;
+      replaySource = r.replay;
     }
   }
   return replaySource;
