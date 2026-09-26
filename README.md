@@ -2,9 +2,9 @@
 
 `playwright-smoothness` fails the build when a web UI stops being smooth. It measures scripted interactions and list scrolling in Chromium, compares each one with a stored baseline, and names the element and the code responsible when it gets worse.
 
-![A virtualized list, flung at 6,000px/s: drawn in every frame (left), and blank in 92% of frames while 97% of frames are still on time (right)](docs/hero.png)
+![A replay of a social feed flung at 6,000px/s, played 4× slower than real time: the posts disappear, and 114 of 123 frames are marked blank](docs/replay.gif)
 
-Dropped frames don't show a list going blank. On the right, 97% of frames arrive on time, but the rows aren't there. `smoothness.scroll()` measures both.
+When a full-mode scroll check gets worse, the test gets a replay like this one, from a demo feed whose posts take too long to build. Most frames still arrived on time (86%), but the list was blank in 114 of 123 of them.
 
 If you're deciding whether to add it, [Before you adopt it](docs/faq.md) covers how much time it adds to your suite, how it keeps CI from going flaky, and how it differs from Lighthouse and RUM. It only warns until you switch a check to fail, it has no runtime dependencies, and it doesn't send data anywhere.
 
@@ -15,6 +15,22 @@ npm install -D playwright-smoothness
 ```
 
 Requires Node 20 or later and `@playwright/test` 1.49 or later.
+
+### Every test, with one line
+
+```ts
+// tests/fixtures.ts
+import { test as base } from '@playwright/test';
+import { withSmoothness } from 'playwright-smoothness';
+export const test = withSmoothness(base, { auto: true });
+export { expect } from '@playwright/test';
+```
+
+Tests that import `test` from this file are measured as they run, with no other changes. Each one is measured once for its whole run, across navigations, and every interaction is listed with its element (`click on button#checkout: 180ms`). Each test is compared with the median of its recent passing runs on your main branch, and those runs are recorded by your CI's main-branch builds. Until a test has three of them, its result says it's building history. Nothing fails: anything that got worse gets an annotation. [docs/automatic-mode.md](docs/automatic-mode.md) covers keeping the history in CI.
+
+### Specific interactions and lists
+
+For the interactions you care most about, `measure()` and `scroll()` run the action several times under CPU throttling and compare with a baseline stored next to the test:
 
 ```ts
 // tests/smoothness.spec.ts
@@ -77,6 +93,10 @@ await smoothness.measure('add to cart', action, {
 ```
 
 ## Scroll a list
+
+![A virtualized list, flung at 6,000px/s: drawn in every frame (left), and blank in 92% of frames while 97% of frames are still on time (right)](docs/hero.png)
+
+Dropped frames don't show a list going blank. On the right, 97% of frames arrive on time, but the rows aren't there. `scroll()` measures both.
 
 `smoothness.scroll(locator, options)` does the same repeated, reloaded runs as `measure()`, with the scroll as the action:
 
@@ -172,17 +192,6 @@ export default defineConfig<SmoothnessTestOptions>({
 | `refreshRate`       | `60`                                       | `120` adds a reported-only 120Hz prediction in full mode.                                                           |
 
 The mode comes from the option, then `SMOOTHNESS_MODE`, then scheduled CI runs (`full`), then `quick`. See [docs/mode-detection.md](docs/mode-detection.md).
-
-## Measure every test automatically
-
-```ts
-// tests/fixtures.ts
-import { test as base } from '@playwright/test';
-import { withSmoothness } from 'playwright-smoothness';
-export const test = withSmoothness(base, { auto: true });
-```
-
-Every test that imports `test` from your fixtures file is measured once for its whole run, across navigations, and compared with the median of its recent passing runs on your main branch. Each interaction is listed with its element (`click on button#checkout: 180ms`). Editing a spec file starts its history again instead of failing. [docs/automatic-mode.md](docs/automatic-mode.md) explains how it works and how to keep the history in CI.
 
 ## Summarize results on pull requests
 
