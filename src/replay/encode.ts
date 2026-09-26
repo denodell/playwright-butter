@@ -204,7 +204,6 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     const mid = (from + to) / 2;
     return {
       fps: fpsBetween(Math.max(0, mid - FPS_WINDOW_MS / 2), Math.min(total, mid + FPS_WINDOW_MS / 2)),
-      dropped: droppedBetween(from, to) > 0,
       blank: args.drawn.some((d, j) => d < args.blankShare && colOf(args.timesMs[j]!) === cI),
       long: args.markers.longFrames.some((f) => f.tMs < to && f.tMs + f.durMs > from),
     };
@@ -285,8 +284,8 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
 
     // LCD graph of the frame rate: a fixed grid of segments, unlit ones faintly visible. Each
     // column covers a slice of the run and lights the one segment at its frames per second, so
-    // the lit segments read as a line; orange where frames were dropped. It draws in as the
-    // replay plays. A one-row strip underneath marks slices with blank frames.
+    // the lit segments read as a line: black at 60fps, orange below it, where frames were
+    // dropped. It draws in as the replay plays. A one-row strip underneath marks slices with blank frames.
     const top = y + 58;
     const gl = left + 36; // a gutter for the graph's labels
     const xAt = (ms: number) => gl + (ms / (total || 1)) * (right - gl);
@@ -302,12 +301,21 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       const played = cI <= playCol;
       const level = sl.fps === null || !played ? -1 : Math.max(0, Math.round((sl.fps / 60) * rows) - 1);
       for (let r = 0; r < rows; r++) {
-        g.fillStyle = r === level ? (sl.dropped ? c.blank : c.ink) : c.off;
+        // Black at the top row (60fps); orange anywhere below it, where frames were dropped.
+        g.fillStyle = r !== level ? c.off : level < rows - 1 ? c.blank : c.ink;
         g.fillRect(gl + cI * colW + 0.75, base - (r + 1) * pitch, colW - 1.5, cellH);
       }
       g.fillStyle = played && (isList ? sl.blank : sl.long) ? c.blank : c.off;
       g.fillRect(gl + cI * colW + 0.75, base + 4, colW - 1.5, cellH);
     }
+    // Key: orange means frames were dropped.
+    g.font = `600 7px ${sans}`;
+    g.letterSpacing = '1.4px';
+    const keyW = g.measureText('FRAMES DROPPED').width;
+    g.letterSpacing = '0px';
+    g.fillStyle = c.blank;
+    g.fillRect(right - keyW - 12, top - 12, 7, cellH);
+    label('Frames dropped', right, top - 8, c.graphite, 'right', 7);
     label('60 fps', gl - 6, base - rows * pitch + 4, c.graphite, 'right', 7);
     label('30', gl - 6, base - (rows / 2) * pitch + 3, c.graphite, 'right', 7);
     label('0', gl - 6, base, c.graphite, 'right', 7);
