@@ -40,7 +40,7 @@ Within one CI job, results on GitHub's runners varied by about ±2% from run to 
 
 Linux, macOS and Windows. CI runs the unit and integration suites on Ubuntu and Windows, and development happens on macOS.
 
-On Windows, Chrome's CPU throttling spaces timers irregularly: on a GitHub Actions runner, a 100ms `setInterval` fired at gaps of up to 588ms, where a Linux runner kept a 250ms interval to within a millisecond of schedule. Pages driven by timers measure less steadily there, so Linux is the steadier choice for the machine that gates.
+On Windows, Chrome's CPU throttling spaces timers irregularly: on a GitHub Actions runner, a 100ms `setInterval` fired at gaps of up to 588ms, where a Linux runner kept a 250ms interval to within a millisecond of schedule. Pages driven by timers measure less steadily there, so Linux is the steadier choice for the machine that gates. On one Windows CI run, Chrome also didn't apply CPU throttling at all (4x left the work almost unslowed, where it applied fully in 10 other runs). Every `measure()` and `scroll()` now checks that throttling slowed a fixed loop, and says so in the result when it didn't.
 
 ## Chromium only
 

@@ -223,6 +223,7 @@ type Reasons = (measurement: string) => string[];
 export async function measure(ctx: MeasureContext, action: () => Promise<void>): Promise<SmoothnessResult> {
   const m = await prepare(ctx);
   const cdp = await PageCdp.open(ctx.page);
+  if (ctx.options.cpuThrottling > 1) await checkThrottling(m, cdp, ctx.options.cpuThrottling);
   const runs: RunData[] = [];
   const tally: RunTally = {
     navigated: 0,
@@ -254,6 +255,32 @@ export async function measure(ctx: MeasureContext, action: () => Promise<void>):
     };
   }
   return combineRuns(m, runs, tally.supported);
+}
+
+/**
+ * Times a fixed loop in the page unthrottled and throttled, and notes when throttling didn't slow
+ * it. Chrome occasionally doesn't apply CPU throttling (seen on a Windows CI runner, where 4x left
+ * the work almost unslowed), and nothing else would say so.
+ */
+async function checkThrottling(m: Measurement, cdp: PageCdp, rate: number): Promise<void> {
+  const loop = () =>
+    m.ctx.page
+      .evaluate(() => {
+        const start = performance.now();
+        let x = 0;
+        for (let k = 0; k < 3_000_000; k++) x = (x * 31 + k) | 0;
+        return x === 0.5 ? 0 : performance.now() - start; // uses x, so the loop isn't optimized away
+      })
+      .catch(() => null);
+  await cdp.throttle(1);
+  const base = await loop();
+  await cdp.throttle(rate);
+  const slowed = await loop();
+  if (base !== null && slowed !== null && base > 0 && slowed < base * Math.max(1.5, rate / 2)) {
+    m.notes.push(
+      `CPU throttling didn't take effect: a fixed loop took ${Math.round(slowed)}ms at ${rate}x against ${Math.round(base)}ms unthrottled, so these numbers are close to unthrottled.`,
+    );
+  }
 }
 
 /** Makes sure the collector is in the page and notes what this mode and browser can't measure. */
