@@ -113,7 +113,7 @@ In full mode it also finds blank frames. It screenshots the list at rest, then c
 await smoothness.scroll(list, { mode: 'full', list: { placeholders: ['.skeleton-row', '#e5e7eb'] } });
 ```
 
-When a full-mode `scroll()` check gets worse, a video of the measured scroll is attached to the test in the Playwright report. It plays 4× slower than real time. Each frame shows the frame rate at that moment and, when the list went blank, how drawn it was. A graph of the whole run draws the frame rate as it plays, orange where frames were dropped, with blank frames marked underneath. `replay: 'on'` attaches one every time, and `'off'` never. The video is built from the frames the measurement already recorded, so making it doesn't change the numbers.
+When a full-mode `scroll()` check gets worse, a video of the measured scroll is attached to the test in the Playwright report. It plays 4× slower than real time. Each frame shows the frame rate at that moment and, when the list went blank, how drawn it was. A graph of the whole run draws the frame rate as it plays, black at 60 frames per second and orange below it, where frames were dropped, with blank frames marked underneath. `replay: 'on'` attaches one every time, and `'off'` never. The video is built from the frames the measurement already recorded, so making it doesn't change the numbers.
 
 [docs/list-detection.md](docs/list-detection.md) explains how blank frames are detected, and what the detection can't see.
 
