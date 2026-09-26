@@ -233,10 +233,23 @@ export async function measure(ctx: MeasureContext, action: () => Promise<void>):
     supported: { loaf: true, event: true },
   };
 
+  let extraReplay: ReplayInput | null = null;
   try {
     for (let run = 0; run <= ctx.options.runs; run++) {
       const data = await measureRun(m, cdp, tally, run, action);
       if (data) runs.push(data);
+    }
+    // measure(): one more run, recorded only for a replay. Screenshots cost the compositor
+    // frames, so they're kept out of the runs that are measured.
+    if (
+      ctx.options.mode === 'full' &&
+      !ctx.list &&
+      ctx.options.replay !== 'off' &&
+      m.browser &&
+      runs.length
+    ) {
+      const scratch: RunTally = { ...tally, errors: new Set(), overflow: { loaf: 0, events: 0, scrolls: 0 } };
+      extraReplay = (await measureRun(m, cdp, scratch, ctx.options.runs + 1, action, true))?.replay ?? null;
     }
   } finally {
     await cdp.close();
@@ -254,7 +267,7 @@ export async function measure(ctx: MeasureContext, action: () => Promise<void>):
       unavailable: [...empty.unavailable, ...m.unavailable],
     };
   }
-  return combineRuns(m, runs, tally.supported);
+  return combineRuns(m, runs, tally.supported, extraReplay);
 }
 
 /**
@@ -331,6 +344,7 @@ async function measureRun(
   tally: RunTally,
   run: number,
   action: () => Promise<void>,
+  forReplay = false,
 ): Promise<RunData | null> {
   const { ctx, browser, collector: c } = m;
   const { page, options } = ctx;
@@ -360,10 +374,8 @@ async function measureRun(
   let listPrepared: ListPrepared | { unavailable: string } | null = null;
   if (options.mode === 'full' && browser && ctx.list && run > 0) listPrepared = await ctx.list.prepare();
   if (options.mode === 'full' && browser) {
-    // Screenshots for blank-row detection, or for a replay of measure() (not on the warm-up).
-    const screenshots =
-      (listPrepared !== null && !('unavailable' in listPrepared)) ||
-      (!ctx.list && options.replay !== 'off' && run > 0);
+    // Screenshots for blank-row detection, or on measure()'s extra run for a replay.
+    const screenshots = (listPrepared !== null && !('unavailable' in listPrepared)) || forReplay;
     trace = await traceRun(
       browser,
       page,
@@ -400,7 +412,7 @@ async function measureRun(
   tally.overflow.scrolls += snapshot.overflow.scrolls;
   if (run === 0) return null; // warm-up, discarded
 
-  const measureReplay = !ctx.list && trace ? replayOfMeasure(ctx, trace, snapshot) : null;
+  const measureReplay = forReplay && trace ? replayOfMeasure(ctx, trace, snapshot) : null;
   return summarizeRun(snapshot, trace, list, replay ?? measureReplay);
 }
 
@@ -557,6 +569,7 @@ async function combineRuns(
   m: Measurement,
   runs: RunData[],
   supported: RunTally['supported'],
+  extraReplay: ReplayInput | null,
 ): Promise<SmoothnessResult> {
   const { ctx, notes, unavailable } = m;
   const { options } = ctx;
@@ -571,7 +584,7 @@ async function combineRuns(
 
   const classCount = (k: FrameClass) =>
     Math.round(median(runs.map((r) => r.classes.filter((c) => c === k).length)));
-  const replaySource = pickReplaySource(runs, list, input);
+  const replaySource = pickReplaySource(runs, list) ?? extraReplay;
 
   const result: SmoothnessResult = {
     schemaVersion: SCHEMA_VERSION,
@@ -788,29 +801,18 @@ function combineBudget120(
 }
 
 /** The replay comes from the run whose blank-frame share is closest to the reported median. */
-function pickReplaySource(
-  runs: RunData[],
-  list: ListResult | null | undefined,
-  input: InputResult | null,
-): ReplayInput | null {
-  // scroll(): the run whose blank-frame share is closest to the reported one. measure(): the run
-  // whose input-to-paint time is, or failing that, the first run with frames.
-  const score = (r: RunData): number | null => {
-    if (list)
-      return r.list && !('unavailable' in r.list)
-        ? Math.abs(r.list.blankFramePercent - list.blankFramePercent)
-        : null;
-    if (input && input.p95ToPaintMs !== null && r.input.p95ToPaintMs !== null)
-      return Math.abs(r.input.p95ToPaintMs - input.p95ToPaintMs);
-    return 0;
-  };
+function pickReplaySource(runs: RunData[], list: ListResult | null | undefined): ReplayInput | null {
+  // scroll(): the run whose blank-frame share is closest to the reported one.
   let replaySource: ReplayInput | null = null;
-  let best = Infinity;
-  for (const r of runs) {
-    const d = r.replay ? score(r) : null;
-    if (d !== null && d < best) {
-      best = d;
-      replaySource = r.replay;
+  if (list) {
+    let best = Infinity;
+    for (const r of runs) {
+      if (!r.replay || !r.list || 'unavailable' in r.list) continue;
+      const d = Math.abs(r.list.blankFramePercent - list.blankFramePercent);
+      if (d < best) {
+        best = d;
+        replaySource = r.replay;
+      }
     }
   }
   return replaySource;
