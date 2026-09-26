@@ -220,30 +220,55 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     dotText(`${pad3(i + 1)}/${n}`, left + col, y + 10, cell, c.ink, c.off);
     dotText(secs(args.timesMs[i]!), left + col * 2, y + 10, cell, c.ink, c.off);
 
-    // Dot waveform: one column per frame, placed by time, as many dots high as it was drawn.
-    const top = y + 50;
-    const rows = 12;
-    const pitch = 4;
-    const base = top + rows * pitch;
-    const xAt = (ms: number) => left + 2 + (ms / (total || 1)) * (right - left - 4);
+    const top = y + 54;
+    const xAt = (ms: number) => left + (ms / (total || 1)) * (right - left);
+    // LCD bar graph: a fixed grid of segments, unlit ones faintly visible. Each column covers
+    // a slice of the run and lights up to its worst frame; a blank slice lights one orange
+    // segment. Columns still to come are pale.
+    const cols = 60;
+    const rows = 8;
+    const cellH = 4;
+    const gapY = 1.5;
+    const colW = (right - left) / cols;
+    const base = top + rows * (cellH + gapY);
+    const worst = Array.from({ length: cols }, () => 1);
+    const seen = Array.from({ length: cols }, () => false);
+    const colOf = (ms: number) => Math.min(cols - 1, Math.floor((ms / (total || 1)) * cols));
     for (let j = 0; j < n; j++) {
-      const d = args.drawn[j]!;
-      const lit = Math.max(1, Math.round(d * rows));
-      const x = xAt(args.timesMs[j]!);
-      for (let k = 0; k < lit; k++) {
-        g.fillStyle = j > i ? c.future : d < args.blankShare ? c.blank : c.ink;
-        g.beginPath();
-        g.arc(x, base - k * pitch, 1.3, 0, Math.PI * 2);
-        g.fill();
+      const cI = colOf(args.timesMs[j]!);
+      worst[cI] = Math.min(worst[cI]!, args.drawn[j]!);
+      seen[cI] = true;
+    }
+    const playCol = colOf(args.timesMs[i]!);
+    const threshRow = Math.round(args.blankShare * rows);
+    for (let cI = 0; cI < cols; cI++) {
+      const v = worst[cI]!;
+      const isBlank = seen[cI] && v < args.blankShare;
+      const lit = !seen[cI] ? 0 : isBlank ? 1 : Math.max(1, Math.round(v * rows));
+      for (let r = 0; r < rows; r++) {
+        const on = r < lit;
+        g.fillStyle = !on
+          ? r === threshRow
+            ? '#dedcd5'
+            : c.off
+          : cI > playCol
+            ? c.future
+            : isBlank
+              ? c.blank
+              : c.ink;
+        g.fillRect(left + cI * colW + 0.75, base - (r + 1) * (cellH + gapY), colW - 1.5, cellH);
       }
     }
-    // The blank threshold: a faint dotted row across the width, between two rows of dots.
-    const ty = base - (Math.round(args.blankShare * rows) - 0.5) * pitch;
-    g.fillStyle = c.future;
-    for (let x = left; x <= right; x += 3) g.fillRect(x, ty, 1, 1);
-    label(`${Math.round(args.blankShare * 100)}%`, left - 6, ty + 3, c.graphite, 'right', 7);
+    label(
+      `${Math.round(args.blankShare * 100)}%`,
+      left - 6,
+      base - threshRow * (cellH + gapY) - 1,
+      c.graphite,
+      'right',
+      7,
+    );
 
-    // Playhead: a small triangle under the waveform.
+    // Playhead: a small triangle under the graph.
     const hx = xAt(args.timesMs[i]!);
     g.fillStyle = c.ink;
     g.beginPath();
