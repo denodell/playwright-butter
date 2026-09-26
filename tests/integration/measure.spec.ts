@@ -110,7 +110,11 @@ test('CPU throttling slows iteration-based work', async ({ page, smoothness }) =
   const at1 = await smoothness.measure('iter click 1x', () => page.click('#heavy'), { cpuThrottling: 1 });
   const at4 = await smoothness.measure('iter click 4x', () => page.click('#heavy'), { cpuThrottling: 4 });
   await attach({ at1, at4 });
-  expect(at4.input!.p95ToPaintMs!).toBeGreaterThan(2 * at1.input!.p95ToPaintMs!);
+  // Chrome occasionally doesn't apply throttling (seen once on a Windows runner); the result
+  // must then say so rather than pass off unthrottled numbers.
+  const noted = at4.notes.join(' ').includes("CPU throttling didn't take effect");
+  if (!noted) expect(at4.input!.p95ToPaintMs!).toBeGreaterThan(2 * at1.input!.p95ToPaintMs!);
+  expect(at1.notes.join(' ')).not.toContain('CPU throttling');
 });
 
 test("reset: 'reload', 'none' and a function", async ({ page, smoothness }) => {
