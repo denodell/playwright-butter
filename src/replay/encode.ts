@@ -256,9 +256,9 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     const droppingNow = droppedBetween(args.timesMs[i]! - FPS_WINDOW_MS, args.timesMs[i]!) > 0;
     const listWentBlank = blankCount > 0;
     const droppedSoFar = droppedBetween(-1, args.timesMs[i]!);
-    label(listWentBlank ? 'Drawn' : 'Dropped', left, y);
+    label(listWentBlank ? 'Drawn' : 'Dropped frames', left, y);
     label('Frames per second', left + col, y);
-    label('Time', left + col * 2, y);
+    label('Elapsed time', left + col * 2, y);
     const cell = 3;
     if (listWentBlank) {
       const endX = dotText(pct.padStart(4, ' '), left, y + 10, cell, blank ? c.blank : c.ink, c.off);
