@@ -105,11 +105,6 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     '/': '00001000100001000100010000100010000',
     '.': '00000000000000000000000000110001100',
     s: '00000000000111110000011100000111110',
-    B: '11110100011000111110100011000111110',
-    L: '10000100001000010000100001000011111',
-    A: '01110100011000111111100011000110001',
-    N: '10001110011010110011100011000110001',
-    K: '10001100101010011000101001001010001',
     ' ': '00000000000000000000000000000000000',
   };
   const dotText = (s: string, x: number, y: number, cell: number, on: string, off: string | null) => {
@@ -128,7 +123,6 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     }
     return x;
   };
-  const dotWidth = (s: string, cell: number) => s.length * cell * 6 - cell;
   const meter = (x: number, y: number, h: number, drawn: number, blank: boolean) => {
     const lit = Math.round(drawn * 10);
     for (let k = 0; k < 10; k++) {
@@ -139,8 +133,9 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const secs = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
   const pad3 = (v: number) => String(v).padStart(String(n).length, '0');
 
-  // The list on the screenshot: a hairline when drawn; when blank, an orange halftone screen and
-  // a tag.
+  // The list on the screenshot: a hairline when drawn; when its rows aren't drawn (a blank frame),
+  // an orange outline and a tag that says so. The empty list itself is the evidence, so it isn't
+  // covered.
   const markList = (ox: number, oy: number, blank: boolean) => {
     if (!args.rect) return;
     const x = ox + args.rect.x * sx;
@@ -153,25 +148,17 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
       return;
     }
-    g.save();
-    g.beginPath();
-    g.rect(x, y, w, h);
-    g.clip();
-    g.fillStyle = 'rgba(255, 79, 0, 0.35)';
-    for (let yy = y + 4; yy < y + h; yy += 8)
-      for (let xx = x + 4 + ((yy - y) % 16 ? 4 : 0); xx < x + w; xx += 8) {
-        g.beginPath();
-        g.arc(xx, yy, 1.4, 0, Math.PI * 2);
-        g.fill();
-      }
-    g.restore();
     g.strokeStyle = c.blank;
     g.lineWidth = 2;
     g.strokeRect(x + 1, y + 1, w - 2, h - 2);
-    const tagW = dotWidth('BLANK', 2) + 12;
+    g.font = `700 10px ${sans}`;
+    g.letterSpacing = '1.2px';
+    const tag = 'ROWS NOT DRAWN YET';
+    const tagW = g.measureText(tag).width + 14;
+    g.letterSpacing = '0px';
     g.fillStyle = c.blank;
     g.fillRect(x + 2, y + 2, tagW, 20);
-    dotText('BLANK', x + 8, y + 5, 2, c.paper, null);
+    label(tag, x + 9, y + 16, c.paper, 'left', 10);
   };
 
   // Frame rate over a short trailing window, from the compositor's presented frames.
@@ -255,7 +242,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     const droppingNow = droppedBetween(args.timesMs[i]! - FPS_WINDOW_MS, args.timesMs[i]!) > 0;
     const listWentBlank = blankCount > 0;
     const droppedSoFar = droppedBetween(-1, args.timesMs[i]!);
-    label(listWentBlank ? 'Drawn' : 'Dropped frames', left, y);
+    label(listWentBlank ? 'List drawn' : 'Dropped frames', left, y);
     label('Frames per second', left + col, y);
     label('Elapsed time', left + col * 2, y);
     const cell = 3;
@@ -308,18 +295,22 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       g.fillStyle = played && (isList ? sl.blank : sl.long) ? c.blank : c.off;
       g.fillRect(gl + cI * colW + 0.75, base + 4, colW - 1.5, cellH);
     }
-    // Key: orange means frames were dropped.
-    g.font = `600 7px ${sans}`;
-    g.letterSpacing = '1.4px';
-    const keyW = g.measureText('FRAMES DROPPED').width;
-    g.letterSpacing = '0px';
-    g.fillStyle = c.blank;
-    g.fillRect(right - keyW - 12, top - 12, 7, cellH);
-    label('Frames dropped', right, top - 8, c.graphite, 'right', 7);
+    // Key: what orange means, on the line and in the strip underneath.
+    let keyX = right;
+    for (const item of [isList ? 'Rows not drawn' : 'Long frames', 'Frames dropped']) {
+      g.font = `600 7px ${sans}`;
+      g.letterSpacing = '1.4px';
+      const w = g.measureText(item.toUpperCase()).width;
+      g.letterSpacing = '0px';
+      label(item, keyX, top - 8, c.graphite, 'right', 7);
+      g.fillStyle = c.blank;
+      g.fillRect(keyX - w - 12, top - 12, 7, cellH);
+      keyX -= w + 26;
+    }
     label('60 fps', gl - 6, base - rows * pitch + 4, c.graphite, 'right', 7);
     label('30', gl - 6, base - (rows / 2) * pitch + 3, c.graphite, 'right', 7);
     label('0', gl - 6, base, c.graphite, 'right', 7);
-    label(isList ? 'Blank' : 'Long', gl - 6, base + 7.5, c.graphite, 'right', 6);
+    label(isList ? 'Not drawn' : 'Long', gl - 6, base + 7.5, c.graphite, 'right', 6);
     // measure(): a small mark above the graph where each input arrived.
     for (const t of inputs) {
       if (t > args.timesMs[i]!) continue;
@@ -346,7 +337,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     g.fill();
     const parts = [
       `${droppedTotal} frames dropped`,
-      isList ? `${blankCount} of ${n} blank` : `${args.markers.longFrames.length} long frames`,
+      isList ? `${blankCount} of ${n} with rows not drawn` : `${args.markers.longFrames.length} long frames`,
     ];
     label(
       parts.join(' · '),
