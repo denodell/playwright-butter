@@ -448,6 +448,7 @@ async function analyzeListRun(
           blankShare: BLANK_FRAME_SHARE,
           frames: trace.frameTimeline.map((f) => ({ tMs: (f.ts - t0) / 1000, dropped: f.dropped })),
           markers: { inputs: [], longFrames: [] },
+          virtualized: true, // until scroll() knows otherwise
           rect: listPrepared.geometry.rect,
           viewport: listPrepared.geometry.viewport,
           title: ctx.label,
@@ -482,6 +483,7 @@ function replayOfMeasure(
           drawn: [],
           blankShare: BLANK_FRAME_SHARE,
           rect: null,
+          virtualized: false,
           viewport: ctx.page.viewportSize() ?? { width: 1280, height: 720 },
           title: ctx.label,
           frames: trace.frameTimeline.map((f) => ({ tMs: (f.ts - t0) / 1000, dropped: f.dropped })),

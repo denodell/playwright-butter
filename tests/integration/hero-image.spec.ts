@@ -19,7 +19,11 @@ async function flingFrames(page: Page, url: string) {
   await page.waitForTimeout(500);
   const target = page.locator('#list');
   const geometry = await listGeometry(target);
-  const { colors } = await blankColors(target, { background: 'auto', placeholders: [] });
+  const { colors } = await blankColors(target, {
+    background: 'auto',
+    placeholders: [],
+    virtualized: 'auto' as const,
+  });
   const referencePng = await referenceShot(page, geometry);
   const cdp = await page.context().newCDPSession(page);
   const browser = page.context().browser()!;

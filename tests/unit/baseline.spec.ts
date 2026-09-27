@@ -291,3 +291,15 @@ test('same label, different tests: separate baselines', () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('blank frames are only gated on a virtualized list', () => {
+  const list = { frames: 100, blankFrames: 60, blankFramePercent: 60, leastDrawnPercent: 0 };
+  const base = metricsOf(makeResult({ list: { ...list, blankFrames: 0, blankFramePercent: 0 } }));
+  const gated = (virtualized: boolean | undefined) =>
+    compareMetrics(makeResult({ list: { ...list, virtualized } }), base, 0.15).some(
+      (c) => c.metric === 'list.blankFramePercent',
+    );
+  expect(gated(true)).toBe(true);
+  expect(gated(undefined)).toBe(true); // results from before detection existed
+  expect(gated(false)).toBe(false);
+});

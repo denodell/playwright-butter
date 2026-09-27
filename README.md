@@ -109,7 +109,7 @@ Dropped frames don't show a list going blank. In this demo feed, whose posts tak
 
 If the list never moves (for example, the locator isn't the element that scrolls), its blank-frame numbers are reported as unavailable, not as 0%.
 
-In full mode it also finds blank frames. It screenshots the list at rest, then compares each frame the compositor produced during the scroll with it. A frame drawn to less than half of the resting list is blank. Skeleton rows should count as blank too, and `list.placeholders` names them:
+In full mode it also finds blank frames. It screenshots the list at rest, then compares each frame the compositor produced during the scroll with it. A frame drawn to less than half of the resting list is blank. Blank frames mean rows that weren't built in time, which happens in virtualized lists: lists that remove rows as they scroll out of view and build new ones. `scroll()` detects that by watching for removed rows, and only gates blank frames on a virtualized list. On any other page they'd mean empty space in the content, so they're reported but not gated, with a note; `list: { virtualized: true }` overrides the detection. Skeleton rows should count as blank too, and `list.placeholders` names them:
 
 ```ts
 await smoothness.scroll(list, { mode: 'full', list: { placeholders: ['.skeleton-row', '#e5e7eb'] } });
@@ -135,7 +135,7 @@ In full mode (`mode: 'full'`), each run is also traced:
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
 | `frames.onTimePercent`   | Frames presented on time, out of frames that had an update to show, from Chrome's frame reporter in the trace. Catches drops that are too short for Long Animation Frames. | Yes   |
 | `frames.dropped`         | Frames whose update missed its deadline.                                                                                                                                   | No    |
-| `list.blankFramePercent` | `scroll()` only: frames where the list was drawn to less than half of its resting state.                                                                                   | Yes   |
+| `list.blankFramePercent` | `scroll()` only: frames where the list was drawn to less than half of its resting state. Gated only on a virtualized list (`list.virtualized`).                            | Yes   |
 | `list.leastDrawnPercent` | `scroll()` only: the emptiest frame, as a percentage of the list at rest.                                                                                                  | No    |
 | `profile.hotFunctions`   | Functions that used the most CPU during the interaction, from V8's sampling profiler, with their callers. Names your handler even behind React's or Angular's dispatcher.  | Never |
 | `budget120`              | With `refreshRate: 120`: main-thread frames over 8.33ms. A prediction, because headless Chrome runs at 60Hz.                                                               | Never |
@@ -179,19 +179,19 @@ export default defineConfig<SmoothnessTestOptions>({
 });
 ```
 
-| Option              | Default                                    |                                                                                                                     |
-| ------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `runs`              | `5`                                        | Measured runs. The median is reported.                                                                              |
-| `cpuThrottling`     | `4`                                        | How many times slower the CPU runs. `1` turns throttling off.                                                       |
-| `maxIncrease`       | `0.15`                                     | Allowed increase over the baseline.                                                                                 |
-| `enforce`           | `'warn'`                                   | `'warn'` or `'fail'`.                                                                                               |
-| `reset`             | `'reload'`                                 | `'reload'`, `'none'`, or an async function.                                                                         |
-| `baselineDir`       | none                                       | A directory of baselines from your main branch, checked before the ones next to the test.                           |
-| `gateTotalBlocking` | `false`                                    | Also gate total blocking time.                                                                                      |
-| `mode`              | see below                                  | `'quick'` or `'full'`. Full mode adds a Chrome trace: dropped frames, a CPU profile, and blank rows for `scroll()`. |
-| `list`              | `{ background: 'auto', placeholders: [] }` | `scroll()` in full mode: what counts as blank.                                                                      |
-| `replay`            | `'on-regression'`                          | Full mode: attach a video replay when a check got worse (`'on'`: always, `'off'`: never).                           |
-| `refreshRate`       | `60`                                       | `120` adds a reported-only 120Hz prediction in full mode.                                                           |
+| Option              | Default                                                         |                                                                                                                     |
+| ------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `runs`              | `5`                                                             | Measured runs. The median is reported.                                                                              |
+| `cpuThrottling`     | `4`                                                             | How many times slower the CPU runs. `1` turns throttling off.                                                       |
+| `maxIncrease`       | `0.15`                                                          | Allowed increase over the baseline.                                                                                 |
+| `enforce`           | `'warn'`                                                        | `'warn'` or `'fail'`.                                                                                               |
+| `reset`             | `'reload'`                                                      | `'reload'`, `'none'`, or an async function.                                                                         |
+| `baselineDir`       | none                                                            | A directory of baselines from your main branch, checked before the ones next to the test.                           |
+| `gateTotalBlocking` | `false`                                                         | Also gate total blocking time.                                                                                      |
+| `mode`              | see below                                                       | `'quick'` or `'full'`. Full mode adds a Chrome trace: dropped frames, a CPU profile, and blank rows for `scroll()`. |
+| `list`              | `{ background: 'auto', placeholders: [], virtualized: 'auto' }` | `scroll()` in full mode: what counts as blank, and whether the list is virtualized (`'auto'` detects it).           |
+| `replay`            | `'on-regression'`                                               | Full mode: attach a video replay when a check got worse (`'on'`: always, `'off'`: never).                           |
+| `refreshRate`       | `60`                                                            | `120` adds a reported-only 120Hz prediction in full mode.                                                           |
 
 The mode comes from the option, then `SMOOTHNESS_MODE`, then scheduled CI runs (`full`), then `quick`. See [docs/mode-detection.md](docs/mode-detection.md).
 

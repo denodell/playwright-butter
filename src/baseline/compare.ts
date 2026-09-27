@@ -79,7 +79,7 @@ export const METRICS: MetricDef[] = [
     read: (r) => r.list?.blankFramePercent,
     source: 'list',
     floor: PERCENT_FLOOR_POINTS,
-    gated: () => true,
+    gated: (r) => r.list?.virtualized !== false,
   },
 ];
 

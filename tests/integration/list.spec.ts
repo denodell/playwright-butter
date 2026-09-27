@@ -27,6 +27,7 @@ test('a cheap list stays drawn: close to 0% blank frames', async ({ page, smooth
   expect(r.unavailable).toEqual([]);
   expect(r.list!.frames).toBeGreaterThanOrEqual(100);
   expect(r.list!.blankFramePercent).toBeLessThanOrEqual(5);
+  expect(r.list!.virtualized).toBe(true); // the test list removes rows that scroll out of view
   expect(r.scroll).toMatchObject({
     input: 'wheel',
     direction: 'vertical',
@@ -168,7 +169,11 @@ test('200 frames are analyzed in under 2 seconds', async ({ page, browser }) => 
   await page.waitForTimeout(500);
   const target = list(page);
   const geometry = await listGeometry(target);
-  const { colors } = await blankColors(target, { background: 'auto', placeholders: [] });
+  const { colors } = await blankColors(target, {
+    background: 'auto',
+    placeholders: [],
+    virtualized: 'auto' as const,
+  });
   const referencePng = await referenceShot(page, geometry);
   const cdp = await page.context().newCDPSession(page);
   const trace = await traceRun(
@@ -317,4 +322,27 @@ test('a scrolling document starts each run from the same place', async ({ page, 
   expect(r.scroll!.requestedPx).toBe(expected);
   expect(r.scroll!.scrolledPx).toBeGreaterThanOrEqual(expected - 1);
   expect(r.notes.join(' ')).not.toContain('already at its end');
+});
+
+test("a page that isn't virtualized: blank frames reported but not gated, with a note", async ({
+  page,
+  smoothness,
+}) => {
+  await page.goto('/scroll.html');
+  const r = await smoothness.scroll(page.locator('html'), { distance: 3000, runs: 2 });
+  expect(r.list!.virtualized).toBe(false);
+  expect(r.notes.join(' ')).toContain("doesn't appear to be virtualized");
+  expect(r).toBeSmooth(); // records the baseline
+  expect(r.comparison!.checks.some((c) => c.metric === 'list.blankFramePercent')).toBe(false);
+});
+
+test('list.virtualized overrides the detection', async ({ page, smoothness }) => {
+  await page.goto('/scroll.html');
+  const r = await smoothness.scroll(page.locator('html'), {
+    distance: 3000,
+    runs: 1,
+    list: { virtualized: true },
+  });
+  expect(r.list!.virtualized).toBe(true);
+  expect(r.notes.join(' ')).not.toContain('virtualized');
 });

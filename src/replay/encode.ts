@@ -26,6 +26,8 @@ export interface ReplayInput {
   frames: { tMs: number; dropped: boolean }[];
   /** measure() only: when each input arrived, and each long frame, in ms from the first screenshot. */
   markers: { inputs: number[]; longFrames: { tMs: number; durMs: number }[] };
+  /** scroll() only: whether the list is virtualized, so blank frames mean rows that weren't built. */
+  virtualized: boolean;
   /** scroll() only: the list's client area in CSS pixels, to outline it. Null for measure(). */
   rect: { x: number; y: number; width: number; height: number } | null;
   viewport: { width: number; height: number };
@@ -48,7 +50,9 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   first.close();
   const n = args.jpegs.length;
   const total = args.timesMs[n - 1] ?? 0;
-  const blankCount = args.drawn.filter((d) => d < args.blankShare).length;
+  // Frames count as blank (rows not drawn) only on a virtualized list.
+  const rowsMatter = args.rect !== null && args.virtualized;
+  const blankCount = rowsMatter ? args.drawn.filter((d) => d < args.blankShare).length : 0;
 
   const pad = 28;
   const even = (v: number) => Math.ceil(v) + (Math.ceil(v) % 2);
@@ -178,7 +182,9 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     return shown + missed === 0 ? null : Math.round((60 * shown) / (shown + missed));
   };
   const fpsAt = (t: number) => fpsBetween(t - FPS_WINDOW_MS, t);
-  const isList = args.rect !== null;
+  // What the strip under the graph shows: rows not drawn (virtualized lists), long frames
+  // (measure()), or nothing (other scrolls).
+  const strip: 'rows' | 'long' | null = args.rect === null ? 'long' : rowsMatter ? 'rows' : null;
   // One mark per interaction: its entries (pointerdown, click) arrive within a few ms.
   const inputs = [...args.markers.inputs]
     .sort((a, b) => a - b)
@@ -215,7 +221,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   for (let i = 0; i < n; i++) {
     const img = await decode(args.jpegs[i]!);
     const drawn = args.drawn[i]!;
-    const blank = drawn < args.blankShare;
+    const blank = rowsMatter && drawn < args.blankShare;
     const pct = `${Math.round(drawn * 100)}%`;
     g.fillStyle = c.paper;
     g.fillRect(0, 0, width, height);
@@ -292,12 +298,15 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
         g.fillStyle = r !== level ? c.off : level < rows - 1 ? c.blank : c.ink;
         g.fillRect(gl + cI * colW + 0.75, base - (r + 1) * pitch, colW - 1.5, cellH);
       }
-      g.fillStyle = played && (isList ? sl.blank : sl.long) ? c.blank : c.off;
-      g.fillRect(gl + cI * colW + 0.75, base + 4, colW - 1.5, cellH);
+      if (strip) {
+        g.fillStyle = played && (strip === 'rows' ? sl.blank : sl.long) ? c.blank : c.off;
+        g.fillRect(gl + cI * colW + 0.75, base + 4, colW - 1.5, cellH);
+      }
     }
     // Key: what orange means, on the line and in the strip underneath.
     let keyX = right;
-    for (const item of [isList ? 'Rows not drawn' : 'Long frames', 'Frames dropped']) {
+    const keyItems = strip === 'rows' ? ['Rows not drawn'] : strip === 'long' ? ['Long frames'] : [];
+    for (const item of [...keyItems, 'Frames dropped']) {
       g.font = `600 7px ${sans}`;
       g.letterSpacing = '1.4px';
       const w = g.measureText(item.toUpperCase()).width;
@@ -310,7 +319,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     label('60 fps', gl - 6, base - rows * pitch + 4, c.graphite, 'right', 7);
     label('30', gl - 6, base - (rows / 2) * pitch + 3, c.graphite, 'right', 7);
     label('0', gl - 6, base, c.graphite, 'right', 7);
-    label(isList ? 'Not drawn' : 'Long', gl - 6, base + 7.5, c.graphite, 'right', 6);
+    if (strip) label(strip === 'rows' ? 'Not drawn' : 'Long', gl - 6, base + 7.5, c.graphite, 'right', 6);
     // measure(): a small mark above the graph where each input arrived.
     for (const t of inputs) {
       if (t > args.timesMs[i]!) continue;
@@ -335,10 +344,9 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     g.lineTo(hx + 4, markY + 10);
     g.closePath();
     g.fill();
-    const parts = [
-      `${droppedTotal} frames dropped`,
-      isList ? `${blankCount} of ${n} with rows not drawn` : `${args.markers.longFrames.length} long frames`,
-    ];
+    const parts = [`${droppedTotal} frames dropped`];
+    if (strip === 'rows') parts.push(`${blankCount} of ${n} with rows not drawn`);
+    if (strip === 'long') parts.push(`${args.markers.longFrames.length} long frames`);
     label(
       parts.join(' · '),
       left,

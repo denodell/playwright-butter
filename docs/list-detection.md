@@ -19,6 +19,12 @@ A drawn list is still mostly background: padding, gaps, and each row's own fill.
 
 A drawn row of the test list has content on 70 of its 80 lines: its 70px poster. So a fully drawn test list measures 87.5%. Comparing each frame with the list's own reference means sparse layouts aren't penalized for their whitespace.
 
+### Virtualized lists only
+
+Blank frames mean rows that weren't built in time, and that only happens in a virtualized list, which removes rows as they scroll out of view and builds new ones. While each run scrolls, a `MutationObserver` counts the elements removed from inside the scroller. If a run removed at least 3 (`MIN_REMOVED_ROWS`), the list is virtualized, and `list.virtualized` is `true` in the result. An ordinary page removes nothing as it scrolls, and neither does an infinite list that only appends.
+
+On a list that isn't virtualized, blank frames are still measured and reported, but they aren't gated: there, a frame drawn to less than half of the starting view means the content further down has more empty space, not that anything failed to draw. The result gets a note saying so, and its replay shows the frame rate without marking rows as not drawn. `list: { virtualized: true }` or `false` overrides the detection.
+
 ### Blank colors
 
 - `list.background: 'auto'` (the default) uses the list's computed background, walking up to the first ancestor with an opaque one, or white if there's none (with a note). It can also be any CSS color.

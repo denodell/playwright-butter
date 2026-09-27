@@ -15,3 +15,8 @@ export function takeReplaySource(result: SmoothnessResult): ReplayInput | undefi
   sources.delete(result);
   return s;
 }
+
+/** The frames kept for a result's replay, without forgetting them. */
+export function peekReplaySource(result: SmoothnessResult): ReplayInput | undefined {
+  return sources.get(result);
+}

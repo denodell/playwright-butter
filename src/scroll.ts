@@ -14,6 +14,8 @@ export const MAX_KEY_PRESSES = 100;
  * the data grows. About 7 seconds at the default speed. An explicit pixel distance isn't capped.
  */
 export const END_CAP_PX = 20_000;
+/** A list that removed at least this many elements while it scrolled is treated as virtualized. */
+export const MIN_REMOVED_ROWS = 3;
 /** Chrome scrolls about 40px per arrow key; used to turn a pixel distance into presses. */
 export const PX_PER_ARROW_KEY = 40;
 /** The scroll has ended when the position is unchanged for this many polls in a row (a fling coasts). */
@@ -164,6 +166,43 @@ export function scrollDistance(
  * Scrolls the target once. Returns the pixels requested and actually scrolled (a fling can
  * overshoot a pixel distance; the end of the list stops it short).
  */
+/**
+ * Starts counting elements removed from inside the scroller. A virtualized list removes rows as
+ * they scroll out of view; an ordinary page, or an infinite list that only appends, doesn't.
+ */
+async function watchRemovals(target: Locator): Promise<void> {
+  await target
+    .evaluate((el) => {
+      const doc = el === document.scrollingElement || el === document.documentElement || el === document.body;
+      const root = doc ? document.body : el;
+      const w = window as unknown as { __smoothnessRemovals?: { n: number; mo: MutationObserver } };
+      w.__smoothnessRemovals?.mo.disconnect();
+      const state = {
+        n: 0,
+        mo: new MutationObserver((records) => {
+          for (const r of records) for (const node of r.removedNodes) if (node.nodeType === 1) state.n++;
+        }),
+      };
+      state.mo.observe(root, { childList: true, subtree: true });
+      w.__smoothnessRemovals = state;
+    })
+    .catch(() => undefined);
+}
+
+/** How many elements were removed since watchRemovals, and stops counting. */
+async function removalsSeen(target: Locator): Promise<number> {
+  return target
+    .evaluate(() => {
+      const w = window as unknown as { __smoothnessRemovals?: { n: number; mo: MutationObserver } };
+      const state = w.__smoothnessRemovals;
+      if (!state) return 0;
+      state.mo.disconnect();
+      delete w.__smoothnessRemovals;
+      return state.n;
+    })
+    .catch(() => 0);
+}
+
 /** Where the scroller is along the scroll direction, in pixels. */
 export async function scrollPosition(target: Locator, s: ResolvedScroll): Promise<number> {
   return position(await listGeometry(target), s);
@@ -186,12 +225,13 @@ export async function performScroll(
   cdp: CDPSession,
   target: Locator,
   s: ResolvedScroll,
-): Promise<{ requested: number; scrolled: number; presses?: number; toEnd?: number }> {
+): Promise<{ requested: number; scrolled: number; presses?: number; toEnd?: number; removed: number }> {
   await target.scrollIntoViewIfNeeded();
   const g = await listGeometry(target);
   const start = position(g, s);
   const { px: requested, toEnd } = scrollDistance(s, maximum(g, s) - start);
-  if (requested <= 0) return { requested: 0, scrolled: 0 };
+  if (requested <= 0) return { requested: 0, scrolled: 0, removed: 0 };
+  await watchRemovals(target);
 
   let presses = 0;
   if (s.input === 'keys') {
@@ -234,9 +274,11 @@ export async function performScroll(
     }
   }
   const end = await waitForRest(target, s);
+  const removed = await removalsSeen(target);
   return {
     requested,
     scrolled: end - start,
+    removed,
     ...(presses ? { presses } : {}),
     ...(toEnd !== undefined ? { toEnd } : {}),
   };
