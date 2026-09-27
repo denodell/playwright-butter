@@ -4,20 +4,42 @@
     <meta charset="utf-8" />
     <title>Catalogue</title>
     <style>
+      :root {
+        --page: #f6f8f3;
+        --ink: #1f2a1c;
+        --muted: #62705c;
+        --rule: #dfe5da;
+      }
       body {
         margin: 0;
-        font-family: system-ui, sans-serif;
+        background: var(--page);
+        color: var(--ink);
+        font:
+          15px/1.4 system-ui,
+          sans-serif;
+      }
+      main {
+        margin: 16px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+      main > p {
+        margin: 2px 0 12px;
+        color: var(--muted);
       }
       .catalogue {
         position: relative;
         height: 480px;
         width: 420px;
         overflow-y: auto;
-        margin: 16px;
+        margin: 0;
         padding: 0;
         list-style: none;
         background: #fff;
-        border: 1px solid #e4e4e7;
+        border: 1px solid var(--rule);
+        border-radius: 8px;
       }
       .row {
         position: absolute;
@@ -27,13 +49,22 @@
         display: flex;
         gap: 12px;
         align-items: center;
-        padding: 0 12px;
+        padding: 0 16px 0 12px;
         box-sizing: border-box;
+        border-bottom: 1px solid var(--rule);
       }
       .thumb {
+        flex: none;
         width: 52px;
         height: 52px;
-        border-radius: 8px;
+        border-radius: 50%;
+      }
+      .name {
+        flex: 1;
+      }
+      .price {
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
       }
     </style>
   </head>

@@ -3,16 +3,29 @@
   <head>
     <meta charset="utf-8" />
     <title>Scroll handler work</title>
+    <link rel="stylesheet" href="/lib/bench.css" />
     <style>
+      ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        background: #fff;
+        border: 1px solid var(--rule);
+      }
       li {
         height: 40px;
-        border-bottom: 1px solid #ddd;
+        padding: 0 12px;
+        line-height: 40px;
+        box-sizing: border-box;
+        border-bottom: 1px solid var(--rule);
       }
     </style>
     <script src="/lib/work.js"></script>
     <script src="/lib/frame-sampler.js"></script>
   </head>
   <body>
+    <h1>Scroll handler</h1>
+    <p>A scroll listener on the window that can block or burn CPU on every event.</p>
     <ul id="list"></ul>
     <script src="/scroll.js"></script>
   </body>

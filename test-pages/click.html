@@ -3,9 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <title>Click handlers</title>
+    <link rel="stylesheet" href="/lib/bench.css" />
     <script src="/lib/work.js"></script>
   </head>
   <body>
+    <h1>Click handlers</h1>
+    <p>
+      Each button blocks the main thread in its click handler. Dismiss removes itself, and Leave navigates
+      away.
+    </p>
     <button id="heavy">Heavy click</button>
     <button id="nested" class="primary"><span class="label">Buy now</span></button>
     <button id="vanish">Dismiss</button>

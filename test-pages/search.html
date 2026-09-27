@@ -3,9 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <title>Slow search input</title>
+    <link rel="stylesheet" href="/lib/bench.css" />
     <script src="/lib/work.js"></script>
   </head>
   <body>
+    <h1>Slow search</h1>
+    <p>Every keydown blocks the main thread before the results update.</p>
     <label for="search">Search</label>
     <input id="search" type="search" autocomplete="off" />
     <ul id="results"></ul>

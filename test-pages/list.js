@@ -24,10 +24,24 @@ if (horizontal) {
   spacer.style.height = rows * ROW + 'px';
 }
 const rendered = new Map();
+const FIRST = ['The Long', 'Midnight', 'Northern', 'A Quiet', 'The Last', 'Paper', 'Silver', 'Winter'];
+const SECOND = [
+  'Harbour',
+  'Crossing',
+  'Signal',
+  'Orchard',
+  'Frontier',
+  'Lantern',
+  'Tide',
+  'Assembly',
+  'Garden',
+];
+const GENRES = ['drama', 'documentary', 'thriller', 'comedy', 'western', 'animation'];
 
 function fillRow(row, i) {
   row.classList.remove('skeleton');
-  row.innerHTML = `<div class="poster" style="background:hsl(${(i * 37) % 360} 70% 45%)"></div><div>Title ${i}</div>`;
+  const title = `${FIRST[i % FIRST.length]} ${SECOND[(i * 7) % SECOND.length]}`;
+  row.innerHTML = `<div class="poster" style="background:hsl(${(i * 37) % 360} 70% 45%)"></div><div>${title}<small>${1968 + (i % 57)}, ${GENRES[i % GENRES.length]}</small></div>`;
 }
 
 function buildRow(i) {

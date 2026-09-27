@@ -1,0 +1,61 @@
+/* Shared look for the test pages: plain, readable, and light to paint, so styling adds as little
+   as possible to what the tests measure. Sizes the tests depend on live in each page. */
+:root {
+  --page: #f7f8fa;
+  --ink: #1b2330;
+  --muted: #5c6878;
+  --rule: #dfe3ea;
+  --accent: #2458d6;
+}
+body {
+  margin: 0;
+  padding: 24px;
+  background: var(--page);
+  color: var(--ink);
+  font:
+    15px/1.5 system-ui,
+    sans-serif;
+}
+h1 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+h1 + p {
+  margin: 0 0 20px;
+  max-width: 60ch;
+  color: var(--muted);
+}
+button {
+  font: inherit;
+  padding: 8px 14px;
+  margin: 0 8px 8px 0;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input {
+  font: inherit;
+  padding: 7px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+code {
+  font-size: 0.93em;
+}

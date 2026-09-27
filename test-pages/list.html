@@ -6,7 +6,10 @@
     <style>
       body {
         margin: 0;
-        font-family: sans-serif;
+        color: #1b2330;
+        font:
+          15px/1.35 system-ui,
+          sans-serif;
       }
       #list {
         position: absolute;
@@ -32,9 +35,14 @@
         box-sizing: border-box;
       }
       .poster {
+        flex: none;
         width: 56px;
         height: 70px;
         border-radius: 4px;
+      }
+      .row small {
+        display: block;
+        color: #5c6878;
       }
       .row.skeleton {
         background: #dddddd;
