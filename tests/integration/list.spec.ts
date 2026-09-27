@@ -143,8 +143,9 @@ test("a locator that doesn't scroll", async ({ page, smoothness }) => {
 });
 
 test('arrow keys', async ({ page, smoothness }) => {
-  // 15ms per new row, and a new row every couple of presses: some presses cross 16ms.
-  await page.goto('/list.html?cost=15&overscan=0');
+  // 25ms per new row, and a new row every couple of presses: those presses cross Event Timing's
+  // 16ms threshold. (At 15ms a press only just crossed it, and runners sometimes counted 2.)
+  await page.goto('/list.html?cost=25&overscan=0');
   const r = await smoothness.scroll(list(page), { input: 'keys', distance: 400, mode: 'quick', runs: 2 });
   save('list-keys', r);
   expect(r.scroll).toMatchObject({ input: 'keys', speedPxPerSec: null, requestedPx: 400, keyPresses: 10 });
