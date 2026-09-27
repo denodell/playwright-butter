@@ -276,6 +276,25 @@ test.describe('replays', () => {
     expect(files.some((f) => f.endsWith('.replay.webm'))).toBe(false);
   });
 
+  test("measure(): 'on' makes a replay of the interaction", async ({ page, smoothness }) => {
+    await page.goto('/click.html?ms=80');
+    const r = await smoothness.measure('heavy click', () => page.click('#heavy'), {
+      mode: 'full',
+      replay: 'on',
+      runs: 2,
+    });
+    expect(r).toBeSmooth();
+  });
+
+  test('the measure() replay is a playable WebM', async ({ page }) => {
+    const files = await outputOf('replays-measure-on-makes');
+    const webm = files.find((f) => f.endsWith('.replay.webm'))!;
+    expect(webm).toBeTruthy();
+    const info = await playable(page, webm);
+    expect(info.width).toBe(556);
+    expect(info.duration).toBeGreaterThan(1);
+  });
+
   test('quick mode has no frames to replay', async ({ page, smoothness }) => {
     await page.goto('/list.html?cost=0');
     const r = await smoothness.scroll(list(page), { ...FLING, mode: 'quick', replay: 'on', runs: 1 });
