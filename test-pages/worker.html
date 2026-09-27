@@ -3,9 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <title>Worker and main-thread work</title>
+    <link rel="stylesheet" href="/lib/bench.css" />
     <script src="/lib/work.js"></script>
   </head>
   <body>
+    <h1>Busy worker</h1>
+    <p>A worker thread runs flat out while this button blocks the main thread on click.</p>
     <button id="heavy">Heavy click</button>
     <script src="/worker-page.js"></script>
   </body>

@@ -3,20 +3,31 @@
   <head>
     <meta charset="utf-8" />
     <title>Mixed work, for classification</title>
+    <link rel="stylesheet" href="/lib/bench.css" />
     <style>
       #feed {
         height: 300px;
         overflow: auto;
-        border: 1px solid #ccc;
+        margin-top: 12px;
+        background: #fff;
+        border: 1px solid var(--rule);
       }
       #feed div {
         height: 40px;
+        padding: 0 12px;
+        line-height: 40px;
+        box-sizing: border-box;
+        border-bottom: 1px solid var(--rule);
       }
     </style>
     <script src="/lib/work.js"></script>
     <script src="/mixed-load.js"></script>
   </head>
   <body>
+    <h1>Mixed work</h1>
+    <p>
+      Work at load, a background timer, and slow clicks, typing and scrolling, for sorting frames by cause.
+    </p>
     <button id="buy" class="primary"><span class="label">Buy now</span></button>
     <input id="search" placeholder="Search" />
     <button id="vanish">Dismiss</button>

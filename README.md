@@ -2,7 +2,7 @@
 
 `playwright-smoothness` fails the build when a web UI stops being smooth. It measures scripted interactions and list scrolling in Chromium, compares each one with a stored baseline, and names the element and the code responsible when it gets worse.
 
-![A replay of a demo article scrolled 3,000px, played 4× slower than real time: the frame rate falls to about 30 frames per second as frames are dropped](docs/replay-frame-rate.gif)
+![A replay of a demo trail journal scrolled 3,000px, played at a quarter of real speed: the frame rate falls to about 30 frames per second as frames are dropped](docs/replay-frame-rate.gif)
 
 When a full-mode check gets worse, the test gets a replay like this one. The demo article has a smooth-scrolling script that moves the page itself on every frame, and half its frames are dropped: about 30 frames per second. No single frame took 50ms, so the browser's Long Animation Frames API never reported one; the dropped frames came from Chrome's own frame timeline.
 
@@ -96,7 +96,7 @@ await smoothness.measure('add to cart', action, {
 
 ## Scroll a list
 
-![A replay of a demo feed flung at 6,000px/s: the page keeps 60 frames per second, but the posts disappear and 114 of 123 frames are blank](docs/replay-blank-rows.gif)
+![A replay of a demo cycling club feed flung at 6,000px/s: the page keeps 60 frames per second, but the posts disappear and 114 of 122 frames are blank](docs/replay-blank-rows.gif)
 
 Dropped frames don't show a list going blank. In this demo feed, whose posts take too long to build, the page keeps 60 frames per second while the list is empty in 114 of 123 frames. `scroll()` measures both.
 
