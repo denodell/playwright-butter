@@ -144,8 +144,9 @@ test("a locator that doesn't scroll", async ({ page, smoothness }) => {
 });
 
 test('arrow keys', async ({ page, smoothness }) => {
-  // 15ms per new row, and a new row every couple of presses: some presses cross 16ms.
-  await page.goto('/list.html?cost=15&overscan=0');
+  // 25ms per new row, and a new row every couple of presses: those presses cross Event Timing's
+  // 16ms threshold. (At 15ms a press only just crossed it, and runners sometimes counted 2.)
+  await page.goto('/list.html?cost=25&overscan=0');
   const r = await smoothness.scroll(list(page), { input: 'keys', distance: 400, mode: 'quick', runs: 2 });
   save('list-keys', r);
   expect(r.scroll).toMatchObject({ input: 'keys', speedPxPerSec: null, requestedPx: 400, keyPresses: 10 });
@@ -193,8 +194,10 @@ test('200 frames are analyzed in under 2 seconds', async ({ page, browser }) => 
     },
     { browserVersion: browser.version(), budget120: false, profile: false, screenshots: true },
   );
-  expect(trace.screenshots.length).toBeGreaterThanOrEqual(200);
-  const jpegs = trace.screenshots.slice(0, 200);
+  // A slow runner can capture fewer than 200 frames in the fling (187 on a Windows runner), so
+  // captured frames are reused to make 200. Each one costs the same to analyze.
+  expect(trace.screenshots.length).toBeGreaterThanOrEqual(100);
+  const jpegs = Array.from({ length: 200 }, (_, i) => trace.screenshots[i % trace.screenshots.length]!);
   const t0 = performance.now();
   const a = await analyzeFrames(driver, {
     jpegs,
