@@ -55,8 +55,8 @@ export interface SmoothnessOptions {
   /** How to reset the page between runs. Default `'reload'`. */
   reset?: ResetStrategy;
   /**
-   * A video replay of a full-mode `measure()` or `scroll()`, attached to the test report, 4x slower
-   * than real time: each frame with the frame rate and a graph of the run (for lists, also how
+   * A video replay of a full-mode `measure()` or `scroll()`, attached to the test report, played at
+   * a quarter of real speed: each frame with the frame rate and a graph of the run (for lists, also how
    * drawn the list was; for measure(), when each input arrived and the long frames).
    * `'on-regression'` (default) attaches it when a check got worse; `'on'` always; `'off'` never.
    */

@@ -57,7 +57,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const pad = 28;
   const even = (v: number) => Math.ceil(v) + (Math.ceil(v) % 2);
   const width = even(imgW + pad * 2);
-  const height = even(pad + imgH + 236);
+  const height = even(pad + imgH + 202);
   const sx = imgW / args.viewport.width;
   const sy = imgH / args.viewport.height;
   const sans = '"Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif';
@@ -131,7 +131,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     const lit = Math.round(drawn * 10);
     for (let k = 0; k < 10; k++) {
       g.fillStyle = k < lit ? (blank ? c.blank : c.ink) : c.off;
-      g.fillRect(x + k * 7, y, 4, h);
+      g.fillRect(x + k * 5, y, 3, h);
     }
   };
   const secs = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
@@ -169,7 +169,6 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const FPS_WINDOW_MS = 250;
   const presented = args.frames.filter((f) => !f.dropped).map((f) => f.tMs);
   const droppedTimes = args.frames.filter((f) => f.dropped).map((f) => f.tMs);
-  const droppedTotal = droppedTimes.length;
   const countBetween = (times: number[], from: number, to: number) =>
     times.reduce((k, t) => (t > from && t <= to ? k + 1 : k), 0);
   const droppedBetween = (from: number, to: number) => countBetween(droppedTimes, from, to);
@@ -240,47 +239,34 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     g.fillStyle = c.ink;
     g.textAlign = 'left';
     g.fillText(fit(args.title, right - left - 120), left, y);
-    label(`${args.slowdown}× slower`, right, y, c.graphite, 'right');
+    label(`Replay at 1/${args.slowdown} speed`, right, y, c.graphite, 'right');
 
     y += 26;
-    const col = (right - left) / 3;
     const fps = fpsAt(args.timesMs[i]!);
     const droppingNow = droppedBetween(args.timesMs[i]! - FPS_WINDOW_MS, args.timesMs[i]!) > 0;
     const listWentBlank = blankCount > 0;
     const droppedSoFar = droppedBetween(-1, args.timesMs[i]!);
-    label(listWentBlank ? 'List drawn' : 'Dropped frames', left, y);
-    label('Frames per second', left + col, y);
-    label('Elapsed time', left + col * 2, y);
-    const cell = 3;
-    if (listWentBlank) {
-      const endX = dotText(pct.padStart(4, ' '), left, y + 10, cell, blank ? c.blank : c.ink, c.off);
-      meter(endX + 6, y + 10, 21, drawn, blank);
-    } else {
-      dotText(
-        String(droppedSoFar).padStart(3, ' '),
-        left,
-        y + 10,
-        cell,
-        droppedSoFar ? c.blank : c.ink,
-        c.off,
-      );
-    }
+
+    // Frames per second, large, beside the graph that plots it.
+    const top = y + 16;
+    const big = 5;
+    label('Frame rate', left, top + 2);
     dotText(
       fps === null ? '  ' : String(fps).padStart(2, ' '),
-      left + col,
-      y + 10,
-      cell,
+      left,
+      top + 12,
+      big,
       droppingNow ? c.blank : c.ink,
       c.off,
     );
-    dotText(secs(args.timesMs[i]!), left + col * 2, y + 10, cell, c.ink, c.off);
+    label('FPS', left, top + 12 + 7 * big + 11);
 
     // LCD graph of the frame rate: a fixed grid of segments, unlit ones faintly visible. Each
     // column covers a slice of the run and lights the one segment at its frames per second, so
     // the lit segments read as a line: black at 60fps, orange below it, where frames were
-    // dropped. It draws in as the replay plays. A one-row strip underneath marks slices with blank frames.
-    const top = y + 58;
-    const gl = left + 36; // a gutter for the graph's labels
+    // dropped. It draws in as the replay plays. A one-row strip underneath marks slices with
+    // rows not drawn (virtualized lists) or long frames (measure()).
+    const gl = left + 106; // after the FPS readout, with a gutter for the graph's labels
     const xAt = (ms: number) => gl + (ms / (total || 1)) * (right - gl);
     const rows = 12;
     const cellH = 3;
@@ -303,20 +289,17 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
         g.fillRect(gl + cI * colW + 0.75, base + 4, colW - 1.5, cellH);
       }
     }
-    // Key: what orange means, on the line and in the strip underneath.
-    let keyX = right;
-    const keyItems = strip === 'rows' ? ['Rows not drawn'] : strip === 'long' ? ['Long frames'] : [];
-    for (const item of [...keyItems, 'Frames dropped']) {
-      g.font = `600 7px ${sans}`;
-      g.letterSpacing = '1.4px';
-      const w = g.measureText(item.toUpperCase()).width;
-      g.letterSpacing = '0px';
-      label(item, keyX, top - 8, c.graphite, 'right', 7);
-      g.fillStyle = c.blank;
-      g.fillRect(keyX - w - 12, top - 12, 7, cellH);
-      keyX -= w + 26;
-    }
-    label('60 fps', gl - 6, base - rows * pitch + 4, c.graphite, 'right', 7);
+    // Above the graph, right-aligned: how many frames the strip underneath marks.
+    const summary =
+      strip === 'rows'
+        ? `${blankCount} of ${n} frames with rows not drawn`
+        : strip === 'long'
+          ? `${args.markers.longFrames.length} long frames`
+          : '';
+    const summaryBad =
+      strip === 'rows' ? blankCount > 0 : strip === 'long' && args.markers.longFrames.length > 0;
+    if (summary) label(summary, right, top - 8, summaryBad ? c.blank : c.graphite, 'right', 7);
+    label('60', gl - 6, base - rows * pitch + 4, c.graphite, 'right', 7);
     label('30', gl - 6, base - (rows / 2) * pitch + 3, c.graphite, 'right', 7);
     label('0', gl - 6, base, c.graphite, 'right', 7);
     if (strip) label(strip === 'rows' ? 'Not drawn' : 'Long', gl - 6, base + 7.5, c.graphite, 'right', 6);
@@ -344,16 +327,49 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     g.lineTo(hx + 4, markY + 10);
     g.closePath();
     g.fill();
-    const parts = [`${droppedTotal} frames dropped`];
-    if (strip === 'rows') parts.push(`${blankCount} of ${n} with rows not drawn`);
-    if (strip === 'long') parts.push(`${args.markers.longFrames.length} long frames`);
-    label(
-      parts.join(' · '),
-      left,
-      markY + 28,
-      droppedTotal || blankCount || args.markers.longFrames.length ? c.blank : c.graphite,
-    );
-    label(`Frame ${pad3(i + 1)}/${n}`, right, markY + 28, c.graphite, 'right');
+
+    // Under the graph, right-aligned: how much of the list was drawn (when it went blank),
+    // dropped frames and elapsed time, each with its label over two lines to its left.
+    const cell = 3;
+    const ry = markY + 22;
+    const digitsW = (chars: number) => chars * cell * 6 - cell;
+    const readouts: { words: [string, string]; width: number; draw: (x: number) => void }[] = [];
+    if (listWentBlank)
+      readouts.push({
+        words: ['List', 'drawn'],
+        width: digitsW(4) + 6 + 48,
+        draw: (x) => {
+          const endX = dotText(pct.padStart(4, ' '), x, ry, cell, blank ? c.blank : c.ink, c.off);
+          meter(endX + 6, ry, 21, drawn, blank);
+        },
+      });
+    readouts.push({
+      words: ['Dropped', 'frames'],
+      width: digitsW(3),
+      draw: (x) =>
+        dotText(String(droppedSoFar).padStart(3, ' '), x, ry, cell, droppedSoFar ? c.blank : c.ink, c.off),
+    });
+    const elapsed = secs(args.timesMs[i]!);
+    readouts.push({
+      words: ['Elapsed', 'time'],
+      width: digitsW(elapsed.length),
+      draw: (x) => dotText(elapsed, x, ry, cell, c.ink, c.off),
+    });
+    let rx = right;
+    for (const r of [...readouts].reverse()) {
+      const x = rx - r.width;
+      r.draw(x);
+      label(r.words[0], x - 6, ry + 9, c.graphite, 'right', 8);
+      label(r.words[1], x - 6, ry + 19, c.graphite, 'right', 8);
+      g.font = `600 8px ${sans}`;
+      g.letterSpacing = '1.4px';
+      const labelW = Math.max(...r.words.map((w) => g.measureText(w.toUpperCase()).width));
+      g.letterSpacing = '0px';
+      rx = x - 6 - labelW - 14;
+    }
+    // On the same line, at the left: which frame this is.
+    label('Frame', left, ry + 9, c.graphite, 'left', 8);
+    label(`${pad3(i + 1)}/${n}`, left, ry + 19, c.ink, 'left', 8);
 
     const frame = new VideoFrame(canvas, { timestamp: Math.round(args.timesMs[i]! * args.slowdown * 1000) });
     encoder.encode(frame, { keyFrame: i % args.keyEvery === 0 });
