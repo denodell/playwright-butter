@@ -177,6 +177,8 @@ async function startStreaming(
   const pageIds = new Map<Page, number>();
   try {
     await context.exposeBinding(STREAM_BINDING, (source, batch: StreamBatch) => {
+      // A page's initial about:blank can run the collector too; there's nothing on it to measure.
+      if (batch.url.startsWith('about:')) return;
       let d = docs.get(batch.doc);
       if (!d) {
         let page = pageIds.get(source.page);

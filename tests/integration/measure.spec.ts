@@ -118,20 +118,23 @@ test('CPU throttling slows iteration-based work', async ({ page, smoothness }) =
 });
 
 test("reset: 'reload', 'none' and a function", async ({ page, smoothness }) => {
+  // Quick mode: full mode (the default on scheduled CI) adds a run for the replay.
+  const mode = 'quick';
   await page.goto('/click.html?ms=20');
   let loads = 0;
   page.on('load', () => loads++);
 
-  await smoothness.measure('reload', () => page.click('#heavy'), { runs: 2 });
+  await smoothness.measure('reload', () => page.click('#heavy'), { runs: 2, mode });
   expect(loads, 'reload: runs, not runs + 1 (the warm-up uses the page as it is)').toBe(2);
 
   loads = 0;
-  await smoothness.measure('none', () => page.click('#heavy'), { runs: 2, reset: 'none' });
+  await smoothness.measure('none', () => page.click('#heavy'), { runs: 2, mode, reset: 'none' });
   expect(loads).toBe(0);
 
   let resets = 0;
   await smoothness.measure('custom', () => page.click('#heavy'), {
     runs: 2,
+    mode,
     reset: async ({ page }) => {
       resets++;
       await page.goto('/click.html?ms=20');
