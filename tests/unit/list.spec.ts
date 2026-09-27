@@ -104,7 +104,7 @@ test('scroll options', () => {
 });
 
 test('default scroll labels', () => {
-  const target = { toString: () => "getByRole('list', { name: 'Trending' })" } as never;
+  const target = { description: "getByRole('list', { name: 'Trending' })" } as never;
   expect(defaultScrollLabel(target, resolveScroll({}))).toBe(
     "scroll getByRole('list', { name: 'Trending' })",
   );

@@ -1,11 +1,11 @@
-import type { CDPSession, Page } from '@playwright/test';
+import type { CdpSession, PageDriver } from './driver.js';
 
 /** A CDP session for one page, with the throttling calls the runner needs. */
 export class PageCdp {
-  private constructor(private readonly session: CDPSession) {}
+  private constructor(private readonly session: CdpSession) {}
 
-  static async open(page: Page): Promise<PageCdp> {
-    return new PageCdp(await page.context().newCDPSession(page));
+  static async open(page: PageDriver): Promise<PageCdp> {
+    return new PageCdp(await page.cdp());
   }
 
   /**

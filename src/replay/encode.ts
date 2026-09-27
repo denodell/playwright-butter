@@ -1,6 +1,6 @@
 // Turns a measured run's trace screenshots into a WebM replay: each frame with the frame rate and
 // other stats, a chart of the whole run, and a marker on frames where a list's rows weren't drawn.
-import type { Browser } from '@playwright/test';
+import type { PageDriver, ScratchPage } from '../driver.js';
 import { PACKAGE_NAME } from '../constants.js';
 import { muxWebM, type EncodedFrame } from './webm.js';
 
@@ -9,9 +9,6 @@ const REPLAY_SLOWDOWN = 4;
 /** A key frame this often, so the report's player can seek. */
 const KEY_FRAME_EVERY = 30;
 const REPLAY_BITRATE = 2_000_000;
-
-/** WebCodecs needs a secure context; http://localhost is one, and Playwright serves it itself. */
-const REPLAY_URL = 'http://localhost/__playwright-smoothness-replay';
 
 export interface ReplayInput {
   /** Base64 JPEGs of the viewport, in order. */
@@ -440,21 +437,20 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
  * bytes, or a reason it couldn't be made.
  */
 export async function encodeReplay(
-  browser: Browser,
+  page: PageDriver,
   input: ReplayInput,
 ): Promise<Uint8Array | { unavailable: string }> {
   if (input.jpegs.length === 0) return { unavailable: 'no frames to replay' };
-  const context = await browser.newContext();
+  let scratch: ScratchPage | null = null;
   try {
-    const page = await context.newPage();
-    await page.route(REPLAY_URL, (r) =>
-      r.fulfill({ contentType: 'text/html', body: '<!doctype html><title>replay</title>' }),
-    );
-    await page.goto(REPLAY_URL);
-    if (!(await page.evaluate(() => typeof VideoEncoder !== 'undefined'))) {
+    // WebCodecs needs a secure context, so the scratch page is on http://localhost.
+    const opened = page.openScratchPage({ secure: true });
+    if (!opened) return { unavailable: "the browser can't open a scratch page to encode the replay in" };
+    scratch = await opened;
+    if (!(await scratch.evaluate(() => typeof VideoEncoder !== 'undefined'))) {
       return { unavailable: "this browser has no WebCodecs VideoEncoder, so replays can't be encoded" };
     }
-    const out = await page.evaluate(renderInPage, {
+    const out = await scratch.evaluate(renderInPage, {
       ...input,
       slowdown: REPLAY_SLOWDOWN,
       keyEvery: KEY_FRAME_EVERY,
@@ -469,6 +465,6 @@ export async function encodeReplay(
   } catch (err) {
     return { unavailable: `the replay couldn't be made: ${String(err).split('\n')[0]}` };
   } finally {
-    await context.close();
+    await scratch?.close().catch(() => undefined);
   }
 }

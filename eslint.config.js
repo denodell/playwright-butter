@@ -55,6 +55,32 @@ export default tseslint.config(
     languageOptions: { globals: { process: 'readonly', console: 'readonly', URL: 'readonly' } },
   },
   {
+    // The measuring engine talks to the browser only through src/driver.ts, so it can move into
+    // smoothness-core. Playwright is imported by the adapter and the Playwright Test integration.
+    files: ['src/**/*.ts'],
+    ignores: [
+      'src/playwright/**',
+      'src/auto/**',
+      'src/fixture.ts',
+      'src/matcher.ts',
+      'src/reporter/index.ts',
+      'src/index.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@playwright/*', 'playwright', 'playwright-core', 'playwright-core/*'],
+              message: 'The engine must not depend on Playwright; use the interfaces in src/driver.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['tests/**/*.ts'],
     rules: {
       // Trace events and PerformanceEntry subclasses are loosely typed; tests read them defensively.

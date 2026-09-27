@@ -7,6 +7,7 @@ import { writeFileSync } from 'node:fs';
 import { traceRun } from '../../src/trace/tracer.js';
 import { FRAME_CATEGORIES, SCREENSHOT_CATEGORIES } from '../../src/trace/categories.js';
 import { analyzeFrames } from '../../src/list/analyze.js';
+import { locatorTarget, playwrightDriver } from '../../src/playwright/driver.js';
 import { blankColors, listGeometry, referenceShot } from '../../src/list/probe.js';
 
 test.use({
@@ -18,18 +19,19 @@ async function flingFrames(page: Page, url: string) {
   await page.goto(url);
   await page.waitForTimeout(500);
   const target = page.locator('#list');
-  const geometry = await listGeometry(target);
-  const { colors } = await blankColors(target, {
+  const geometry = await listGeometry(locatorTarget(target));
+  const { colors } = await blankColors(locatorTarget(target), {
     background: 'auto',
     placeholders: [],
     virtualized: 'auto' as const,
   });
-  const referencePng = await referenceShot(page, geometry);
+  const driver = playwrightDriver(page);
+  const referencePng = await referenceShot(driver, geometry);
   const cdp = await page.context().newCDPSession(page);
   const browser = page.context().browser()!;
   const trace = await traceRun(
-    browser,
-    page,
+    driver.tracer()!,
+    driver,
     [...FRAME_CATEGORIES, ...SCREENSHOT_CATEGORIES],
     () =>
       cdp
@@ -43,7 +45,7 @@ async function flingFrames(page: Page, url: string) {
         .then(() => undefined),
     { browserVersion: browser.version(), budget120: false, profile: false, screenshots: true },
   );
-  const a = await analyzeFrames(browser, {
+  const a = await analyzeFrames(driver, {
     jpegs: trace.screenshots,
     referencePng,
     geometry,

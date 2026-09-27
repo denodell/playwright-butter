@@ -7,31 +7,23 @@ import {
   type PlaywrightTestOptions,
   type TestInfo,
 } from '@playwright/test';
-import { median } from './analysis/stats.js';
-import { listMeasurement } from './list/measure.js';
-import {
-  defaultScrollLabel,
-  performScroll,
-  restoreScroll,
-  scrollPosition,
-  resolveScroll,
-  END_CAP_PX,
-  MAX_KEY_PRESSES,
-  MIN_REMOVED_ROWS,
-  PX_PER_ARROW_KEY,
-  type ScrollOptions,
-} from './scroll.js';
+import { defaultScrollLabel, resolveScroll, type ScrollOptions } from './scroll.js';
 import { basename } from 'node:path';
 import { writeFileSync } from 'node:fs';
+import type { PageDriver } from './driver.js';
+import { measureScroll } from './measure-scroll.js';
 import { encodeReplay } from './replay/encode.js';
-import { peekReplaySource, takeReplaySource } from './replay/source.js';
+import { takeReplaySource } from './replay/source.js';
 import { installCollector } from './collector/collector.js';
-import { browserEnvironment } from './environment.js';
+import { locatorTarget, playwrightDriver } from './playwright/driver.js';
 import { resolveOptions } from './options.js';
 import { COLLECTOR_CONFIG, emptyResult, measure, type MeasureContext } from './runner.js';
 import { warnInGitHubActions } from './ci.js';
 import { resultPath, writeResult } from './output.js';
-import type { SmoothnessOptions, SmoothnessResult } from './types.js';
+import type { SmoothnessOptions as CoreOptions, SmoothnessResult } from './types.js';
+
+/** Options for a measurement. A `reset` function is given the Playwright page. */
+export type SmoothnessOptions = CoreOptions<Page>;
 
 export interface Smoothness {
   /**
@@ -74,11 +66,12 @@ function warn(testInfo: TestInfo, message: string): void {
 
 async function createSmoothness(
   page: Page,
+  driver: PageDriver,
   defaults: SmoothnessOptions,
   testInfo: TestInfo,
   outputs: Map<string, { path: string; result: SmoothnessResult }>,
 ): Promise<Smoothness> {
-  const environment = await browserEnvironment(page.context().browser());
+  const environment = await driver.environment();
   if (environment.browserName === 'chromium' && environment.headlessMode === 'headless-shell') {
     warn(
       testInfo,
@@ -102,7 +95,7 @@ async function createSmoothness(
       annotateOnce(testInfo, 'smoothness-skipped', `${label}: ${reason}`);
       result = emptyResult({ label, options, environment }, reason);
     } else {
-      result = await run({ page, label, options, environment });
+      result = await run({ page: driver, label, options, environment });
     }
     const path = resultPath(testInfo, label);
     writeResult(result, path);
@@ -115,11 +108,11 @@ async function createSmoothness(
       return record(label, overrides, (ctx) => measure(ctx, action));
     },
 
-    async scroll(target, all = {}) {
+    async scroll(locator, all = {}) {
       const { distance, direction, input, speed, label: givenLabel, ...overrides } = all;
       const s = resolveScroll({ distance, direction, input, speed });
+      const target = locatorTarget(locator);
       const label = givenLabel ?? defaultScrollLabel(target, s);
-      const done: Awaited<ReturnType<typeof performScroll>>[] = [];
       return record(label, overrides, async (ctx) => {
         if (s.input === 'touch' && (await page.evaluate(() => navigator.maxTouchPoints)) === 0) {
           // Touch events on a page that reports no touch support aren't what a phone does:
@@ -128,88 +121,7 @@ async function createSmoothness(
             "smoothness.scroll(): input: 'touch' needs a touch-enabled browser context. Use test.use({ hasTouch: true }) or a mobile device, such as devices['Pixel 7'].",
           );
         }
-        const cdp = await page.context().newCDPSession(page);
-        const browser = page.context().browser();
-        try {
-          let origin: number | null = null;
-          const result = await measure(
-            {
-              ...ctx,
-              ...(browser
-                ? { list: listMeasurement(page, browser, target, s.direction, ctx.options.list) }
-                : {}),
-              // Chrome restores a document's scroll position on reload, so without this each run
-              // would start where the last one stopped. With reset: 'none', runs carry on instead.
-              beforeRun: async (run) => {
-                if (run === 0) origin = await scrollPosition(target, s);
-                else if (ctx.options.reset !== 'none' && origin !== null)
-                  await restoreScroll(target, s, origin);
-              },
-            },
-            async () => {
-              done.push(await performScroll(page, cdp, target, s));
-            },
-          );
-          const measured = done.slice(1); // the first scroll is the warm-up
-          if (measured.length && measured.every((d) => d.requested > 0 && d.scrolled === 0)) {
-            // Nothing moved: blank-frame numbers would describe a still list, so they're withheld.
-            const reason = `the scroll gesture didn't move the list in any run (asked for ${measured[0]!.requested}px)`;
-            if ('list' in result) result.list = null;
-            result.unavailable.push({ measurement: 'list', reason });
-            result.notes.push(`Nothing scrolled: ${reason}. Is the locator the element that scrolls?`);
-          }
-          if (measured.length) {
-            result.scroll = {
-              input: s.input,
-              direction: s.direction,
-              speedPxPerSec: s.input === 'keys' ? null : s.speedPxPerSec,
-              requestedPx: Math.round(median(measured.map((d) => d.requested))),
-              scrolledPx: Math.round(median(measured.map((d) => d.scrolled))),
-              ...(s.input === 'keys'
-                ? { keyPresses: Math.round(median(measured.map((d) => d.presses ?? 0))) }
-                : {}),
-            };
-            if (measured.every((d) => d.requested === 0)) {
-              result.notes.push(
-                "The list was already at its end, so nothing scrolled. With reset: 'none', later runs start where the last one stopped.",
-              );
-            }
-            const toEnd = measured.find((d) => d.toEnd !== undefined)?.toEnd;
-            if (toEnd !== undefined) {
-              result.notes.push(
-                `distance: 'end' stopped at ${END_CAP_PX.toLocaleString('en-US')}px; the end of the list was ${toEnd.toLocaleString('en-US')}px away. Pass a number of pixels to scroll further.`,
-              );
-            }
-            if (
-              s.input === 'keys' &&
-              measured.some((d) => d.requested > MAX_KEY_PRESSES * PX_PER_ARROW_KEY)
-            ) {
-              result.notes.push(
-                `Arrow keys were pressed at most ${MAX_KEY_PRESSES} times per run, which didn't reach the requested distance.`,
-              );
-            }
-          }
-          if (result.list) {
-            // Blank frames mean rows that weren't built in time only on a virtualized list. On
-            // any other page they'd mean empty space in the content, so they aren't gated there.
-            const setting = ctx.options.list.virtualized;
-            const virtualized =
-              setting === 'auto' ? measured.some((d) => d.removed >= MIN_REMOVED_ROWS) : setting;
-            result.list.virtualized = virtualized;
-            const source = peekReplaySource(result);
-            if (source) source.virtualized = virtualized;
-            if (!virtualized) {
-              result.notes.push(
-                setting === 'auto'
-                  ? "The list doesn't appear to be virtualized (no rows were removed while it scrolled), so blank frames aren't gated: here they'd mean empty space in the content, not rows that weren't built in time. Set list: { virtualized: true } if it is."
-                  : "list.virtualized is false, so blank frames aren't gated.",
-              );
-            }
-          }
-          return result;
-        } finally {
-          await cdp.detach().catch(() => undefined);
-        }
+        return measureScroll(ctx, target, s);
       });
     },
   };
@@ -220,21 +132,20 @@ async function createSmoothness(
  * `replay: 'on'`, and when a check got worse with `'on-regression'` (the default).
  */
 async function attachReplay(
-  page: Page,
+  driver: PageDriver,
   testInfo: TestInfo,
   label: string,
   path: string,
   result: SmoothnessResult,
 ) {
   const source = takeReplaySource(result);
-  const browser = page.context().browser();
-  if (!source || !browser) return;
+  if (!source) return;
   const status = result.comparison?.status;
   const wanted =
     result.settings.replay === 'on' ||
     (result.settings.replay === 'on-regression' && (status === 'warn' || status === 'fail'));
   if (!wanted) return;
-  const video = await encodeReplay(browser, source);
+  const video = await encodeReplay(driver, source);
   if ('unavailable' in video) {
     result.notes.push(`No replay: ${video.unavailable}.`);
   } else {
@@ -258,10 +169,11 @@ export const smoothnessFixtures: Fixtures<
       await page.addInitScript(installCollector, COLLECTOR_CONFIG);
     }
     const outputs = new Map<string, { path: string; result: SmoothnessResult }>();
-    await use(await createSmoothness(page, smoothnessOptions, testInfo, outputs));
+    const driver = playwrightDriver(page);
+    await use(await createSmoothness(page, driver, smoothnessOptions, testInfo, outputs));
     // Attached after the test body, so each file includes toBeSmooth()'s comparison.
     for (const [label, { path, result }] of outputs) {
-      await attachReplay(page, testInfo, label, path, result);
+      await attachReplay(driver, testInfo, label, path, result);
       await testInfo.attach(`smoothness: ${label}`, { path, contentType: 'application/json' });
     }
   },

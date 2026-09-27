@@ -1,4 +1,4 @@
-import type { Browser, Page } from '@playwright/test';
+import type { PageDriver, Tracer } from './driver.js';
 import { cpus, platform } from 'node:os';
 import {
   COLLECTOR_KEY,
@@ -38,7 +38,6 @@ import {
   type ProfileRun,
 } from './analysis/profile.js';
 import { NameResolver, type ResolvedFrame } from './sourcemap/resolve.js';
-import { pageFetcher } from './sourcemap/fetch.js';
 import type { ParsedTrace } from './trace/parse.js';
 import type { BrowserEnvironment } from './environment.js';
 import { SCHEMA_VERSION } from './constants.js';
@@ -87,7 +86,7 @@ interface RunData {
 }
 
 export interface MeasureContext {
-  page: Page;
+  page: PageDriver;
   label: string;
   options: ResolvedOptions;
   environment: BrowserEnvironment;
@@ -101,7 +100,7 @@ export interface MeasureContext {
 // pages with a strict Content-Security-Policy work). The key is passed in because these
 // functions run in the page and can't see module scope.
 type Win = Record<string, CollectorApi>;
-function collector(page: Page) {
+function collector(page: PageDriver) {
   const key = COLLECTOR_KEY;
   return {
     installed: () => page.evaluate((k) => k in window, key),
@@ -126,11 +125,11 @@ function collector(page: Page) {
  * that's referenced but can't be used gets a note.
  */
 async function resolveNames(
-  page: Page,
+  page: PageDriver,
   profiles: ProfileRun[],
   notes: string[],
 ): Promise<Map<string, ResolvedFrame>> {
-  const resolver = new NameResolver(pageFetcher(page));
+  const resolver = new NameResolver(page.fetchText);
   const resolved = new Map<string, ResolvedFrame>();
   for (const frame of namedFrames(profiles)) {
     const r = await resolver.resolve(frame).catch(() => null);
@@ -142,7 +141,7 @@ async function resolveNames(
   return resolved;
 }
 
-/** Describes this machine. Playwright runs the browser locally, so it's the browser's machine too. */
+/** Describes this machine. The browser runs locally, so it's the browser's machine too. */
 export function machine(): SmoothnessResult['machine'] {
   const list = cpus();
   return { cpuModel: list[0]?.model.trim() ?? 'unknown', cpus: list.length, platform: platform() };
@@ -186,18 +185,19 @@ export function emptyResult(ctx: Omit<MeasureContext, 'page'>, reason: string): 
   };
 }
 
-async function resetPage(page: Page, options: ResolvedOptions): Promise<void> {
+async function resetPage(page: PageDriver, options: ResolvedOptions): Promise<void> {
   const reset = options.reset;
   if (reset === 'none') return;
-  if (reset === 'reload') await page.reload({ waitUntil: 'load' });
-  else await reset({ page });
+  if (reset === 'reload') await page.reload();
+  else await reset({ page: page.native });
 }
 
 /** What every run of one measure() call shares, and the notes and gaps it collects. */
 interface Measurement {
   ctx: MeasureContext;
   collector: ReturnType<typeof collector>;
-  browser: Browser | null;
+  /** Null when the page's browser can't be traced: full mode is then unavailable. */
+  tracer: Tracer | null;
   categories: string[];
   notes: string[];
   unavailable: Unavailable[];
@@ -245,7 +245,7 @@ export async function measure(ctx: MeasureContext, action: () => Promise<void>):
       ctx.options.mode === 'full' &&
       !ctx.list &&
       ctx.options.replay !== 'off' &&
-      m.browser &&
+      m.tracer &&
       runs.length
     ) {
       const scratch: RunTally = { ...tally, errors: new Set(), overflow: { loaf: 0, events: 0, scrolls: 0 } };
@@ -313,16 +313,16 @@ async function prepare(ctx: MeasureContext): Promise<Measurement> {
     );
   }
 
-  const browser = page.context().browser();
+  const tracer = page.tracer();
   const categories = [
     ...FRAME_CATEGORIES,
     ...PROFILE_CATEGORIES,
     ...(options.refreshRate === 120 ? ANIMATION_FRAME_CATEGORIES : []),
   ];
-  if (options.mode === 'full' && !browser) {
+  if (options.mode === 'full' && !tracer) {
     unavailable.push({
       measurement: 'frames',
-      reason: 'full mode needs Browser.startTracing, which a persistent context has no Browser for',
+      reason: "full mode needs a trace, and this page's browser can't be traced (a Playwright persistent context has no Browser to trace with)",
     });
   }
   if (options.mode === 'quick' && ctx.list) {
@@ -331,7 +331,7 @@ async function prepare(ctx: MeasureContext): Promise<Measurement> {
   if (options.mode === 'quick' && options.refreshRate === 120) {
     notes.push('refreshRate 120 adds a prediction in full mode only; this was quick mode.');
   }
-  return { ctx, collector: c, browser, categories, notes, unavailable };
+  return { ctx, collector: c, tracer, categories, notes, unavailable };
 }
 
 /**
@@ -346,7 +346,7 @@ async function measureRun(
   action: () => Promise<void>,
   forReplay = false,
 ): Promise<RunData | null> {
-  const { ctx, browser, collector: c } = m;
+  const { ctx, tracer, collector: c } = m;
   const { page, options } = ctx;
   if (run > 0) await resetPage(page, options);
   if (ctx.beforeRun) await ctx.beforeRun(run);
@@ -372,12 +372,12 @@ async function measureRun(
   // Blank-row detection: prepared after the page settles and before tracing (the reference
   // screenshot must not land inside the trace). Skipped on the warm-up run.
   let listPrepared: ListPrepared | { unavailable: string } | null = null;
-  if (options.mode === 'full' && browser && ctx.list && run > 0) listPrepared = await ctx.list.prepare();
-  if (options.mode === 'full' && browser) {
+  if (options.mode === 'full' && tracer && ctx.list && run > 0) listPrepared = await ctx.list.prepare();
+  if (options.mode === 'full' && tracer) {
     // Screenshots for blank-row detection, or on measure()'s extra run for a replay.
     const screenshots = (listPrepared !== null && !('unavailable' in listPrepared)) || forReplay;
     trace = await traceRun(
-      browser,
+      tracer,
       page,
       screenshots ? [...m.categories, ...SCREENSHOT_CATEGORIES] : m.categories,
       measured,
@@ -484,7 +484,7 @@ function replayOfMeasure(
           blankShare: BLANK_FRAME_SHARE,
           rect: null,
           virtualized: false,
-          viewport: ctx.page.viewportSize() ?? { width: 1280, height: 720 },
+          viewport: ctx.page.viewport() ?? { width: 1280, height: 720 },
           title: ctx.label,
           frames: trace.frameTimeline.map((f) => ({ tMs: (f.ts - t0) / 1000, dropped: f.dropped })),
           markers: {
@@ -703,10 +703,10 @@ function combineFrames(
   reasons: Reasons,
   addSpread: AddSpread,
 ): FramesResult | null {
-  const { browser, notes, unavailable } = m;
+  const { tracer, notes, unavailable } = m;
   const perRun = runs.map((r) => r.trace?.frames ?? null).filter((f): f is FramesResult => f !== null);
   if (perRun.length === 0) {
-    if (browser) for (const reason of reasons('frames')) unavailable.push({ measurement: 'frames', reason });
+    if (tracer) for (const reason of reasons('frames')) unavailable.push({ measurement: 'frames', reason });
     return null;
   }
   if (perRun.length < runs.length) {
@@ -737,10 +737,10 @@ async function combineProfile(
   runs: RunData[],
   reasons: Reasons,
 ): Promise<ProfileResult | null> {
-  const { ctx, browser, notes, unavailable } = m;
+  const { ctx, tracer, notes, unavailable } = m;
   const profiles = runs.map((r) => r.profile).filter((p): p is ProfileRun => p !== null);
   if (profiles.length === 0) {
-    if (browser)
+    if (tracer)
       for (const reason of reasons('profile')) unavailable.push({ measurement: 'profile', reason });
     return null;
   }

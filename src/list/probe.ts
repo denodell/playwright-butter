@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import type { ElementTarget, PageDriver } from '../driver.js';
 import type { ListOptions } from '../types.js';
 
 /** The list's scrollable client area (no borders or scrollbars), in viewport CSS pixels. */
@@ -10,7 +10,7 @@ export interface ListGeometry {
   document: boolean;
 }
 
-export async function listGeometry(target: Locator): Promise<ListGeometry> {
+export async function listGeometry(target: ElementTarget): Promise<ListGeometry> {
   return target.evaluate((el) => {
     const doc = el === document.scrollingElement || el === document.documentElement || el === document.body;
     const scroller = (doc ? (document.scrollingElement ?? document.documentElement) : el) as HTMLElement;
@@ -47,7 +47,7 @@ export async function listGeometry(target: Locator): Promise<ListGeometry> {
  * selector whose element's background is used. Anything unresolvable is reported, not guessed.
  */
 export async function blankColors(
-  target: Locator,
+  target: ElementTarget,
   list: Required<ListOptions>,
 ): Promise<{ colors: [number, number, number][]; notes: string[] }> {
   return target.evaluate(
@@ -108,10 +108,10 @@ export async function blankColors(
 }
 
 /** The list's client area at rest, as a PNG at CSS-pixel scale. */
-export async function referenceShot(page: Page, g: ListGeometry): Promise<Buffer> {
+export async function referenceShot(page: PageDriver, g: ListGeometry): Promise<Buffer> {
   const x = Math.max(0, g.rect.x);
   const y = Math.max(0, g.rect.y);
   const width = Math.min(g.rect.x + g.rect.width, g.viewport.width) - x;
   const height = Math.min(g.rect.y + g.rect.height, g.viewport.height) - y;
-  return page.screenshot({ clip: { x, y, width, height }, type: 'png', scale: 'css' });
+  return page.screenshot({ x, y, width, height });
 }

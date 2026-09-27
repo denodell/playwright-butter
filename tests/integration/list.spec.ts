@@ -8,6 +8,7 @@ import { save } from '../detection/helpers.js';
 import { traceRun } from '../../src/trace/tracer.js';
 import { FRAME_CATEGORIES, SCREENSHOT_CATEGORIES } from '../../src/trace/categories.js';
 import { analyzeFrames } from '../../src/list/analyze.js';
+import { locatorTarget, playwrightDriver } from '../../src/playwright/driver.js';
 import { blankColors, listGeometry, referenceShot } from '../../src/list/probe.js';
 import { compareMetrics, metricsOf } from '../../src/baseline/compare.js';
 
@@ -168,17 +169,18 @@ test('200 frames are analyzed in under 2 seconds', async ({ page, browser }) => 
   await page.goto('/list.html?cost=15&overscan=0');
   await page.waitForTimeout(500);
   const target = list(page);
-  const geometry = await listGeometry(target);
-  const { colors } = await blankColors(target, {
+  const geometry = await listGeometry(locatorTarget(target));
+  const { colors } = await blankColors(locatorTarget(target), {
     background: 'auto',
     placeholders: [],
     virtualized: 'auto' as const,
   });
-  const referencePng = await referenceShot(page, geometry);
+  const driver = playwrightDriver(page);
+  const referencePng = await referenceShot(driver, geometry);
   const cdp = await page.context().newCDPSession(page);
   const trace = await traceRun(
-    browser,
-    page,
+    driver.tracer()!,
+    driver,
     [...FRAME_CATEGORIES, ...SCREENSHOT_CATEGORIES],
     async () => {
       await cdp.send('Input.synthesizeScrollGesture', {
@@ -194,7 +196,7 @@ test('200 frames are analyzed in under 2 seconds', async ({ page, browser }) => 
   expect(trace.screenshots.length).toBeGreaterThanOrEqual(200);
   const jpegs = trace.screenshots.slice(0, 200);
   const t0 = performance.now();
-  const a = await analyzeFrames(browser, {
+  const a = await analyzeFrames(driver, {
     jpegs,
     referencePng,
     geometry,

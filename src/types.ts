@@ -1,5 +1,4 @@
 // Public types: options and the versioned result (schemaVersion 1).
-import type { Page } from '@playwright/test';
 
 /** How much to measure. */
 export type SmoothnessMode = 'quick' | 'full';
@@ -16,7 +15,10 @@ export type Enforce = 'warn' | 'fail';
  * - `'none'`: run again from wherever the last run left the page.
  * - a function: your own reset, followed by the same settle wait as `'reload'`.
  */
-export type ResetStrategy = 'reload' | 'none' | ((ctx: { page: Page }) => Promise<void>);
+// `P` is the automation library's page type (a Playwright Page in playwright-smoothness). It
+// defaults to any so the engine, which never looks inside, can accept options for any library.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ResetStrategy<P = any> = 'reload' | 'none' | ((ctx: { page: P }) => Promise<void>);
 
 export interface ListOptions {
   /** Color treated as "blank" in list screenshots. `'auto'` samples the list's computed background. */
@@ -31,7 +33,8 @@ export interface ListOptions {
   virtualized?: 'auto' | boolean;
 }
 
-export interface SmoothnessOptions {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface SmoothnessOptions<P = any> {
   /**
    * `'quick'` measures with Event Timing and Long Animation Frames. `'full'` adds a Chrome
    * trace and screenshots. Default: `SMOOTHNESS_MODE` if set, `'full'` on scheduled CI runs,
@@ -53,7 +56,7 @@ export interface SmoothnessOptions {
   /** Options for `smoothness.scroll()` blank-row detection. */
   list?: ListOptions;
   /** How to reset the page between runs. Default `'reload'`. */
-  reset?: ResetStrategy;
+  reset?: ResetStrategy<P>;
   /**
    * A video replay of a full-mode `measure()` or `scroll()`, attached to the test report, played at
    * a quarter of real speed: each frame with the frame rate and a graph of the run (for lists, also how
@@ -69,7 +72,8 @@ export interface SmoothnessOptions {
 }
 
 /** Options after defaults are applied, plus where `mode` came from. */
-export interface ResolvedOptions {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface ResolvedOptions<P = any> {
   mode: SmoothnessMode;
   modeSource: string;
   runs: number;
@@ -79,7 +83,7 @@ export interface ResolvedOptions {
   enforce: Enforce;
   baselineDir: string | undefined;
   list: Required<ListOptions>;
-  reset: ResetStrategy;
+  reset: ResetStrategy<P>;
   gateTotalBlocking: boolean;
   replay: ReplayMode;
 }

@@ -35,11 +35,12 @@ import {
 import { compareMetrics } from '../baseline/compare.js';
 import { formatMessage, formatSummary } from '../baseline/message.js';
 import { resolveOptions } from '../options.js';
-import { browserEnvironment, type BrowserEnvironment } from '../environment.js';
+import type { BrowserEnvironment } from '../environment.js';
+import { browserEnvironment } from '../playwright/driver.js';
 import { onMainBranch, warnInGitHubActions } from '../ci.js';
 import { resultPath, writeResult } from '../output.js';
 import { CALIBRATE_ENV, SCHEMA_VERSION } from '../constants.js';
-import { smoothnessFixtures, type SmoothnessFixtures } from '../fixture.js';
+import { smoothnessFixtures, type SmoothnessFixtures, type SmoothnessOptions } from '../fixture.js';
 import {
   appendHistory,
   historyPath,
@@ -48,7 +49,7 @@ import {
   specHash,
   type HistoryEntry,
 } from './history.js';
-import type { Comparison, ResolvedOptions, SmoothnessOptions, SmoothnessResult } from '../types.js';
+import type { Comparison, ResolvedOptions, SmoothnessResult } from '../types.js';
 
 export interface AutoOptions extends SmoothnessOptions {
   /** Measure every test automatically. */

@@ -1,4 +1,4 @@
-import type { Browser } from '@playwright/test';
+import type { PageDriver } from '../driver.js';
 import { lineCoverage, type CoverageOptions } from './coverage.js';
 import type { ListGeometry } from './probe.js';
 
@@ -22,7 +22,7 @@ export interface ListAnalysis {
  * dependency and uses the browser's own (fast, native) decoder; see docs/list-detection.md.
  */
 export async function analyzeFrames(
-  browser: Browser,
+  page: PageDriver,
   input: {
     jpegs: string[];
     referencePng: Buffer;
@@ -31,10 +31,11 @@ export async function analyzeFrames(
     blank: [number, number, number][];
   },
 ): Promise<ListAnalysis> {
-  const context = await browser.newContext();
+  const opened = page.openScratchPage({ secure: false });
+  if (!opened) throw new Error("the browser can't open a scratch page to analyze screenshots in");
+  const scratch = await opened;
   try {
-    const page = await context.newPage();
-    return await page.evaluate(
+    return await scratch.evaluate(
       async ({ jpegs, png, rect, viewport, options, source }) => {
         const coverage = new Function(`return (${source})`)() as (
           d: Uint8ClampedArray,
@@ -87,6 +88,6 @@ export async function analyzeFrames(
       },
     );
   } finally {
-    await context.close();
+    await scratch.close();
   }
 }
