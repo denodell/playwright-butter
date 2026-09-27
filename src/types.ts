@@ -23,6 +23,12 @@ export interface ListOptions {
   background?: 'auto' | string;
   /** Colors or selectors whose appearance counts as blank (skeleton rows, placeholders). */
   placeholders?: string[];
+  /**
+   * Whether the list is virtualized: it removes rows that scroll out of view and builds new ones.
+   * `'auto'` (default) detects it while scrolling. Blank frames are only gated for virtualized
+   * lists; on other pages they measure empty space in the content, not rows that weren't built.
+   */
+  virtualized?: 'auto' | boolean;
 }
 
 export interface SmoothnessOptions {
@@ -201,6 +207,11 @@ export interface ListResult {
   blankFramePercent: number;
   /** The least-drawn frame, as a percentage of the list at rest. */
   leastDrawnPercent: number;
+  /**
+   * Whether the list is virtualized: detected (rows were removed from the page while it
+   * scrolled) or set with `list.virtualized`. Blank frames are only gated when it is.
+   */
+  virtualized?: boolean;
 }
 
 export interface Spread {

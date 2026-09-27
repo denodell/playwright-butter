@@ -17,13 +17,14 @@ import {
   resolveScroll,
   END_CAP_PX,
   MAX_KEY_PRESSES,
+  MIN_REMOVED_ROWS,
   PX_PER_ARROW_KEY,
   type ScrollOptions,
 } from './scroll.js';
 import { basename } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { encodeReplay } from './replay/encode.js';
-import { takeReplaySource } from './replay/source.js';
+import { peekReplaySource, takeReplaySource } from './replay/source.js';
 import { installCollector } from './collector/collector.js';
 import { browserEnvironment } from './environment.js';
 import { resolveOptions } from './options.js';
@@ -185,6 +186,23 @@ async function createSmoothness(
             ) {
               result.notes.push(
                 `Arrow keys were pressed at most ${MAX_KEY_PRESSES} times per run, which didn't reach the requested distance.`,
+              );
+            }
+          }
+          if (result.list) {
+            // Blank frames mean rows that weren't built in time only on a virtualized list. On
+            // any other page they'd mean empty space in the content, so they aren't gated there.
+            const setting = ctx.options.list.virtualized;
+            const virtualized =
+              setting === 'auto' ? measured.some((d) => d.removed >= MIN_REMOVED_ROWS) : setting;
+            result.list.virtualized = virtualized;
+            const source = peekReplaySource(result);
+            if (source) source.virtualized = virtualized;
+            if (!virtualized) {
+              result.notes.push(
+                setting === 'auto'
+                  ? "The list doesn't appear to be virtualized (no rows were removed while it scrolled), so blank frames aren't gated: here they'd mean empty space in the content, not rows that weren't built in time. Set list: { virtualized: true } if it is."
+                  : "list.virtualized is false, so blank frames aren't gated.",
               );
             }
           }

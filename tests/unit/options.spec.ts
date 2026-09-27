@@ -11,7 +11,7 @@ test('defaults', () => {
     refreshRate: 60,
     enforce: 'warn',
     baselineDir: undefined,
-    list: { background: 'auto', placeholders: [] },
+    list: { background: 'auto', placeholders: [], virtualized: 'auto' },
     reset: 'reload',
     gateTotalBlocking: false,
     replay: 'on-regression',
@@ -66,6 +66,7 @@ test('invalid values are rejected with a clear message', () => {
   expect(() => resolveOptions([{ cpuThrottling: 0.5 }], {})).toThrow(/cpuThrottling/);
   expect(() => resolveOptions([{ maxIncrease: -1 }], {})).toThrow(/maxIncrease/);
   expect(() => resolveOptions([{ refreshRate: 90 as 60 }], {})).toThrow(/refreshRate/);
+  expect(() => resolveOptions([{ list: { virtualized: 'yes' as 'auto' } }], {})).toThrow(/list.virtualized/);
   expect(() => resolveOptions([{ enforce: 'maybe' as 'warn' }], {})).toThrow(/enforce/);
   expect(() => resolveOptions([{ replay: 'sometimes' as 'on' }], {})).toThrow(/replay must be/);
 });
