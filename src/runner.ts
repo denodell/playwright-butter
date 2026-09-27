@@ -241,13 +241,7 @@ export async function measure(ctx: MeasureContext, action: () => Promise<void>):
     }
     // measure(): one more run, recorded only for a replay. Screenshots cost the compositor
     // frames, so they're kept out of the runs that are measured.
-    if (
-      ctx.options.mode === 'full' &&
-      !ctx.list &&
-      ctx.options.replay !== 'off' &&
-      m.tracer &&
-      runs.length
-    ) {
+    if (ctx.options.mode === 'full' && !ctx.list && ctx.options.replay !== 'off' && m.tracer && runs.length) {
       const scratch: RunTally = { ...tally, errors: new Set(), overflow: { loaf: 0, events: 0, scrolls: 0 } };
       extraReplay = (await measureRun(m, cdp, scratch, ctx.options.runs + 1, action, true))?.replay ?? null;
     }
@@ -322,7 +316,8 @@ async function prepare(ctx: MeasureContext): Promise<Measurement> {
   if (options.mode === 'full' && !tracer) {
     unavailable.push({
       measurement: 'frames',
-      reason: "full mode needs a trace, and this page's browser can't be traced (a Playwright persistent context has no Browser to trace with)",
+      reason:
+        "full mode needs a trace, and this page's browser can't be traced (a Playwright persistent context has no Browser to trace with)",
     });
   }
   if (options.mode === 'quick' && ctx.list) {
@@ -740,8 +735,7 @@ async function combineProfile(
   const { ctx, tracer, notes, unavailable } = m;
   const profiles = runs.map((r) => r.profile).filter((p): p is ProfileRun => p !== null);
   if (profiles.length === 0) {
-    if (tracer)
-      for (const reason of reasons('profile')) unavailable.push({ measurement: 'profile', reason });
+    if (tracer) for (const reason of reasons('profile')) unavailable.push({ measurement: 'profile', reason });
     return null;
   }
   if (profiles.length < runs.length) {
