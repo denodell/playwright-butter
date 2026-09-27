@@ -82,7 +82,7 @@ interface RunData {
   profile: ProfileRun | null;
   /** scroll() in full mode only. */
   list: ListResult | { unavailable: string } | null;
-  /** scroll() in full mode: the frames, for a replay. */
+  /** Full mode: the frames, for a replay. */
   replay: ReplayInput | null;
 }
 
@@ -233,10 +233,23 @@ export async function measure(ctx: MeasureContext, action: () => Promise<void>):
     supported: { loaf: true, event: true },
   };
 
+  let extraReplay: ReplayInput | null = null;
   try {
     for (let run = 0; run <= ctx.options.runs; run++) {
       const data = await measureRun(m, cdp, tally, run, action);
       if (data) runs.push(data);
+    }
+    // measure(): one more run, recorded only for a replay. Screenshots cost the compositor
+    // frames, so they're kept out of the runs that are measured.
+    if (
+      ctx.options.mode === 'full' &&
+      !ctx.list &&
+      ctx.options.replay !== 'off' &&
+      m.browser &&
+      runs.length
+    ) {
+      const scratch: RunTally = { ...tally, errors: new Set(), overflow: { loaf: 0, events: 0, scrolls: 0 } };
+      extraReplay = (await measureRun(m, cdp, scratch, ctx.options.runs + 1, action, true))?.replay ?? null;
     }
   } finally {
     await cdp.close();
@@ -254,7 +267,7 @@ export async function measure(ctx: MeasureContext, action: () => Promise<void>):
       unavailable: [...empty.unavailable, ...m.unavailable],
     };
   }
-  return combineRuns(m, runs, tally.supported);
+  return combineRuns(m, runs, tally.supported, extraReplay);
 }
 
 /**
@@ -331,6 +344,7 @@ async function measureRun(
   tally: RunTally,
   run: number,
   action: () => Promise<void>,
+  forReplay = false,
 ): Promise<RunData | null> {
   const { ctx, browser, collector: c } = m;
   const { page, options } = ctx;
@@ -360,7 +374,8 @@ async function measureRun(
   let listPrepared: ListPrepared | { unavailable: string } | null = null;
   if (options.mode === 'full' && browser && ctx.list && run > 0) listPrepared = await ctx.list.prepare();
   if (options.mode === 'full' && browser) {
-    const screenshots = listPrepared !== null && !('unavailable' in listPrepared);
+    // Screenshots for blank-row detection, or on measure()'s extra run for a replay.
+    const screenshots = (listPrepared !== null && !('unavailable' in listPrepared)) || forReplay;
     trace = await traceRun(
       browser,
       page,
@@ -397,7 +412,8 @@ async function measureRun(
   tally.overflow.scrolls += snapshot.overflow.scrolls;
   if (run === 0) return null; // warm-up, discarded
 
-  return summarizeRun(snapshot, trace, list, replay);
+  const measureReplay = forReplay && trace ? replayOfMeasure(ctx, trace, snapshot) : null;
+  return summarizeRun(snapshot, trace, list, replay ?? measureReplay);
 }
 
 /**
@@ -431,6 +447,7 @@ async function analyzeListRun(
           drawn: analyzed.drawn,
           blankShare: BLANK_FRAME_SHARE,
           frames: trace.frameTimeline.map((f) => ({ tMs: (f.ts - t0) / 1000, dropped: f.dropped })),
+          markers: { inputs: [], longFrames: [] },
           rect: listPrepared.geometry.rect,
           viewport: listPrepared.geometry.viewport,
           title: ctx.label,
@@ -442,6 +459,46 @@ async function analyzeListRun(
     trace.frameTimeline = [];
   }
   return { list, replay };
+}
+
+/**
+ * A measure() run's frames for a replay: its screenshots and frame timeline, with the inputs and
+ * long frames from the collector placed on the same clock. The screenshots are dropped from the
+ * trace afterwards.
+ */
+function replayOfMeasure(
+  ctx: MeasureContext,
+  trace: ParsedTrace,
+  snapshot: CollectorSnapshot,
+): ReplayInput | null {
+  const t0 = trace.screenshotTimes[0];
+  const offset = trace.pageOffsetUs;
+  const out =
+    t0 === undefined || offset === null || ctx.options.replay === 'off'
+      ? null
+      : {
+          jpegs: trace.screenshots,
+          timesMs: trace.screenshotTimes.map((t) => (t - t0) / 1000),
+          drawn: [],
+          blankShare: BLANK_FRAME_SHARE,
+          rect: null,
+          viewport: ctx.page.viewportSize() ?? { width: 1280, height: 720 },
+          title: ctx.label,
+          frames: trace.frameTimeline.map((f) => ({ tMs: (f.ts - t0) / 1000, dropped: f.dropped })),
+          markers: {
+            inputs: snapshot.events
+              .filter((e) => e.interactionId > 0)
+              .map((e) => (e.start * 1000 + offset - t0) / 1000),
+            longFrames: snapshot.loaf.map((f) => ({
+              tMs: (f.start * 1000 + offset - t0) / 1000,
+              durMs: f.duration,
+            })),
+          },
+        };
+  trace.screenshots = [];
+  trace.screenshotTimes = [];
+  trace.frameTimeline = [];
+  return out;
 }
 
 /** Classifies a run's frames and summarizes the ones the interaction caused. */
@@ -512,6 +569,7 @@ async function combineRuns(
   m: Measurement,
   runs: RunData[],
   supported: RunTally['supported'],
+  extraReplay: ReplayInput | null,
 ): Promise<SmoothnessResult> {
   const { ctx, notes, unavailable } = m;
   const { options } = ctx;
@@ -526,7 +584,7 @@ async function combineRuns(
 
   const classCount = (k: FrameClass) =>
     Math.round(median(runs.map((r) => r.classes.filter((c) => c === k).length)));
-  const replaySource = pickReplaySource(runs, list);
+  const replaySource = pickReplaySource(runs, list) ?? extraReplay;
 
   const result: SmoothnessResult = {
     schemaVersion: SCHEMA_VERSION,
@@ -744,6 +802,7 @@ function combineBudget120(
 
 /** The replay comes from the run whose blank-frame share is closest to the reported median. */
 function pickReplaySource(runs: RunData[], list: ListResult | null | undefined): ReplayInput | null {
+  // scroll(): the run whose blank-frame share is closest to the reported one.
   let replaySource: ReplayInput | null = null;
   if (list) {
     let best = Infinity;

@@ -18,14 +18,16 @@ export interface ReplayInput {
   jpegs: string[];
   /** Each frame's time from the first, in real ms. */
   timesMs: number[];
-  /** Each frame's drawn share relative to the list at rest, 0..1. */
+  /** scroll() only: each frame's drawn share relative to the list at rest, 0..1. Empty otherwise. */
   drawn: number[];
   /** Below this share a frame is blank. */
   blankShare: number;
   /** The compositor's presented and dropped frames, in ms from the first screenshot. */
   frames: { tMs: number; dropped: boolean }[];
-  /** The list's client area and the viewport, in CSS pixels, to outline the list. */
-  rect: { x: number; y: number; width: number; height: number };
+  /** measure() only: when each input arrived, and each long frame, in ms from the first screenshot. */
+  markers: { inputs: number[]; longFrames: { tMs: number; durMs: number }[] };
+  /** scroll() only: the list's client area in CSS pixels, to outline it. Null for measure(). */
+  rect: { x: number; y: number; width: number; height: number } | null;
   viewport: { width: number; height: number };
   title: string;
 }
@@ -140,6 +142,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   // The list on the screenshot: a hairline when drawn; when blank, an orange halftone screen and
   // a tag.
   const markList = (ox: number, oy: number, blank: boolean) => {
+    if (!args.rect) return;
     const x = ox + args.rect.x * sx;
     const y = oy + args.rect.y * sy;
     const w = args.rect.width * sx;
@@ -188,6 +191,11 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     return shown + missed === 0 ? null : Math.round((60 * shown) / (shown + missed));
   };
   const fpsAt = (t: number) => fpsBetween(t - FPS_WINDOW_MS, t);
+  const isList = args.rect !== null;
+  // One mark per interaction: its entries (pointerdown, click) arrive within a few ms.
+  const inputs = [...args.markers.inputs]
+    .sort((a, b) => a - b)
+    .filter((t, k, all) => k === 0 || t - all[k - 1]! > 30);
   const GRAPH_COLS = 60;
   const colOf = (ms: number) => Math.min(GRAPH_COLS - 1, Math.floor((ms / (total || 1)) * GRAPH_COLS));
   const slices = Array.from({ length: GRAPH_COLS }, (_, cI) => {
@@ -197,6 +205,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     return {
       fps: fpsBetween(Math.max(0, mid - FPS_WINDOW_MS / 2), Math.min(total, mid + FPS_WINDOW_MS / 2)),
       blank: args.drawn.some((d, j) => d < args.blankShare && colOf(args.timesMs[j]!) === cI),
+      long: args.markers.longFrames.some((f) => f.tMs < to && f.tMs + f.durMs > from),
     };
   });
 
@@ -296,7 +305,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
         g.fillStyle = r !== level ? c.off : level < rows - 1 ? c.blank : c.ink;
         g.fillRect(gl + cI * colW + 0.75, base - (r + 1) * pitch, colW - 1.5, cellH);
       }
-      g.fillStyle = played && sl.blank ? c.blank : c.off;
+      g.fillStyle = played && (isList ? sl.blank : sl.long) ? c.blank : c.off;
       g.fillRect(gl + cI * colW + 0.75, base + 4, colW - 1.5, cellH);
     }
     // Key: orange means frames were dropped.
@@ -310,7 +319,20 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     label('60 fps', gl - 6, base - rows * pitch + 4, c.graphite, 'right', 7);
     label('30', gl - 6, base - (rows / 2) * pitch + 3, c.graphite, 'right', 7);
     label('0', gl - 6, base, c.graphite, 'right', 7);
-    label('Blank', gl - 6, base + 7.5, c.graphite, 'right', 6);
+    label(isList ? 'Blank' : 'Long', gl - 6, base + 7.5, c.graphite, 'right', 6);
+    // measure(): a small mark above the graph where each input arrived.
+    for (const t of inputs) {
+      if (t > args.timesMs[i]!) continue;
+      const ix = Math.round(xAt(Math.max(0, t))) + 0.5; // an input just before the first frame sits at the start
+      g.fillStyle = c.ink;
+      g.beginPath();
+      g.moveTo(ix - 3, top - 9);
+      g.lineTo(ix + 3, top - 9);
+      g.lineTo(ix, top - 4);
+      g.closePath();
+      g.fill();
+    }
+    if (inputs.length) label('input', gl - 12, top - 4, c.graphite, 'right', 6);
 
     // Playhead: a small triangle under the graph.
     const hx = xAt(args.timesMs[i]!);
@@ -322,8 +344,16 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     g.lineTo(hx + 4, markY + 10);
     g.closePath();
     g.fill();
-    const parts = [`${droppedTotal} frames dropped`, `${blankCount} of ${n} blank`];
-    label(parts.join(' · '), left, markY + 28, droppedTotal || blankCount ? c.blank : c.graphite);
+    const parts = [
+      `${droppedTotal} frames dropped`,
+      isList ? `${blankCount} of ${n} blank` : `${args.markers.longFrames.length} long frames`,
+    ];
+    label(
+      parts.join(' · '),
+      left,
+      markY + 28,
+      droppedTotal || blankCount || args.markers.longFrames.length ? c.blank : c.graphite,
+    );
     label(`Frame ${pad3(i + 1)}/${n}`, right, markY + 28, c.graphite, 'right');
 
     const frame = new VideoFrame(canvas, { timestamp: Math.round(args.timesMs[i]! * args.slowdown * 1000) });
