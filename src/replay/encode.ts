@@ -57,7 +57,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const pad = 28;
   const even = (v: number) => Math.ceil(v) + (Math.ceil(v) % 2);
   const width = even(imgW + pad * 2);
-  const height = even(pad + imgH + 238);
+  const height = even(pad + imgH + 226);
   const sx = imgW / args.viewport.width;
   const sy = imgH / args.viewport.height;
   const sans = '"Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif';
@@ -330,42 +330,47 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     g.closePath();
     g.fill();
 
-    // Under the graph: how much of the list was drawn (when it went blank), dropped frames and
-    // elapsed time.
+    // Under the graph, right-aligned: how much of the list was drawn (when it went blank),
+    // dropped frames and elapsed time, each with its label over two lines to its left.
     const cell = 3;
-    const ry = markY + 26;
-    const readouts: { name: string; draw: (x: number) => void }[] = [];
+    const ry = markY + 22;
+    const digitsW = (chars: number) => chars * cell * 6 - cell;
+    const readouts: { words: [string, string]; width: number; draw: (x: number) => void }[] = [];
     if (listWentBlank)
       readouts.push({
-        name: 'List drawn',
+        words: ['List', 'drawn'],
+        width: digitsW(4) + 6 + 70,
         draw: (x) => {
-          const endX = dotText(pct.padStart(4, ' '), x, ry + 10, cell, blank ? c.blank : c.ink, c.off);
-          meter(endX + 6, ry + 10, 21, drawn, blank);
+          const endX = dotText(pct.padStart(4, ' '), x, ry, cell, blank ? c.blank : c.ink, c.off);
+          meter(endX + 6, ry, 21, drawn, blank);
         },
       });
     readouts.push({
-      name: 'Dropped frames',
+      words: ['Dropped', 'frames'],
+      width: digitsW(3),
       draw: (x) =>
-        dotText(
-          String(droppedSoFar).padStart(3, ' '),
-          x,
-          ry + 10,
-          cell,
-          droppedSoFar ? c.blank : c.ink,
-          c.off,
-        ),
+        dotText(String(droppedSoFar).padStart(3, ' '), x, ry, cell, droppedSoFar ? c.blank : c.ink, c.off),
     });
+    const elapsed = secs(args.timesMs[i]!);
     readouts.push({
-      name: 'Elapsed time',
-      draw: (x) => dotText(secs(args.timesMs[i]!), x, ry + 10, cell, c.ink, c.off),
+      words: ['Elapsed', 'time'],
+      width: digitsW(elapsed.length),
+      draw: (x) => dotText(elapsed, x, ry, cell, c.ink, c.off),
     });
-    readouts.forEach((r, k) => {
-      const x = left + ((right - left) / 3) * k;
-      label(r.name, x, ry);
+    let rx = right;
+    for (const r of [...readouts].reverse()) {
+      const x = rx - r.width;
       r.draw(x);
-    });
+      label(r.words[0], x - 8, ry + 9, c.graphite, 'right', 8);
+      label(r.words[1], x - 8, ry + 19, c.graphite, 'right', 8);
+      g.font = `600 8px ${sans}`;
+      g.letterSpacing = '1.4px';
+      const labelW = Math.max(...r.words.map((w) => g.measureText(w.toUpperCase()).width));
+      g.letterSpacing = '0px';
+      rx = x - 8 - labelW - 22;
+    }
 
-    const footY = ry + 52;
+    const footY = ry + 44;
     const summary =
       strip === 'rows'
         ? `${blankCount} of ${n} frames with rows not drawn`
