@@ -239,7 +239,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     g.fillStyle = c.ink;
     g.textAlign = 'left';
     g.fillText(fit(args.title, right - left - 120), left, y);
-    label(`Playing at 1/${args.slowdown} speed`, right, y, c.graphite, 'right');
+    label(`Replay at 1/${args.slowdown} speed`, right, y, c.graphite, 'right');
 
     y += 26;
     const fps = fpsAt(args.timesMs[i]!);
@@ -250,7 +250,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     // Frames per second, large, beside the graph that plots it.
     const top = y + 16;
     const big = 5;
-    label('FPS', left, top + 2);
+    label('Frame rate', left, top + 2);
     dotText(
       fps === null ? '  ' : String(fps).padStart(2, ' '),
       left,
@@ -259,6 +259,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       droppingNow ? c.blank : c.ink,
       c.off,
     );
+    label('FPS', left, top + 12 + 7 * big + 11);
 
     // LCD graph of the frame rate: a fixed grid of segments, unlit ones faintly visible. Each
     // column covers a slice of the run and lights the one segment at its frames per second, so
