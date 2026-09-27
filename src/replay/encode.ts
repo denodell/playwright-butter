@@ -57,7 +57,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const pad = 28;
   const even = (v: number) => Math.ceil(v) + (Math.ceil(v) % 2);
   const width = even(imgW + pad * 2);
-  const height = even(pad + imgH + 236);
+  const height = even(pad + imgH + 250);
   const sx = imgW / args.viewport.width;
   const sy = imgH / args.viewport.height;
   const sans = '"Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif';
@@ -243,43 +243,47 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     label(`${args.slowdown}× slower`, right, y, c.graphite, 'right');
 
     y += 26;
-    const col = (right - left) / 3;
+    // Readouts. Frames per second leads, larger than the rest; the others share a baseline with it.
     const fps = fpsAt(args.timesMs[i]!);
     const droppingNow = droppedBetween(args.timesMs[i]! - FPS_WINDOW_MS, args.timesMs[i]!) > 0;
     const listWentBlank = blankCount > 0;
     const droppedSoFar = droppedBetween(-1, args.timesMs[i]!);
-    label(listWentBlank ? 'List drawn' : 'Dropped frames', left, y);
-    label('Frames per second', left + col, y);
-    label('Elapsed time', left + col * 2, y);
+    const colB = left + (right - left) * 0.36;
+    const colC = left + (right - left) * 0.7;
+    const big = 5;
     const cell = 3;
+    const smallTop = y + 10 + 7 * big - 7 * cell; // bottom-aligned with the large digits
+    label('Frames per second', left, y);
+    label(listWentBlank ? 'List drawn' : 'Dropped frames', colB, y);
+    label('Elapsed time', colC, y);
+    dotText(
+      fps === null ? '  ' : String(fps).padStart(2, ' '),
+      left,
+      y + 10,
+      big,
+      droppingNow ? c.blank : c.ink,
+      c.off,
+    );
     if (listWentBlank) {
-      const endX = dotText(pct.padStart(4, ' '), left, y + 10, cell, blank ? c.blank : c.ink, c.off);
-      meter(endX + 6, y + 10, 21, drawn, blank);
+      const endX = dotText(pct.padStart(4, ' '), colB, smallTop, cell, blank ? c.blank : c.ink, c.off);
+      meter(endX + 6, smallTop, 21, drawn, blank);
     } else {
       dotText(
         String(droppedSoFar).padStart(3, ' '),
-        left,
-        y + 10,
+        colB,
+        smallTop,
         cell,
         droppedSoFar ? c.blank : c.ink,
         c.off,
       );
     }
-    dotText(
-      fps === null ? '  ' : String(fps).padStart(2, ' '),
-      left + col,
-      y + 10,
-      cell,
-      droppingNow ? c.blank : c.ink,
-      c.off,
-    );
-    dotText(secs(args.timesMs[i]!), left + col * 2, y + 10, cell, c.ink, c.off);
+    dotText(secs(args.timesMs[i]!), colC, smallTop, cell, c.ink, c.off);
 
     // LCD graph of the frame rate: a fixed grid of segments, unlit ones faintly visible. Each
     // column covers a slice of the run and lights the one segment at its frames per second, so
     // the lit segments read as a line: black at 60fps, orange below it, where frames were
     // dropped. It draws in as the replay plays. A one-row strip underneath marks slices with blank frames.
-    const top = y + 58;
+    const top = y + 72;
     const gl = left + 36; // a gutter for the graph's labels
     const xAt = (ms: number) => gl + (ms / (total || 1)) * (right - gl);
     const rows = 12;
