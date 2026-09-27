@@ -15,6 +15,8 @@ export default tseslint.config(
       'examples/**/playwright-report/',
       'examples/**/smoothness-baselines/',
       'examples/react-list/public/app.js',
+      'demos/apps/kanban/dist/',
+      'demos/results/',
     ],
   },
   {
@@ -31,6 +33,23 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    files: ['demos/**/*.{js,mjs}'],
+    languageOptions: {
+      globals: {
+        atob: 'readonly',
+        Blob: 'readonly',
+        Buffer: 'readonly',
+        console: 'readonly',
+        document: 'readonly',
+        location: 'readonly',
+        performance: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+      },
+    },
+  },
   {
     files: ['scripts/**/*.mjs', 'test-pages/server.mjs'],
     languageOptions: { globals: { process: 'readonly', console: 'readonly', URL: 'readonly' } },

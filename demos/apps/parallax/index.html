@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Travel stories</title>
+    <style>
+      :root {
+        --page: #ffffff;
+        --ink: #1c2630;
+        --muted: #5f6f7a;
+        --sky: #bcd6e6;
+        --sea: #2f6f8f;
+        --sand: #e7dcc3;
+      }
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--ink);
+        font:
+          18px/1.7 Athelas,
+          Palatino,
+          Georgia,
+          serif;
+      }
+      article {
+        max-width: 34em;
+        margin: 0 auto;
+        padding: 48px 24px 96px;
+      }
+      h1 {
+        font:
+          400 52px/1.02 Didot,
+          'Bodoni 72',
+          Georgia,
+          serif;
+        margin: 0 0 12px;
+        text-wrap: balance;
+      }
+      .byline {
+        font:
+          15px 'Gill Sans',
+          Seravek,
+          system-ui,
+          sans-serif;
+        color: var(--muted);
+        margin: 0 0 32px;
+      }
+      p {
+        margin: 0 0 20px;
+      }
+      figure {
+        margin: 32px 0;
+      }
+      /* A photograph stand-in: sky, sea and a strip of beach, with the horizon at a different
+         height in each one. */
+      .figure {
+        position: relative;
+        height: 260px;
+        overflow: hidden;
+      }
+      .figure .img {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: -60px;
+        height: 380px;
+        background:
+          radial-gradient(
+            circle at 72% calc(var(--horizon) - 9%),
+            #fff6dc 0 18px,
+            rgba(255, 246, 220, 0.5) 19px 40px,
+            transparent 41px
+          ),
+          linear-gradient(
+            180deg,
+            #9fc4dc 0,
+            #dce9ef var(--horizon),
+            #27607e var(--horizon),
+            #4d8ea8 calc(var(--horizon) + 28%),
+            #f2ede0 calc(var(--horizon) + 28%),
+            #f2ede0 calc(var(--horizon) + 30%),
+            #ddcfae calc(var(--horizon) + 30%),
+            #cdbd98 100%
+          );
+      }
+      figcaption {
+        font:
+          14px/1.4 'Gill Sans',
+          Seravek,
+          system-ui,
+          sans-serif;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <article id="story"></article>
+    <script>
+      // ?v=bad: the scroll handler measures and moves every image on every scroll event,
+      // alternating reads and writes, so each image forces a fresh layout.
+      // ?v=good: positions are measured once and images move with transforms in a rAF.
+      const bad = new URLSearchParams(location.search).get('v') === 'bad';
+      const story = document.getElementById('story');
+      const lines = [
+        'We left before dawn and followed the river road north, stopping wherever the light looked good.',
+        'The ferry only runs twice a day in winter, so we slept in the car by the slipway.',
+        'A fisherman showed us where the seals haul out at low tide, past the second headland.',
+        'Most villages had one shop, one pub and a noticeboard full of lost dogs and choir practice.',
+        'By the third week we had stopped checking the forecast and just packed for rain.',
+        'The road narrowed to a single track with passing places and sheep that would not move.',
+        'We ate chips on the harbour wall and watched the boats come in with the last of the light.',
+      ];
+      const places = [
+        'Porth Lane',
+        'Skerry Point',
+        'Ardmore Sands',
+        'Kilbride harbour',
+        'Tollan Head',
+        'Rosscarbery',
+        'Machair Bay',
+      ];
+      let html =
+        '<h1>Ninety days on the coast road</h1><p class="byline">Words and pictures by Nell Garvey</p>';
+      for (let i = 0; i < 60; i++) {
+        const para = [0, 1, 2, 3].map((k) => lines[(i * 2 + k * 3) % lines.length]).join(' ');
+        html += `<p>${para}</p><figure><div class="figure" style="--horizon:${34 + ((i * 11) % 22)}%"><div class="img"></div></div><figcaption>Day ${(1 + i * 1.5) | 0}, ${places[i % places.length]}</figcaption></figure>`;
+      }
+      story.innerHTML = html;
+      const imgs = [...document.querySelectorAll('.figure .img')];
+
+      if (bad) {
+        addEventListener(
+          'scroll',
+          function onScrollParallax() {
+            for (const img of imgs) {
+              const r = img.parentElement.getBoundingClientRect(); // read (forces layout)
+              img.style.top = -60 + (r.top / innerHeight) * 40 + 'px'; // write (invalidates it)
+              img.style.filter = `brightness(${0.8 + Math.abs(r.top % 100) / 500})`;
+            }
+            // Recomputes a reading-progress sparkline from every paragraph's text on every event.
+            let hash = 0;
+            for (let pass = 0; pass < 4; pass++)
+              for (const p of story.querySelectorAll('p'))
+                for (let i = 0; i < p.textContent.length; i++)
+                  hash = (hash * 31 + p.textContent.charCodeAt(i)) | 0;
+            story.dataset.progress = String(hash);
+          },
+          { passive: true },
+        );
+      } else {
+        const tops = imgs.map((img) => img.parentElement.getBoundingClientRect().top + scrollY);
+        let queued = false;
+        addEventListener(
+          'scroll',
+          function onScrollParallax() {
+            if (queued) return;
+            queued = true;
+            requestAnimationFrame(() => {
+              queued = false;
+              imgs.forEach((img, i) => {
+                img.style.transform = `translateY(${((tops[i] - scrollY) / innerHeight) * 40}px)`;
+              });
+            });
+          },
+          { passive: true },
+        );
+      }
+    </script>
+  </body>
+</html>
