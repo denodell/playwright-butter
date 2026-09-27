@@ -60,7 +60,9 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const pad = 24;
   const even = (v: number) => Math.ceil(v) + (Math.ceil(v) % 2);
   const width = even(imgW + pad * 2);
-  const height = even(pad + imgH + (strip ? 260 : 244));
+  // Room above the chart for a key, when there's something to key, and under it for the strip.
+  const keyRoom = strip || args.markers.inputs.length ? 18 : 0;
+  const height = even(pad + imgH + 48 + 28 + keyRoom + 60 + (strip ? 54 : 50) + 18);
   const sx = imgW / args.viewport.width;
   const sy = imgH / args.viewport.height;
   const sans =
@@ -215,36 +217,57 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     y += 14;
     hline(left, right, y);
 
-    // Stats, in equal columns with hairlines between them. Frame rate comes first.
     const fps = fpsAt(now);
     const droppingNow = droppedBetween(now - FPS_WINDOW_MS, now) > 0;
     const droppedSoFar = droppedBetween(-1, now);
-    const stats: { label: string; value: string; unit?: string; bad?: boolean }[] = [
-      { label: 'Frame rate', value: fps === null ? '–' : String(fps), unit: 'fps', bad: droppingNow },
-      { label: 'Dropped frames', value: String(droppedSoFar), bad: droppedSoFar > 0 },
-      { label: 'Elapsed', value: secs(now) },
-    ];
-    if (blankCount > 0) stats.push({ label: 'List drawn', value: `${Math.round(drawn * 100)}%`, bad: blank });
-    const colW = (right - left) / stats.length;
-    stats.forEach((st, k) => {
-      const x = left + k * colW + (k ? 16 : 0);
-      if (k) {
-        g.fillStyle = c.hair;
-        g.fillRect(Math.round(left + k * colW), y + 14, 1, 44);
-      }
-      text(st.label, x, y + 30, { fill: c.muted });
-      const w = text(st.value, x, y + 58, { size: 24, weight: 600, fill: st.bad ? c.bad : c.ink });
-      if (st.unit) text(st.unit, x + w + 4, y + 58, { size: 13, fill: c.faint });
+
+    // Above the chart, right-aligned: what the red in the strip means, and the input marks.
+    const keyY = y + 24;
+    let kx = right;
+    const key = (label: string, detail: string, swatch: (x: number) => void) => {
+      g.font = `400 12px ${sans}`;
+      const w = g.measureText(label).width + (detail ? g.measureText(detail).width + 6 : 0);
+      kx -= w;
+      const tx = kx + text(label, kx, keyY, { fill: c.muted }) + 6;
+      if (detail) text(detail, tx, keyY, { fill: c.faint });
+      swatch(kx - 14);
+      kx -= 30;
+    };
+    if (inputs.length)
+      key('Input', '', (x) => {
+        g.fillStyle = c.muted;
+        g.beginPath();
+        g.moveTo(x, keyY - 8);
+        g.lineTo(x + 8, keyY - 8);
+        g.lineTo(x + 4, keyY - 1);
+        g.closePath();
+        g.fill();
+      });
+    const square = (x: number) => {
+      g.fillStyle = c.bad;
+      g.beginPath();
+      g.roundRect(x, keyY - 8, 8, 8, 2);
+      g.fill();
+    };
+    if (strip === 'rows') key('Rows not drawn', `${blankCount} of ${n} frames`, square);
+    if (strip === 'long') key('Long frames', String(args.markers.longFrames.length), square);
+
+    // Frame rate, large, beside the chart that plots it.
+    const chartTop = y + 28 + keyRoom;
+    const chartH = 60;
+    const chartBottom = chartTop + chartH;
+    text('Frame rate', left, chartTop + 2, { fill: c.muted });
+    text(fps === null ? '–' : String(fps), left - 2, chartTop + 48, {
+      size: 44,
+      weight: 600,
+      fill: droppingNow ? c.bad : c.ink,
     });
-    y += 72;
-    hline(left, right, y);
+    text('fps', left, chartTop + 66, { size: 13, fill: c.faint });
 
     // The frame rate across the run, drawn in as the replay plays: black at 60fps, red below
     // it, where frames were dropped. A gridline at 60 and 30.
-    const gl = left + 22;
-    const chartTop = y + 22;
-    const chartH = 56;
-    const chartBottom = chartTop + chartH;
+    const axis = left + 104;
+    const gl = axis + 22;
     const xAt = (ms: number) => gl + (ms / (total || 1)) * (right - gl);
     const yAt = (f: number) => chartBottom - (f / 60) * chartH;
     const sliceW = (right - gl) / GRAPH_COLS;
@@ -260,7 +283,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       g.moveTo(gl, Math.round(yAt(v)) + 0.5);
       g.lineTo(right, Math.round(yAt(v)) + 0.5);
       g.stroke();
-      text(String(v), left, yAt(v) + 4, { size: 10, fill: c.faint });
+      text(String(v), axis, yAt(v) + 4, { size: 10, fill: c.faint });
     }
     g.setLineDash([]);
     const playCol = colOf(now);
@@ -270,17 +293,15 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       if (f === null) continue;
       pts.push({ x: gl + (cI + 0.5) * sliceW, y: yAt(f), ok: f >= 58 });
     }
-    if (pts.length > 1) {
-      g.lineWidth = 1.5;
-      g.lineJoin = 'round';
-      g.lineCap = 'round';
-      for (let k = 1; k < pts.length; k++) {
-        g.strokeStyle = pts[k]!.ok && pts[k - 1]!.ok ? c.ink : c.bad;
-        g.beginPath();
-        g.moveTo(pts[k - 1]!.x, pts[k - 1]!.y);
-        g.lineTo(pts[k]!.x, pts[k]!.y);
-        g.stroke();
-      }
+    g.lineWidth = 1.5;
+    g.lineJoin = 'round';
+    g.lineCap = 'round';
+    for (let k = 1; k < pts.length; k++) {
+      g.strokeStyle = pts[k]!.ok && pts[k - 1]!.ok ? c.ink : c.bad;
+      g.beginPath();
+      g.moveTo(pts[k - 1]!.x, pts[k - 1]!.y);
+      g.lineTo(pts[k]!.x, pts[k]!.y);
+      g.stroke();
     }
     // measure(): a small mark above the chart where each input arrived.
     for (const t of inputs) {
@@ -288,9 +309,9 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       const ix = Math.round(xAt(Math.max(0, t))) + 0.5; // an input just before the first frame sits at the start
       g.fillStyle = c.muted;
       g.beginPath();
-      g.moveTo(ix - 3.5, chartTop - 12);
-      g.lineTo(ix + 3.5, chartTop - 12);
-      g.lineTo(ix, chartTop - 6);
+      g.moveTo(ix - 3.5, chartTop - 11);
+      g.lineTo(ix + 3.5, chartTop - 11);
+      g.lineTo(ix, chartTop - 5);
       g.closePath();
       g.fill();
     }
@@ -311,8 +332,9 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
 
     // A strip under the chart marks slices with rows not drawn (virtualized lists) or long
     // frames (measure()).
-    y = chartBottom + 10;
+    y = chartBottom;
     if (strip) {
+      y += 10;
       g.fillStyle = c.wash;
       g.beginPath();
       g.roundRect(gl, y, right - gl, 6, 3);
@@ -330,37 +352,34 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
         g.fill();
         cI = end;
       }
+      y += 6;
     }
 
-    // Footer: what the red means, and which frame this is.
-    const footY = strip ? y + 30 : y + 14;
-    let fx = left;
-    const key = (label: string, detail: string, swatch: (x: number) => void) => {
-      swatch(fx);
-      fx += 14;
-      fx += text(label, fx, footY, { fill: c.muted }) + 6;
-      if (detail) fx += text(detail, fx, footY, { fill: c.faint });
-      fx += 18;
-    };
-    const square = (x: number) => {
-      g.fillStyle = c.bad;
-      g.beginPath();
-      g.roundRect(x, footY - 8, 8, 8, 2);
-      g.fill();
-    };
-    if (strip === 'rows') key('Rows not drawn', `${blankCount} of ${n} frames`, square);
-    if (strip === 'long') key('Long frames', String(args.markers.longFrames.length), square);
-    if (inputs.length)
-      key('Input', '', (x) => {
-        g.fillStyle = c.muted;
-        g.beginPath();
-        g.moveTo(x, footY - 8);
-        g.lineTo(x + 8, footY - 8);
-        g.lineTo(x + 4, footY - 1);
-        g.closePath();
-        g.fill();
+    // Under the chart, right-aligned: how much of the list was drawn (when it went blank),
+    // dropped frames and elapsed time, each with its label over two lines to its left. The
+    // frame number is on the left of the same line.
+    const statY = strip ? y + 38 : y + 50;
+    const stats: { words: [string, string]; value: string; bad?: boolean }[] = [];
+    if (blankCount > 0)
+      stats.push({ words: ['List', 'drawn'], value: `${Math.round(drawn * 100)}%`, bad: blank });
+    stats.push({ words: ['Dropped', 'frames'], value: String(droppedSoFar), bad: droppedSoFar > 0 });
+    stats.push({ words: ['Elapsed', 'time'], value: secs(now) });
+    let sx2 = right;
+    for (const st of [...stats].reverse()) {
+      const w = text(st.value, sx2, statY, {
+        size: 22,
+        weight: 600,
+        fill: st.bad ? c.bad : c.ink,
+        align: 'right',
       });
-    text(`Frame ${i + 1} of ${n}`, right, footY, { fill: c.faint, align: 'right' });
+      const lx = sx2 - w - 8;
+      text(st.words[0], lx, statY - 12, { size: 11, fill: c.muted, align: 'right' });
+      text(st.words[1], lx, statY, { size: 11, fill: c.muted, align: 'right' });
+      g.font = `400 11px ${sans}`;
+      sx2 = lx - Math.max(...st.words.map((word) => g.measureText(word).width)) - 24;
+    }
+    text('Frame', left, statY - 12, { size: 11, fill: c.muted });
+    text(`${i + 1} of ${n}`, left, statY, { size: 11, fill: c.faint });
 
     const frame = new VideoFrame(canvas, { timestamp: Math.round(args.timesMs[i]! * args.slowdown * 1000) });
     encoder.encode(frame, { keyFrame: i % args.keyEvery === 0 });
