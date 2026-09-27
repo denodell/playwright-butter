@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Saturday bake</title>
+    <style>
+      :root {
+        --flour: #f7f7f5;
+        --ink: #2b211d;
+        --muted: #756a63;
+        --oven: #c4561d;
+        --ready: #2f7a4f;
+      }
+      body {
+        margin: 0;
+        background: var(--flour);
+        color: var(--ink);
+        font:
+          14px/1.4 Futura,
+          'Avenir Next',
+          system-ui,
+          sans-serif;
+      }
+      main {
+        padding: 24px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        margin-bottom: 20px;
+      }
+      h1 {
+        font-size: 28px;
+        font-weight: 500;
+        margin: 0;
+      }
+      header p {
+        margin: 2px 0 0;
+        color: var(--muted);
+      }
+      #sort {
+        font: inherit;
+        padding: 8px 14px;
+        border: 1.5px solid var(--ink);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+      }
+      #sort[aria-pressed='true'] {
+        background: var(--ink);
+        color: var(--flour);
+      }
+      #sort:focus-visible {
+        outline: 2px solid var(--oven);
+        outline-offset: 2px;
+      }
+      .columns {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      h2 {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0 0 10px;
+        padding-bottom: 8px;
+        border-bottom: 3px solid var(--ink);
+        display: flex;
+        justify-content: space-between;
+      }
+      .oven h2 {
+        border-color: var(--oven);
+      }
+      .ready h2 {
+        border-color: var(--ready);
+      }
+      h2 span {
+        font-weight: 400;
+        color: var(--muted);
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #e4e1dd;
+        border-radius: 4px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+      }
+      .order {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      time {
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+      }
+      .card p {
+        margin: 2px 0 0;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="dist/main.js"></script>
+  </body>
+</html>

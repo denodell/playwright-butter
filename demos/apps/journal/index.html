@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Field notes</title>
+    <style>
+      :root {
+        --mist: #f1f5f3;
+        --spruce: #1f2d2b;
+        --lichen: #4d7166;
+        --rule: #cad6d1;
+        --contour: #9fb7ae;
+      }
+      body {
+        margin: 0;
+        background: var(--mist);
+        color: var(--spruce);
+        font:
+          19px/1.7 'Iowan Old Style',
+          Charter,
+          Georgia,
+          serif;
+      }
+      article {
+        max-width: 36em;
+        margin: 0 auto;
+        padding: 56px 24px 96px;
+      }
+      h1 {
+        font:
+          600 44px/1.05 'Avenir Next Condensed',
+          'Avenir Next',
+          system-ui,
+          sans-serif;
+        letter-spacing: -0.01em;
+        margin: 0 0 12px;
+        text-wrap: balance;
+      }
+      .trip {
+        margin: 0 0 40px;
+        color: var(--lichen);
+        font-size: 17px;
+      }
+      section {
+        opacity: 0.35;
+        transform: translateY(16px);
+        border-top: 1px solid var(--rule);
+        padding-top: 8px;
+      }
+      section.seen {
+        opacity: 1;
+        transform: none;
+      }
+      h2 {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font:
+          600 24px/1.3 'Avenir Next Condensed',
+          'Avenir Next',
+          system-ui,
+          sans-serif;
+        margin: 32px 0 8px;
+      }
+      h2 small {
+        font:
+          400 16px 'Iowan Old Style',
+          Charter,
+          Georgia,
+          serif;
+        color: var(--lichen);
+      }
+      p {
+        margin: 0 0 20px;
+      }
+      /* The day's walk as an elevation profile: height above the day's start, left to right. */
+      .plate {
+        display: block;
+        width: 100%;
+        height: 220px;
+        background: #e4ece8;
+        border-radius: 4px;
+      }
+      .plate .ground {
+        fill: #c3d4cc;
+      }
+      .plate .line {
+        fill: none;
+        stroke: var(--lichen);
+        stroke-width: 2;
+        vector-effect: non-scaling-stroke;
+      }
+      .plate .camp {
+        fill: var(--spruce);
+      }
+    </style>
+  </head>
+  <body>
+    <article id="notes"></article>
+    <script>
+      // ?v=bad: a "smooth scroll" script takes over the mouse wheel and moves the page itself on
+      // every animation frame, and each frame also updates reveal animations by measuring every
+      // section (CPU work, so it slows down under throttling). The compositor can't scroll on
+      // its own, so when a frame runs long, frames drop. ?v=good: native scrolling, with reveals
+      // from an IntersectionObserver.
+      const bad = new URLSearchParams(location.search).get('v') === 'bad';
+      const notes = document.getElementById('notes');
+      const lines = [
+        'The ridge path climbs for an hour before the trees thin out and the valley opens below.',
+        'We filled the bottles at the last stream and carried water for the rest of the day.',
+        'Cloud came up from the south after lunch, so we walked the scree in single file and kept talking.',
+        'The hut warden had soup on by six and a map of the pass pinned above the stove.',
+        'Marmots whistled from the boulders every time we stopped to rest our knees.',
+        'By evening the wind dropped and the whole range turned the colour of brick.',
+      ];
+      const para = (i) => [0, 1, 2].map((k) => lines[(i + k * 2) % lines.length]).join(' ');
+      let html =
+        '<h1>Field notes from the high pass</h1><p class="trip">Forty days on foot, from the river mouth to the pass at 3,140 m.</p>';
+      for (let i = 0; i < 40; i++) {
+        const camp = 900 + Math.round(2240 * Math.sin((i / 39) * Math.PI * 0.5));
+        const pts = Array.from({ length: 25 }, (_, k) => {
+          const y = 150 - k * 3 - 28 * Math.sin((k + i) * 0.7) - 14 * Math.sin((k * i) % 5);
+          return [k * 25, Math.max(20, Math.min(200, y))];
+        });
+        const d = pts.map(([x, y], k) => `${k ? 'L' : 'M'}${x} ${y.toFixed(1)}`).join(' ');
+        const [ex, ey] = pts[pts.length - 1];
+        const plate = `<svg class="plate" viewBox="0 0 600 220" preserveAspectRatio="none" role="img" aria-label="Elevation over day ${i + 1}"><path class="ground" d="${d} L600 220 L0 220 Z"/><path class="line" d="${d}"/><circle class="camp" cx="${ex - 4}" cy="${ey}" r="4"/></svg>`;
+        html += `<section><h2>Day ${i + 1} <small>Camp at ${camp.toLocaleString('en-US')} m</small></h2><p>${para(i)}</p>${plate}</section>`;
+      }
+      notes.innerHTML = html;
+      const sections = [...document.querySelectorAll('section')];
+
+      if (bad) {
+        let target = scrollY;
+        let current = scrollY;
+        addEventListener(
+          'wheel',
+          function onWheel(e) {
+            e.preventDefault();
+            target = Math.max(
+              0,
+              Math.min(document.documentElement.scrollHeight - innerHeight, target + e.deltaY),
+            );
+          },
+          { passive: false },
+        );
+        requestAnimationFrame(function smoothScroll() {
+          current += (target - current) * 0.2;
+          if (Math.abs(target - current) < 0.5) current = target;
+          scrollTo(0, current);
+          let x = 0;
+          for (const s of sections) {
+            const r = s.getBoundingClientRect();
+            s.classList.toggle('seen', r.top < innerHeight * 0.9);
+            for (let k = 0; k < 40000; k++) x = (x * 31 + k) | 0; // easing curves for each reveal
+          }
+          window.__sink = x;
+          requestAnimationFrame(smoothScroll);
+        });
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => entries.forEach((e) => e.isIntersecting && e.target.classList.add('seen')),
+          { rootMargin: '0px 0px -10% 0px' },
+        );
+        sections.forEach((s) => io.observe(s));
+      }
+    </script>
+  </body>
+</html>

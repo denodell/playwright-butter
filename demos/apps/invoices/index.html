@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Invoices</title>
+    <style>
+      :root {
+        --paper: #ffffff;
+        --ink: #1e2238;
+        --muted: #6a6f86;
+        --rule: #e3e5ee;
+        --press: #2b4acb;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font:
+          14px/1.4 'Avenir Next',
+          system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 40px 24px;
+      }
+      h1 {
+        font:
+          400 34px/1.1 Charter,
+          'Iowan Old Style',
+          Georgia,
+          serif;
+        margin: 0;
+      }
+      .shop {
+        margin: 4px 0 28px;
+        color: var(--muted);
+      }
+      .find {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid var(--ink);
+      }
+      label {
+        font-weight: 600;
+      }
+      input {
+        font: inherit;
+        padding: 8px 12px;
+        width: 300px;
+        border: 1px solid #c9ccda;
+        border-radius: 6px;
+        color: var(--ink);
+      }
+      input:focus {
+        outline: 2px solid var(--press);
+        outline-offset: 1px;
+        border-color: var(--press);
+      }
+      #count {
+        margin-left: auto;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-variant-numeric: tabular-nums;
+      }
+      th {
+        font-weight: 600;
+        color: var(--muted);
+        padding: 10px 8px 6px;
+        text-align: left;
+      }
+      td {
+        border-bottom: 1px solid var(--rule);
+        padding: 6px 8px;
+        text-align: left;
+      }
+      th:nth-child(5),
+      td:nth-child(5) {
+        padding-left: 32px;
+      }
+      th:nth-child(4),
+      td:nth-child(4) {
+        text-align: right;
+      }
+      td:first-child {
+        color: var(--muted);
+      }
+      tr.hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Invoices</h1>
+      <p class="shop">Fenwick &amp; Hale Letterpress, 2026 ledger</p>
+      <div class="find">
+        <label for="search">Customer</label>
+        <input id="search" placeholder="Type a name, like Acme" autocomplete="off" />
+        <span id="count"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Customer</th>
+            <th>Job</th>
+            <th>Amount</th>
+            <th>Due</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

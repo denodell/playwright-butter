@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Feed</title>
+    <style>
+      :root {
+        --road: #e6e9ec;
+        --ink: #17212b;
+        --muted: #5d6975;
+      }
+      body {
+        margin: 0;
+        background: var(--road);
+        color: var(--ink);
+        font:
+          15px/1.45 Seravek,
+          'Gill Sans',
+          system-ui,
+          sans-serif;
+      }
+      header {
+        width: 560px;
+        margin: 24px auto 0;
+      }
+      header h1 {
+        font-size: 22px;
+        margin: 0;
+      }
+      header p {
+        margin: 2px 0 0;
+        color: var(--muted);
+      }
+      #feed {
+        height: 640px;
+        width: 560px;
+        margin: 12px auto 20px;
+        overflow-y: auto;
+        position: relative;
+        background: var(--road);
+      }
+      #spacer {
+        position: relative;
+      }
+      .post {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 132px;
+        box-sizing: border-box;
+        padding: 6px 0;
+      }
+      .post .card {
+        background: #fff;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 14px 16px 12px;
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        gap: 4px 12px;
+      }
+      .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--rider);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .who {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .who span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .body p {
+        margin: 2px 0 6px;
+      }
+      .ride {
+        display: flex;
+        gap: 16px;
+        color: var(--muted);
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+      }
+      .ride b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Harbour Road Cycling Club</h1>
+      <p>Rides logged by members this season</p>
+    </header>
+    <div id="feed" role="feed" aria-label="Posts"><div id="spacer"></div></div>
+    <script>
+      // A windowed feed of 5,000 posts. ?v=bad: building a post is CPU work that takes tens of
+      // milliseconds under throttling (it formats mentions and links the slow way) and nothing is built ahead of the viewport.
+      // ?v=good: about 1ms per post, with three posts built ahead in each direction.
+      const bad = new URLSearchParams(location.search).get('v') === 'bad';
+      const ROW = 132,
+        COUNT = 5000,
+        overscan = bad ? 0 : 3,
+        iterations = bad ? 1_500_000 : 50_000;
+      const feed = document.getElementById('feed');
+      const spacer = document.getElementById('spacer');
+      spacer.style.height = ROW * COUNT + 'px';
+      const built = new Map();
+      function buildPost(i) {
+        let x = 0;
+        for (let k = 0; k < iterations; k++) x = (x * 31 + k) | 0; // formatting mentions, links and emoji
+        window.__sink = x;
+        const el = document.createElement('div');
+        el.className = 'post';
+        el.style.top = i * ROW + 'px';
+        const names = [
+          'Priya Nair',
+          'Tom Okafor',
+          'Ines Duarte',
+          'Sam Whitlock',
+          'Mei Tanaka',
+          'Rhys Morgan',
+          'Ada Lindqvist',
+        ];
+        const routes = [
+          'the coast loop',
+          'Hollins Hill and back',
+          'the reservoir road',
+          'the Tuesday chain gang',
+          'the old railway path',
+          'a gravel detour through the forest',
+        ];
+        const notes = [
+          'Headwind on the way out, tailwind all the way home.',
+          'Puncture at the bridge, fixed in ten minutes.',
+          'Coffee stop at the lighthouse cafe.',
+          'Wet roads, so we kept it steady on the descents.',
+          'New club record on the hill climb segment.',
+        ];
+        const name = names[i % names.length];
+        const km = 24 + ((i * 17) % 90);
+        const climb = 120 + ((i * 131) % 1400);
+        el.style.setProperty('--rider', `hsl(${(i % names.length) * 51} 55% 38%)`);
+        el.innerHTML = `<div class="card"><div class="avatar">${name
+          .split(' ')
+          .map((w) => w[0])
+          .join('')}</div><div class="body">
+          <div class="who"><strong>${name}</strong><span>${1 + (i % 23)} h ago</span></div>
+          <p>Rode ${routes[i % routes.length]}. ${notes[(i * 3) % notes.length]}</p>
+          <div class="ride"><span><b>${km} km</b> distance</span><span><b>${climb} m</b> climbing</span><span><b>${(24 + (i % 9)).toFixed(1)} km/h</b> average</span></div></div></div>`;
+        return el;
+      }
+      function render() {
+        const first = Math.max(0, Math.floor(feed.scrollTop / ROW) - overscan);
+        const last = Math.min(COUNT - 1, Math.ceil((feed.scrollTop + feed.clientHeight) / ROW) + overscan);
+        for (const [i, el] of built)
+          if (i < first || i > last) {
+            el.remove();
+            built.delete(i);
+          }
+        for (let i = first; i <= last; i++)
+          if (!built.has(i)) {
+            const el = buildPost(i);
+            spacer.appendChild(el);
+            built.set(i, el);
+          }
+      }
+      feed.addEventListener(
+        'scroll',
+        function onFeedScroll() {
+          render();
+        },
+        { passive: true },
+      );
+      render();
+    </script>
+  </body>
+</html>

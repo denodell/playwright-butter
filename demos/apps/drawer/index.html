@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Settings</title>
+    <style>
+      :root {
+        --page: #f5f7fa;
+        --ink: #16324f;
+        --muted: #5b6f84;
+        --offpeak: #2a9d8f;
+        --peak: #e39b2d;
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--page);
+        color: var(--ink);
+        font:
+          15px/1.45 'Avenir Next',
+          system-ui,
+          sans-serif;
+      }
+      header {
+        padding: 32px 40px;
+      }
+      h1 {
+        font-size: 28px;
+        font-weight: 600;
+        margin: 0;
+      }
+      header p {
+        margin: 4px 0 20px;
+        color: var(--muted);
+      }
+      #open {
+        font: inherit;
+        font-weight: 600;
+        padding: 10px 18px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--ink);
+        color: #fff;
+        cursor: pointer;
+      }
+      #open:focus-visible {
+        outline: 3px solid var(--peak);
+        outline-offset: 2px;
+      }
+      #drawer {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        width: 380px;
+        box-sizing: border-box;
+        padding: 28px;
+        background: #fff;
+        border-left: 1px solid #dde3ea;
+        transform: translateX(100%);
+      }
+      #drawer h2 {
+        font-size: 20px;
+        margin: 0;
+      }
+      .total {
+        font:
+          700 44px/1.1 'DIN Alternate',
+          'Avenir Next',
+          system-ui,
+          sans-serif;
+        margin: 12px 0 0;
+        font-variant-numeric: tabular-nums;
+      }
+      .total small {
+        font-size: 18px;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      .key {
+        display: flex;
+        gap: 16px;
+        color: var(--muted);
+        font-size: 13px;
+        margin: 8px 0 20px;
+      }
+      .key span::before {
+        content: '';
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        margin-right: 6px;
+        background: var(--c);
+      }
+      #chart {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 160px;
+        border-bottom: 1px solid #cfd8e2;
+      }
+      #chart div {
+        flex: 1;
+        background: var(--offpeak);
+        border-radius: 2px 2px 0 0;
+      }
+      #chart div.peak {
+        background: var(--peak);
+      }
+      .hours {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>12 Alder Close</h1>
+      <p>Smart meter connected, readings every 30 minutes</p>
+      <button id="open"><span class="label">Show today's electricity</span></button>
+    </header>
+    <aside id="drawer" aria-label="Today's electricity">
+      <h2>Today</h2>
+      <p class="total">14.2 <small>kWh so far</small></p>
+      <div class="key">
+        <span style="--c: var(--offpeak)">Off-peak rate</span
+        ><span style="--c: var(--peak)">Peak rate, 4pm to 7pm</span>
+      </div>
+      <div id="chart"></div>
+      <div class="hours">
+        <span>Midnight</span><span>6am</span><span>Noon</span><span>6pm</span><span>10pm</span>
+      </div>
+    </aside>
+    <script>
+      // A JavaScript-driven slide-in over 600ms. ?v=bad: every animation frame also rebuilds the
+      // usage chart (about 25ms of work), which is under the 50ms long-frame threshold but over a
+      // 16.7ms frame. ?v=good: the chart is built once, before the animation starts.
+      const bad = new URLSearchParams(location.search).get('v') === 'bad';
+      const drawer = document.getElementById('drawer');
+      const chart = document.getElementById('chart');
+      function buildChart(t) {
+        const end = performance.now() + (bad ? 25 : 0);
+        const bars = [];
+        // 60 half-hour-ish readings from midnight to now: low overnight, a morning bump, and
+        // the evening peak. t nudges each reading so a rebuild draws something new.
+        for (let i = 0; i < 60; i++) {
+          const hour = (i * 22) / 60;
+          const load =
+            18 +
+            40 * Math.exp(-((hour - 7.5) ** 2) / 2) +
+            95 * Math.exp(-((hour - 17.5) ** 2) / 3) +
+            ((i * 37 + t) % 17);
+          bars.push(
+            `<div class="${hour >= 16 && hour < 19 ? 'peak' : ''}" style="height:${Math.round(load)}px"></div>`,
+          );
+        }
+        chart.innerHTML = bars.join('');
+        while (performance.now() < end) {} // stands in for chart layout maths
+      }
+      document.getElementById('open').addEventListener('click', function onOpenClick() {
+        if (!bad) buildChart(0);
+        const start = performance.now();
+        requestAnimationFrame(function slideIn(now) {
+          const p = Math.min(1, (now - start) / 600);
+          drawer.style.transform = `translateX(${(1 - p) * 100}%)`;
+          if (bad) buildChart(Math.round(p * 100));
+          if (p < 1) requestAnimationFrame(slideIn);
+        });
+      });
+    </script>
+  </body>
+</html>
