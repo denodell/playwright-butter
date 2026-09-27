@@ -144,14 +144,16 @@ test("a locator that doesn't scroll", async ({ page, smoothness }) => {
 });
 
 test('arrow keys', async ({ page, smoothness }) => {
-  // 25ms per new row, and a new row every couple of presses: those presses cross Event Timing's
-  // 16ms threshold. (At 15ms a press only just crossed it, and runners sometimes counted 2.)
+  // 25ms per new row, and a new row every couple of presses. Arrow keys scroll smoothly over
+  // several frames, so a row is often built after the press's own paint, and how many presses
+  // Event Timing counts as slow varies with frame timing (2 on some CI runs, 5 on others). The test
+  // checks that key presses are measured at all, not how many.
   await page.goto('/list.html?cost=25&overscan=0');
   const r = await smoothness.scroll(list(page), { input: 'keys', distance: 400, mode: 'quick', runs: 2 });
   save('list-keys', r);
   expect(r.scroll).toMatchObject({ input: 'keys', speedPxPerSec: null, requestedPx: 400, keyPresses: 10 });
   expect(r.scroll!.scrolledPx).toBeGreaterThan(0);
-  expect(r.input!.interactions).toBeGreaterThanOrEqual(3);
+  expect(r.input!.interactions).toBeGreaterThanOrEqual(1);
   expect(r.input!.interactions).toBeLessThanOrEqual(10);
   // A key press is one interaction (keydown, keypress, keyup), but Event Timing only reports the
   // entries that took 16ms or more, so the slowest press may be known only by its keyup.
