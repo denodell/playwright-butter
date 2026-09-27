@@ -57,7 +57,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const pad = 28;
   const even = (v: number) => Math.ceil(v) + (Math.ceil(v) % 2);
   const width = even(imgW + pad * 2);
-  const height = even(pad + imgH + 226);
+  const height = even(pad + imgH + 202);
   const sx = imgW / args.viewport.width;
   const sy = imgH / args.viewport.height;
   const sans = '"Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif';
@@ -131,7 +131,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     const lit = Math.round(drawn * 10);
     for (let k = 0; k < 10; k++) {
       g.fillStyle = k < lit ? (blank ? c.blank : c.ink) : c.off;
-      g.fillRect(x + k * 7, y, 4, h);
+      g.fillRect(x + k * 5, y, 3, h);
     }
   };
   const secs = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
@@ -239,7 +239,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     g.fillStyle = c.ink;
     g.textAlign = 'left';
     g.fillText(fit(args.title, right - left - 120), left, y);
-    label(`${args.slowdown}× slower`, right, y, c.graphite, 'right');
+    label(`Playing at 1/${args.slowdown} speed`, right, y, c.graphite, 'right');
 
     y += 26;
     const fps = fpsAt(args.timesMs[i]!);
@@ -288,19 +288,16 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
         g.fillRect(gl + cI * colW + 0.75, base + 4, colW - 1.5, cellH);
       }
     }
-    // Key: what orange means, on the line and in the strip underneath.
-    let keyX = right;
-    const keyItems = strip === 'rows' ? ['Rows not drawn'] : strip === 'long' ? ['Long frames'] : [];
-    for (const item of [...keyItems, 'Frames dropped']) {
-      g.font = `600 7px ${sans}`;
-      g.letterSpacing = '1.4px';
-      const w = g.measureText(item.toUpperCase()).width;
-      g.letterSpacing = '0px';
-      label(item, keyX, top - 8, c.graphite, 'right', 7);
-      g.fillStyle = c.blank;
-      g.fillRect(keyX - w - 12, top - 12, 7, cellH);
-      keyX -= w + 26;
-    }
+    // Above the graph, right-aligned: how many frames the strip underneath marks.
+    const summary =
+      strip === 'rows'
+        ? `${blankCount} of ${n} frames with rows not drawn`
+        : strip === 'long'
+          ? `${args.markers.longFrames.length} long frames`
+          : '';
+    const summaryBad =
+      strip === 'rows' ? blankCount > 0 : strip === 'long' && args.markers.longFrames.length > 0;
+    if (summary) label(summary, right, top - 8, summaryBad ? c.blank : c.graphite, 'right', 7);
     label('60', gl - 6, base - rows * pitch + 4, c.graphite, 'right', 7);
     label('30', gl - 6, base - (rows / 2) * pitch + 3, c.graphite, 'right', 7);
     label('0', gl - 6, base, c.graphite, 'right', 7);
@@ -339,7 +336,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     if (listWentBlank)
       readouts.push({
         words: ['List', 'drawn'],
-        width: digitsW(4) + 6 + 70,
+        width: digitsW(4) + 6 + 48,
         draw: (x) => {
           const endX = dotText(pct.padStart(4, ' '), x, ry, cell, blank ? c.blank : c.ink, c.off);
           meter(endX + 6, ry, 21, drawn, blank);
@@ -361,26 +358,17 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     for (const r of [...readouts].reverse()) {
       const x = rx - r.width;
       r.draw(x);
-      label(r.words[0], x - 8, ry + 9, c.graphite, 'right', 8);
-      label(r.words[1], x - 8, ry + 19, c.graphite, 'right', 8);
+      label(r.words[0], x - 6, ry + 9, c.graphite, 'right', 8);
+      label(r.words[1], x - 6, ry + 19, c.graphite, 'right', 8);
       g.font = `600 8px ${sans}`;
       g.letterSpacing = '1.4px';
       const labelW = Math.max(...r.words.map((w) => g.measureText(w.toUpperCase()).width));
       g.letterSpacing = '0px';
-      rx = x - 8 - labelW - 22;
+      rx = x - 6 - labelW - 14;
     }
-
-    const footY = ry + 44;
-    const summary =
-      strip === 'rows'
-        ? `${blankCount} of ${n} frames with rows not drawn`
-        : strip === 'long'
-          ? `${args.markers.longFrames.length} long frames`
-          : '';
-    const summaryBad =
-      strip === 'rows' ? blankCount > 0 : strip === 'long' && args.markers.longFrames.length > 0;
-    if (summary) label(summary, left, footY, summaryBad ? c.blank : c.graphite);
-    label(`Frame ${pad3(i + 1)}/${n}`, right, footY, c.graphite, 'right');
+    // On the same line, at the left: which frame this is.
+    label('Frame', left, ry + 9, c.graphite, 'left', 8);
+    label(`${pad3(i + 1)}/${n}`, left, ry + 19, c.ink, 'left', 8);
 
     const frame = new VideoFrame(canvas, { timestamp: Math.round(args.timesMs[i]! * args.slowdown * 1000) });
     encoder.encode(frame, { keyFrame: i % args.keyEvery === 0 });
