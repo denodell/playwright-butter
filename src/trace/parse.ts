@@ -61,6 +61,8 @@ export interface ParsedTrace {
   screenshots: string[];
   /** Each screenshot's trace timestamp (µs), in step with `screenshots`. */
   screenshotTimes: number[];
+  /** The page's presented and dropped frames inside the window, in time order (µs), for replays. */
+  frameTimeline: { ts: number; dropped: boolean }[];
   unavailable: Unavailable[];
   notes: string[];
 }
@@ -215,9 +217,13 @@ function parseFrames(events: TraceEvent[], marks: Marks, chrome: string, out: Pa
     if (seen.has(key)) continue;
     seen.add(key);
     hosts.add(String(f.layer_tree_host_id));
-    if (PRESENTED.has(state)) onTime++;
-    else if (state === DROPPED) dropped++;
-    else if (state !== NO_UPDATE) unknown.set(state, (unknown.get(state) ?? 0) + 1);
+    if (PRESENTED.has(state)) {
+      onTime++;
+      out.frameTimeline.push({ ts: e.ts, dropped: false });
+    } else if (state === DROPPED) {
+      dropped++;
+      out.frameTimeline.push({ ts: e.ts, dropped: true });
+    } else if (state !== NO_UPDATE) unknown.set(state, (unknown.get(state) ?? 0) + 1);
   }
   if (unknown.size) {
     out.notes.push(
@@ -234,6 +240,7 @@ function parseFrames(events: TraceEvent[], marks: Marks, chrome: string, out: Pa
       `Frames from ${otherRenderers.size} other renderer process(es), such as out-of-process iframes, weren't counted.`,
     );
   }
+  out.frameTimeline.sort((a, b) => a.ts - b.ts);
   const total = onTime + dropped;
   out.frames = {
     total,
@@ -293,6 +300,7 @@ export function emptyTrace(): ParsedTrace {
     profile: null,
     screenshots: [],
     screenshotTimes: [],
+    frameTimeline: [],
     unavailable: [],
     notes: [],
   };

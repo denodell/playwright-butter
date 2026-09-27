@@ -73,6 +73,12 @@ test('counts frames between the marks only', () => {
     opts,
   );
   expect(out.frames).toEqual({ total: 3, onTime: 2, dropped: 1, onTimePercent: 66.7 });
+  // The same frames in time order, for replays; frames with nothing to show aren't listed.
+  expect(out.frameTimeline).toEqual([
+    { ts: 110, dropped: false },
+    { ts: 120, dropped: false },
+    { ts: 130, dropped: true },
+  ]);
   expect(out.notes).toEqual([]);
 });
 
