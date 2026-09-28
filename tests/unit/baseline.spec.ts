@@ -14,7 +14,8 @@ import {
   metricsOf,
   INPUT_FLOOR_MS,
 } from '../../packages/smoothness-core/src/baseline/compare.js';
-import { evaluate, type EvaluateInfo } from '../../packages/smoothness-core/src/baseline/evaluate.js';
+import { evaluate } from '../../packages/smoothness-core/src/baseline/evaluate.js';
+import type { BaselineTarget, UpdateMode } from '../../packages/smoothness-core/src/baseline/store.js';
 import { writeBaseline } from '../../packages/smoothness-core/src/baseline/store.js';
 import { makeResult } from './result-factory.js';
 
@@ -164,13 +165,23 @@ test('a spread wider than maxIncrease marks the check noisy', () => {
 
 // ---- evaluate (files, update modes, enforce) ----
 
-function fakeInfo(dir: string, updateSnapshots = 'missing'): EvaluateInfo {
+// Like playwright-smoothness's target: a folder per test, with the project and platform added to
+// each file name as Playwright's default snapshot template does.
+function fakeInfo(
+  dir: string,
+  update: UpdateMode = 'missing',
+  title = 'filters-opens-quickly',
+): BaselineTarget {
   return {
-    snapshotPath: (...name: string[]) =>
-      join(dir, 'spec.ts-snapshots', ...name).replace(/\.json$/, '-chromium-linux.json'),
-    titlePath: ['spec.ts', 'filters', 'opens quickly'],
-    project: { name: 'chromium', snapshotDir: dir },
-    config: { updateSnapshots },
+    path: (fileName) =>
+      join(dir, 'spec.ts-snapshots', 'smoothness', title, fileName).replace(
+        /\.json$/,
+        '-chromium-linux.json',
+      ),
+    root: dir,
+    project: 'chromium',
+    update,
+    describeUpdate: (mode) => `--update-snapshots=${mode}`,
   };
 }
 
@@ -290,10 +301,10 @@ test('same label, different tests: separate baselines', () => {
   const dir = mkdtempSync(join(tmpdir(), 'smoothness-'));
   try {
     const a = evaluate(makeResult(), fakeInfo(dir));
-    const b = evaluate(makeResult({ input: { p95ToPaintMs: 999 } }), {
-      ...fakeInfo(dir),
-      titlePath: ['spec.ts', 'another test'],
-    });
+    const b = evaluate(
+      makeResult({ input: { p95ToPaintMs: 999 } }),
+      fakeInfo(dir, 'missing', 'another-test'),
+    );
     expect(b.status).toBe('baseline-created');
     expect(a.baseline!.path.replaceAll('\\', '/')).toContain('/filters-opens-quickly/');
     expect(b.baseline!.path.replaceAll('\\', '/')).toContain('/another-test/');

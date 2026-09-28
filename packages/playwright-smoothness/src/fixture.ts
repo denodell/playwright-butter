@@ -8,13 +8,12 @@ import {
   type TestInfo,
 } from '@playwright/test';
 import {
-  COLLECTOR_CONFIG,
   defaultScrollLabel,
   emptyResult,
   encodeReplay,
-  installCollector,
   measure,
   measureScroll,
+  preparePage,
   resolveOptions,
   resolveScroll,
   resultPath,
@@ -27,6 +26,7 @@ import {
   type SmoothnessOptions as CoreOptions,
   type SmoothnessResult,
 } from 'smoothness-core';
+import { resultDir } from './testinfo.js';
 import { basename } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { locatorTarget, playwrightDriver } from './driver.js';
@@ -106,7 +106,7 @@ async function createSmoothness(
     } else {
       result = await run({ page: driver, label, options, environment });
     }
-    const path = resultPath(testInfo, label);
+    const path = resultPath(resultDir(testInfo), label);
     writeResult(result, path);
     outputs.set(label, { path, result });
     return result;
@@ -174,11 +174,9 @@ export const smoothnessFixtures: Fixtures<
 > = {
   smoothnessOptions: [{}, { option: true }],
   smoothness: async ({ page, smoothnessOptions }, use, testInfo) => {
-    if (page.context().browser()?.browserType().name() === 'chromium') {
-      await page.addInitScript(installCollector, COLLECTOR_CONFIG);
-    }
-    const outputs = new Map<string, { path: string; result: SmoothnessResult }>();
     const driver = playwrightDriver(page);
+    if (page.context().browser()?.browserType().name() === 'chromium') await preparePage(driver);
+    const outputs = new Map<string, { path: string; result: SmoothnessResult }>();
     await use(await createSmoothness(page, driver, smoothnessOptions, testInfo, outputs));
     // Attached after the test body, so each file includes toBeSmooth()'s comparison.
     for (const [label, { path, result }] of outputs) {
