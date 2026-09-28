@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { build } from 'esbuild';
-import { decodeSegment } from '../../src/sourcemap/vlq.js';
-import { SourceMap } from '../../src/sourcemap/sourcemap.js';
-import { NameResolver, generatedName, type FetchText } from '../../src/sourcemap/resolve.js';
+import { decodeSegment } from '../../packages/smoothness-core/src/sourcemap/vlq.js';
+import { SourceMap } from '../../packages/smoothness-core/src/sourcemap/sourcemap.js';
+import {
+  NameResolver,
+  generatedName,
+  type FetchText,
+} from '../../packages/smoothness-core/src/sourcemap/resolve.js';
 
 const vlq = (s: string) => decodeSegment(s, 0, s.length);
 

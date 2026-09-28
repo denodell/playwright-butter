@@ -3,10 +3,12 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const distEntry = new URL('../../dist/index.js', import.meta.url);
+const distEntry = new URL('../../packages/playwright-smoothness/dist/index.js', import.meta.url);
 const built = existsSync(fileURLToPath(distEntry));
-const mod = built ? await import(distEntry.href) : await import('../../src/index.js');
-const { test, expect } = mod as typeof import('../../src/index.js');
+const mod = built
+  ? await import(distEntry.href)
+  : await import('../../packages/playwright-smoothness/src/index.js');
+const { test, expect } = mod as typeof import('../../packages/playwright-smoothness/src/index.js');
 
 test('the built package measures a click end to end', async ({ page, smoothness }) => {
   test.skip(!built, 'dist/ not built; run npm run build');

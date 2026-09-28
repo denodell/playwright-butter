@@ -1,69 +1,16 @@
 {
-  "name": "playwright-smoothness",
-  "version": "1.0.0",
-  "description": "Fail the build when a web UI stops being smooth. Frame, input and long-list checks for Playwright, compared against a baseline.",
-  "license": "MIT",
-  "author": "Den Odell",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/denodell/playwright-smoothness.git"
-  },
-  "homepage": "https://github.com/denodell/playwright-smoothness#readme",
-  "bugs": {
-    "url": "https://github.com/denodell/playwright-smoothness/issues"
-  },
-  "keywords": [
-    "playwright",
-    "performance",
-    "jank",
-    "smoothness",
-    "long-animation-frames",
-    "event-timing"
-  ],
+  "name": "playwright-smoothness-monorepo",
+  "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/smoothness-core",
+    "packages/playwright-smoothness"
+  ],
   "engines": {
     "node": ">=20"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    },
-    "./reporter": {
-      "import": {
-        "types": "./dist/reporter.d.ts",
-        "default": "./dist/reporter.js"
-      },
-      "require": {
-        "types": "./dist/reporter.d.cts",
-        "default": "./dist/reporter.cjs"
-      }
-    },
-    "./package.json": "./package.json"
-  },
-  "bin": {
-    "playwright-smoothness": "dist/cli.js"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
-  "sideEffects": false,
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
-    "build": "tsup",
+    "build": "npm run build --workspace smoothness-core --workspace playwright-smoothness",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
@@ -71,15 +18,11 @@
     "test:unit": "playwright test --project=unit",
     "test:integration": "playwright test --project=integration --project=integration-firefox --project=e2e",
     "test:detection": "playwright test --project=detection",
-    "docs:images": "npm run build && node demos/make-images.mjs",
     "test:headless-modes": "playwright test --project=mode-headless-shell --project=mode-new-headless --project=mode-headed",
+    "docs:images": "npm run build && node demos/make-images.mjs",
     "changeset": "changeset",
-    "prepublishOnly": "npm run build",
-    "release:check": "npm run build && npm publish --dry-run",
+    "release:check": "npm run build && npm publish --dry-run --workspace smoothness-core --workspace playwright-smoothness",
     "release": "npm run build && changeset publish"
-  },
-  "peerDependencies": {
-    "@playwright/test": ">=1.49.0"
   },
   "devDependencies": {
     "@angular/common": "21.2.24",

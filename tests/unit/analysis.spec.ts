@@ -1,8 +1,19 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import type { CollectorSnapshot, EventRecord, LoafRecord } from '../../src/collector/collector.js';
-import { elementFromInvoker, groupInteractions } from '../../src/analysis/interactions.js';
-import { classifyFrame, classifyFrames, LOAD_GRACE_MS } from '../../src/analysis/classify.js';
+import type {
+  CollectorSnapshot,
+  EventRecord,
+  LoafRecord,
+} from '../../packages/smoothness-core/src/collector/collector.js';
+import {
+  elementFromInvoker,
+  groupInteractions,
+} from '../../packages/smoothness-core/src/analysis/interactions.js';
+import {
+  classifyFrame,
+  classifyFrames,
+  LOAD_GRACE_MS,
+} from '../../packages/smoothness-core/src/analysis/classify.js';
 import {
   attributeFrames,
   combineInput,
@@ -10,8 +21,8 @@ import {
   scriptBlocking,
   summarizeInput,
   summarizeLongFrames,
-} from '../../src/analysis/aggregate.js';
-import { median, percentile, spread } from '../../src/analysis/stats.js';
+} from '../../packages/smoothness-core/src/analysis/aggregate.js';
+import { median, percentile, spread } from '../../packages/smoothness-core/src/analysis/stats.js';
 
 const ev = (p: Partial<EventRecord>): EventRecord => ({
   name: 'click',

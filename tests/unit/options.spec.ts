@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { detectMode, resolveOptions } from '../../src/options.js';
+import { detectMode, resolveOptions } from '../../packages/smoothness-core/src/options.js';
 
 test('defaults', () => {
   expect(resolveOptions([], {})).toEqual({

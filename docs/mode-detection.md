@@ -19,4 +19,4 @@ The first rule that applies wins:
 
 The chosen mode is in every result as `mode`. The rule that chose it is in `settings.modeSource`.
 
-The rules are implemented in `src/options.ts` (`detectMode`) and tested in `tests/unit/options.spec.ts`.
+The rules are implemented in `packages/smoothness-core/src/options.ts` (`detectMode`) and tested in `tests/unit/options.spec.ts`.

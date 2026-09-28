@@ -2,9 +2,15 @@ import { test, expect } from '@playwright/test';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { appendHistory, historyPath, medianMetrics, readHistory, specHash } from '../../src/auto/history.js';
-import { analyzeDocs, type DocData } from '../../src/auto/withSmoothness.js';
-import { onMainBranch } from '../../src/ci.js';
+import {
+  appendHistory,
+  historyPath,
+  medianMetrics,
+  readHistory,
+  specHash,
+} from '../../packages/smoothness-core/src/auto/history.js';
+import { analyzeDocs, type DocData } from '../../packages/playwright-smoothness/src/withSmoothness.js';
+import { onMainBranch } from '../../packages/smoothness-core/src/ci.js';
 import { makeResult } from './result-factory.js';
 
 test('medianMetrics skips unmeasured runs', () => {

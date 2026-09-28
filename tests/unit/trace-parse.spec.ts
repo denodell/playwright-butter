@@ -1,7 +1,12 @@
 // The trace parser, without a browser: recorded Chrome traces plus synthetic broken ones.
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { MARK_END, MARK_START, parseTrace, type TraceEvent } from '../../src/trace/parse.js';
+import {
+  MARK_END,
+  MARK_START,
+  parseTrace,
+  type TraceEvent,
+} from '../../packages/smoothness-core/src/trace/parse.js';
 
 const load = (name: string) =>
   JSON.parse(readFileSync(`tests/fixtures/traces/${name}.json`, 'utf8')) as {

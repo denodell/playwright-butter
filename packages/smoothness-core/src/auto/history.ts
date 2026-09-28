@@ -8,9 +8,9 @@ import { metricsOf, type BaselineMetrics } from '../baseline/compare.js';
 import { median } from '../analysis/stats.js';
 import { writeJsonAtomic } from '../output.js';
 import { machineSlug, slug } from '../baseline/key.js';
-import { PACKAGE_NAME } from '../constants.js';
+import { FORMAT_NAME } from '../constants.js';
 
-const HISTORY_KIND = `${PACKAGE_NAME}-history`;
+const HISTORY_KIND = `${FORMAT_NAME}-history`;
 
 export interface HistoryEntry {
   recordedAt: string;
@@ -60,7 +60,7 @@ export function readHistory(path: string): HistoryFile | string | null {
   try {
     const h = JSON.parse(readFileSync(path, 'utf8')) as HistoryFile;
     if (h.kind !== HISTORY_KIND || h.schemaVersion !== 1)
-      return `${path} isn't a ${PACKAGE_NAME} history file`;
+      return `${path} isn't a ${FORMAT_NAME} history file`;
     return h;
   } catch (err) {
     return `${path} couldn't be read: ${String(err)}`;

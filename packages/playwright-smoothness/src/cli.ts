@@ -5,10 +5,14 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, w
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
-import { forwardSlashes } from './output.js';
-import type { SmoothnessResult } from './types.js';
-import { calibrate, formatCalibration } from './calibrate/analyze.js';
-import { CALIBRATE_ENV, PACKAGE_NAME } from './constants.js';
+import {
+  CALIBRATE_ENV,
+  calibrate,
+  formatCalibration,
+  forwardSlashes,
+  type SmoothnessResult,
+} from 'smoothness-core';
+import { PACKAGE_NAME } from './constants.js';
 
 const HELP = `Usage: npx ${PACKAGE_NAME} calibrate [options] [-- <playwright test arguments>]
 

@@ -1,10 +1,17 @@
 import { expect as baseExpect, test } from '@playwright/test';
-import type { SmoothnessResult } from './types.js';
-import { CALIBRATE_ENV, SCHEMA_VERSION } from './constants.js';
-import { evaluate, type MatcherOptions } from './baseline/evaluate.js';
-import { formatMessage, formatSummary } from './baseline/message.js';
-import { resultPath, writeResult, writtenPath } from './output.js';
-import { warnInGitHubActions } from './ci.js';
+import {
+  CALIBRATE_ENV,
+  SCHEMA_VERSION,
+  evaluate,
+  formatMessage,
+  formatSummary,
+  resultPath,
+  warnInGitHubActions,
+  writeResult,
+  writtenPath,
+  type MatcherOptions,
+  type SmoothnessResult,
+} from 'smoothness-core';
 
 function isResult(v: unknown): v is SmoothnessResult {
   return (

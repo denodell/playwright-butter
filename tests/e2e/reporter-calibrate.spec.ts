@@ -6,10 +6,12 @@ import { PLAYWRIGHT_CLI } from './helpers.js';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { CheckCalibration } from '../../src/calibrate/analyze.js';
+import type { CheckCalibration } from '../../packages/smoothness-core/src/calibrate/analyze.js';
 
 const CONFIG = 'tests/e2e/fixture-project/playwright.config.ts';
-const built = existsSync('dist/cli.js') && existsSync('dist/reporter.js');
+const built =
+  existsSync('packages/playwright-smoothness/dist/cli.js') &&
+  existsSync('packages/playwright-smoothness/dist/reporter.js');
 const clean = () => Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(TEST_|PW_)/.test(k)));
 
 let work: string;
@@ -26,7 +28,13 @@ test('the reporter writes the markdown summary and the job summary', () => {
   const step = join(work, 'step-summary.md');
   const child = spawnSync(
     process.execPath,
-    [PLAYWRIGHT_CLI, 'test', '-c', CONFIG, `--reporter=list,${join(process.cwd(), 'dist', 'reporter.js')}`],
+    [
+      PLAYWRIGHT_CLI,
+      'test',
+      '-c',
+      CONFIG,
+      `--reporter=list,${join(process.cwd(), 'packages/playwright-smoothness/dist', 'reporter.js')}`,
+    ],
     {
       env: {
         ...clean(),
@@ -54,7 +62,17 @@ test('calibrate is repeatable', () => {
     const out = join(work, `calibration-${n}.json`);
     const child = spawnSync(
       process.execPath,
-      ['dist/cli.js', 'calibrate', '--runs', '3', '--out', out, '--', '-c', CONFIG],
+      [
+        'packages/playwright-smoothness/dist/cli.js',
+        'calibrate',
+        '--runs',
+        '3',
+        '--out',
+        out,
+        '--',
+        '-c',
+        CONFIG,
+      ],
       {
         env: { ...clean(), CLICK_MS: '60', SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots-cal') },
         encoding: 'utf8',

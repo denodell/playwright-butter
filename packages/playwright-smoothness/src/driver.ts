@@ -2,8 +2,15 @@
 import type { Browser, Locator, Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import type { CdpSession, ElementTarget, Evaluate, PageDriver, ScratchPage } from '../driver.js';
-import { detectHeadlessMode, type BrowserEnvironment } from '../environment.js';
+import {
+  detectHeadlessMode,
+  type BrowserEnvironment,
+  type CdpSession,
+  type ElementTarget,
+  type Evaluate,
+  type PageDriver,
+  type ScratchPage,
+} from 'smoothness-core';
 
 /** How long one script or source map fetch may take. */
 const FETCH_TIMEOUT_MS = 10_000;

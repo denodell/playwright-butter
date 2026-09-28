@@ -7,20 +7,29 @@ import {
   type PlaywrightTestOptions,
   type TestInfo,
 } from '@playwright/test';
-import { defaultScrollLabel, resolveScroll, type ScrollOptions } from './scroll.js';
+import {
+  COLLECTOR_CONFIG,
+  defaultScrollLabel,
+  emptyResult,
+  encodeReplay,
+  installCollector,
+  measure,
+  measureScroll,
+  resolveOptions,
+  resolveScroll,
+  resultPath,
+  takeReplaySource,
+  warnInGitHubActions,
+  writeResult,
+  type MeasureContext,
+  type PageDriver,
+  type ScrollOptions,
+  type SmoothnessOptions as CoreOptions,
+  type SmoothnessResult,
+} from 'smoothness-core';
 import { basename } from 'node:path';
 import { writeFileSync } from 'node:fs';
-import type { PageDriver } from './driver.js';
-import { measureScroll } from './measure-scroll.js';
-import { encodeReplay } from './replay/encode.js';
-import { takeReplaySource } from './replay/source.js';
-import { installCollector } from './collector/collector.js';
-import { locatorTarget, playwrightDriver } from './playwright/driver.js';
-import { resolveOptions } from './options.js';
-import { COLLECTOR_CONFIG, emptyResult, measure, type MeasureContext } from './runner.js';
-import { warnInGitHubActions } from './ci.js';
-import { resultPath, writeResult } from './output.js';
-import type { SmoothnessOptions as CoreOptions, SmoothnessResult } from './types.js';
+import { locatorTarget, playwrightDriver } from './driver.js';
 
 /** Options for a measurement. A `reset` function is given the Playwright page. */
 export type SmoothnessOptions = CoreOptions<Page>;

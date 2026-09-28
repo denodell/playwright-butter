@@ -2,10 +2,20 @@ import { test, expect } from '@playwright/test';
 import { mkdtempSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { baselineKey, labelSlug, machineSlug, slug, baselineFileName } from '../../src/baseline/key.js';
-import { compareMetrics, metricsOf, INPUT_FLOOR_MS } from '../../src/baseline/compare.js';
-import { evaluate, type EvaluateInfo } from '../../src/baseline/evaluate.js';
-import { writeBaseline } from '../../src/baseline/store.js';
+import {
+  baselineKey,
+  labelSlug,
+  machineSlug,
+  slug,
+  baselineFileName,
+} from '../../packages/smoothness-core/src/baseline/key.js';
+import {
+  compareMetrics,
+  metricsOf,
+  INPUT_FLOOR_MS,
+} from '../../packages/smoothness-core/src/baseline/compare.js';
+import { evaluate, type EvaluateInfo } from '../../packages/smoothness-core/src/baseline/evaluate.js';
+import { writeBaseline } from '../../packages/smoothness-core/src/baseline/store.js';
 import { makeResult } from './result-factory.js';
 
 // ---- keys ----

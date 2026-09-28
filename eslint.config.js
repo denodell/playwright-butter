@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   {
     ignores: [
-      'dist/',
+      'packages/*/dist/',
       '.tmp-e2e/',
       'test-pages/frameworks/',
       'node_modules/',
@@ -55,17 +55,9 @@ export default tseslint.config(
     languageOptions: { globals: { process: 'readonly', console: 'readonly', URL: 'readonly' } },
   },
   {
-    // The measuring engine talks to the browser only through src/driver.ts, so it can move into
-    // smoothness-core. Playwright is imported by the adapter and the Playwright Test integration.
-    files: ['src/**/*.ts'],
-    ignores: [
-      'src/playwright/**',
-      'src/auto/**',
-      'src/fixture.ts',
-      'src/matcher.ts',
-      'src/reporter/index.ts',
-      'src/index.ts',
-    ],
+    // smoothness-core talks to the browser only through its driver interfaces, so any automation
+    // library can drive it. Playwright belongs in playwright-smoothness.
+    files: ['packages/smoothness-core/src/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -73,7 +65,7 @@ export default tseslint.config(
           patterns: [
             {
               group: ['@playwright/*', 'playwright', 'playwright-core', 'playwright-core/*'],
-              message: 'The engine must not depend on Playwright; use the interfaces in src/driver.ts.',
+              message: 'smoothness-core must not depend on Playwright; use the interfaces in its driver.ts.',
             },
           ],
         },

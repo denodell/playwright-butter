@@ -38,7 +38,7 @@ Trace screenshots are JPEGs. The options were a JPEG decoder in Node (a dependen
 - Chrome's native decoder: 200 frames decode and measure in about 0.5s locally and 1.2s on a 4-vCPU GitHub Actions runner, inside a 2-second budget (asserted in `tests/integration/list.spec.ts`);
 - the throwaway page is in its own browser context, so it can't affect the page being measured.
 
-The line-counting function (`src/list/coverage.ts`) is plain code with no dependencies. It runs in that page, and unit tests call it directly in Node.
+The line-counting function (`packages/smoothness-core/src/list/coverage.ts`) is plain code with no dependencies. It runs in that page, and unit tests call it directly in Node.
 
 ## Replays
 
@@ -48,7 +48,7 @@ A replay turns a measured run's screenshots into a WebM video attached to the te
 
 - `replay: 'on-regression'` (the default) attaches one when a check got worse. `'on'` attaches one for every full-mode `scroll()`, and `'off'` never.
 - It's made after the test body, from frames the measurement already recorded, so it doesn't affect the numbers. When no replay is wanted, nothing is encoded.
-- Encoding uses WebCodecs (`VideoEncoder`, VP8) in a throwaway page of the same Chromium; that page is on `http://localhost` because WebCodecs needs a secure context. The WebM container is written by the library (`src/replay/webm.ts`), including cues, so the report's player can seek. There are no dependencies. A 3.3-second fling becomes a 15-second replay of about 550KB, encoded in under a second locally.
+- Encoding uses WebCodecs (`VideoEncoder`, VP8) in a throwaway page of the same Chromium; that page is on `http://localhost` because WebCodecs needs a secure context. The WebM container is written by the library (`packages/smoothness-core/src/replay/webm.ts`), including cues, so the report's player can seek. There are no dependencies. A 3.3-second fling becomes a 15-second replay of about 550KB, encoded in under a second locally.
 
 ## Results
 

@@ -1,8 +1,12 @@
 // Snapshot tests for the reporter's markdown. Update with --update-snapshots.
 import { test, expect } from '@playwright/test';
-import { buildMarkdown, changeCell, type ReportEntry } from '../../src/reporter/markdown.js';
-import { compareMetrics, metricsOf } from '../../src/baseline/compare.js';
-import type { Comparison, SmoothnessResult } from '../../src/types.js';
+import {
+  buildMarkdown,
+  changeCell,
+  type ReportEntry,
+} from '../../packages/smoothness-core/src/reporter/markdown.js';
+import { compareMetrics, metricsOf } from '../../packages/smoothness-core/src/baseline/compare.js';
+import type { Comparison, SmoothnessResult } from '../../packages/smoothness-core/src/types.js';
 import { makeResult } from './result-factory.js';
 
 const baseline = {
@@ -110,7 +114,7 @@ test('summary: pipes in labels do not break the table', () => {
 });
 
 // ---- the reporter's options ----
-import SmoothnessReporter from '../../src/reporter/index.js';
+import SmoothnessReporter from '../../packages/playwright-smoothness/src/reporter.js';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
