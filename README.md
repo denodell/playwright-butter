@@ -226,7 +226,7 @@ On the main branch, CI records baselines with `--update-snapshots=all` and uploa
 - [`examples/plain-site`](examples/plain-site): a static page with a button and a long list. CI tests the baseline recipe against it.
 - [`examples/react-list`](examples/react-list): a minified React windowed list, where full mode names the slow component through source maps.
 - [`examples/github-actions`](examples/github-actions): the CI workflow from the CI guide.
-- [`demos`](demos): six small apps, each with a fast and a slow version.
+- [`demos`](demos): seven small apps, each with a fast and a slow version, from a trail journal to a design board.
 
 ## Packages
 
