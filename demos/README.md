@@ -1,15 +1,18 @@
 # Demo apps
 
-Six small apps, each with a fast version (`?v=good`) and a slow one (`?v=bad`), for checking that playwright-smoothness catches the kinds of problem real apps have. The README's replay GIFs come from two of them.
+Seven small apps, each with a fast version (`?v=good`) and a slow one (`?v=bad`), for checking that playwright-smoothness catches the kinds of problem real apps have. The README's replay GIFs come from two of them.
 
-| App        | What it is                    | What the slow version does                                                      |
-| ---------- | ----------------------------- | ------------------------------------------------------------------------------- |
-| `invoices` | A letterpress shop's invoices | Rebuilds the table on every keystroke and forces a layout for each row          |
-| `kanban`   | A bakery's production board   | Re-renders 400 React cards without memoization when you sort                    |
-| `parallax` | A coast road travel story     | Measures and moves every image on every scroll event                            |
-| `drawer`   | A home energy monitor         | Rebuilds the usage chart on every frame of the panel's slide-in                 |
-| `feed`     | A cycling club feed           | Builds each post slowly, with nothing built ahead of the viewport               |
-| `journal`  | A trail journal               | Takes over the mouse wheel and scrolls the page itself, with work on each frame |
+| App        | What it is                    | What the slow version does                                                         |
+| ---------- | ----------------------------- | ---------------------------------------------------------------------------------- |
+| `invoices` | A letterpress shop's invoices | Rebuilds the table on every keystroke and forces a layout for each row             |
+| `kanban`   | A bakery's production board   | Re-renders 400 React cards without memoization when you sort                       |
+| `parallax` | A coast road travel story     | Measures and moves every image on every scroll event                               |
+| `drawer`   | A home energy monitor         | Rebuilds the usage chart on every frame of the panel's slide-in                    |
+| `feed`     | A cycling club feed           | Builds each post slowly, with nothing built ahead of the viewport                  |
+| `journal`  | A trail journal               | Takes over the mouse wheel and scrolls the page itself, with work on each frame    |
+| `board`    | A design board, like Canva's  | Re-renders all 940 layers and measures each one for snapping on every pointer move |
+
+The design board shows what full mode's frame timeline adds. Its slow drag drops about a quarter of its frames while producing at most one long frame, so Long Animation Frames alone would barely register it. The drag test sends pointer moves every 16ms through CDP without waiting for the page, the way a mouse keeps moving whether or not the page keeps up.
 
 ## Run them
 

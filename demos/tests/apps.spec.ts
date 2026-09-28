@@ -50,3 +50,30 @@ test('journal scroll', async ({ page, smoothness }) => {
   const result = await smoothness.scroll(page.locator('html'), { distance: 3000, speed: 'normal' });
   expect(result).toBeSmooth();
 });
+
+test('design board drag', async ({ page, smoothness }) => {
+  await page.goto(`/board/?v=${v}`);
+  const card = page.locator('#hero-card');
+  const cdp = await page.context().newCDPSession(page);
+  const mouse = (type: string, x: number, y: number) =>
+    cdp.send('Input.dispatchMouseEvent', { type: type as 'mouseMoved', x, y, button: 'left', buttons: 1 });
+  const result = await smoothness.measure('drag a card', async () => {
+    const box = (await card.boundingBox())!;
+    const x0 = box.x + 40;
+    const y0 = box.y + 20;
+    await mouse('mousePressed', x0, y0);
+    // A mouse sends moves at the screen's rate whether or not the page keeps up, so these go out
+    // every 16ms without waiting for the page (page.mouse.move would wait for each one). Across
+    // the board and back, as someone lining a card up would.
+    const moves: Promise<unknown>[] = [];
+    for (let i = 1; i <= 70; i++) {
+      const t = i / 70;
+      const x = x0 + 480 * Math.sin(t * Math.PI);
+      const y = y0 + 320 * t;
+      moves.push(new Promise((r) => setTimeout(r, i * 16)).then(() => mouse('mouseMoved', x, y)));
+    }
+    await Promise.all(moves);
+    await mouse('mouseReleased', x0, y0 + 320);
+  });
+  expect(result).toBeSmooth();
+});

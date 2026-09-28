@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Spring campaign board</title>
+    <style>
+      :root {
+        --desk: #e9ebef;
+        --ink: #1c1f26;
+        --muted: #6a7080;
+        --select: #3b6ff5;
+        --guide: #f0419b;
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--desk);
+        color: var(--ink);
+        font:
+          14px/1.4 'Avenir Next',
+          system-ui,
+          sans-serif;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 52px;
+        padding: 0 20px;
+        background: #fff;
+        border-bottom: 1px solid #d9dce3;
+      }
+      header h1 {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0;
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+      }
+      #board {
+        position: relative;
+        width: 940px;
+        height: 604px;
+        margin: 24px auto;
+        background: #f4f5f7;
+        box-shadow: 0 0 0 1px #d9dce3;
+        overflow: hidden;
+        touch-action: none;
+      }
+      .shape {
+        position: absolute;
+        box-sizing: border-box;
+        user-select: none;
+      }
+      #hero-card {
+        border-radius: 6px;
+        font-weight: 600;
+        color: #fff;
+        z-index: 2;
+        padding: 16px;
+        font-size: 20px;
+        line-height: 1.15;
+        background: var(--ink);
+        cursor: grab;
+      }
+      #hero-card.dragging {
+        cursor: grabbing;
+        outline: 2px solid var(--select);
+        outline-offset: 3px;
+      }
+      .shape.near {
+        outline: 1px solid rgba(59, 111, 245, 0.5);
+      }
+      .guide {
+        position: absolute;
+        background: var(--guide);
+        pointer-events: none;
+      }
+      .guide.x {
+        top: 0;
+        bottom: 0;
+        width: 1px;
+      }
+      .guide.y {
+        left: 0;
+        right: 0;
+        height: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Spring campaign</h1>
+      <p>Instagram stories, 14 frames</p>
+    </header>
+    <div id="board" role="application" aria-label="Design board">
+      <div id="guides"></div>
+    </div>
+    <script>
+      // Dragging a headline card across a design board of about 940 layers, with snapping guides.
+      // ?v=bad: every pointermove re-renders the whole board from its layer list (as a scene-graph
+      // render without memoized layers does), then measures every layer to work out snapping.
+      // ?v=good: layer edges are measured once when the drag starts, and only the card moves, with
+      // a transform, once per frame.
+      const query = new URLSearchParams(location.search);
+      const bad = query.get('v') === 'bad';
+      const board = document.getElementById('board');
+      const guides = document.getElementById('guides');
+      // Fourteen story frames, each built from about 70 layers: a photo, a headline, lines of body
+      // text, a price tag and some decoration, as a zoomed-out design board shows them.
+      const themes = [
+        ['#3b6ff5', '#dfe7ff'],
+        ['#e4572e', '#fde3da'],
+        ['#1d9a6c', '#d8f1e7'],
+        ['#8a5cf6', '#ebe3ff'],
+        ['#f2b632', '#fdf1d2'],
+        ['#12a4b8', '#d6f1f5'],
+        ['#d6336c', '#fbdde8'],
+      ];
+      const layerData = [];
+      const FRAME_W = 118;
+      const FRAME_H = 262;
+      for (let f = 0; f < 14; f++) {
+        const fx = 22 + (f % 7) * (FRAME_W + 12);
+        const fy = 24 + Math.floor(f / 7) * (FRAME_H + 30);
+        const [accent, tint] = themes[f % themes.length];
+        const add = (x, y, w, h, color, radius = 0, text = '') =>
+          layerData.push({ x: fx + x, y: fy + y, w, h, color, radius, text });
+        add(0, 0, FRAME_W, FRAME_H, '#fff', 4); // the frame
+        add(6, 6, FRAME_W - 12, 110, tint, 3); // the photo
+        for (let d = 0; d < 12; d++) add(12 + (d % 6) * 16, 18 + Math.floor(d / 6) * 16, 6, 6, accent, 3); // pattern
+        add(10, 126, 84, 9, accent, 2); // headline
+        add(10, 139, 60, 9, accent, 2);
+        for (let t = 0; t < 44; t++) {
+          const col = t % 2;
+          add(10 + col * 50, 156 + Math.floor(t / 2) * 3.4, 40 - ((t * 7) % 12), 1.6, '#c9cdd6'); // body text
+        }
+        add(10, 236, 48, 16, accent, 8, ''); // price tag
+        for (let d = 0; d < 6; d++) add(66 + d * 7, 242, 4, 4, tint, 2); // page dots
+      }
+      const layerHtml = (l, near) =>
+        `<div class="shape${near ? ' near' : ''}" style="left:${l.x}px;top:${l.y}px;width:${l.w}px;height:${l.h}px;background:${l.color};border-radius:${l.radius}px"></div>`;
+      const layersEl = document.createElement('div');
+      board.append(layersEl);
+      const renderLayers = (cx, cy) =>
+        (layersEl.innerHTML = layerData
+          .map((l) => layerHtml(l, cx !== undefined && Math.abs(l.x - cx) < 60 && Math.abs(l.y - cy) < 60))
+          .join(''));
+      renderLayers();
+      board.insertAdjacentHTML(
+        'beforeend',
+        `<div id="hero-card" class="shape" style="left:300px;top:200px;width:220px">Spring collection, out now</div>`,
+      );
+      const card = document.getElementById('hero-card');
+      const SNAP = 6;
+
+      // Where the card should snap on one axis: a layer edge within SNAP pixels of either card edge.
+      function snapTo(edges, start, size) {
+        for (const e of edges) {
+          if (Math.abs(e - start) < SNAP) return e;
+          if (Math.abs(e - (start + size)) < SNAP) return e - size;
+        }
+        return null;
+      }
+      function drawGuides(sx, sy) {
+        guides.innerHTML =
+          (sx === null ? '' : `<div class="guide x" style="left:${sx}px"></div>`) +
+          (sy === null ? '' : `<div class="guide y" style="top:${sy}px"></div>`);
+      }
+      // Every layer's left and right (or top and bottom) edges, measured from the page.
+      function measureEdges() {
+        const b = board.getBoundingClientRect();
+        const xs = [];
+        const ys = [];
+        for (const el of layersEl.children) {
+          const r = el.getBoundingClientRect();
+          xs.push(r.left - b.left, r.right - b.left);
+          ys.push(r.top - b.top, r.bottom - b.top);
+        }
+        return { xs, ys };
+      }
+
+      let drag = null;
+      card.addEventListener('pointerdown', function onCardPointerDown(e) {
+        card.setPointerCapture(e.pointerId);
+        card.classList.add('dragging');
+        drag = {
+          dx: e.clientX - card.offsetLeft,
+          dy: e.clientY - card.offsetTop,
+          x0: card.offsetLeft,
+          y0: card.offsetTop,
+          w: card.offsetWidth,
+          h: card.offsetHeight,
+          edges: bad ? null : measureEdges(),
+          next: null,
+          queued: false,
+        };
+      });
+
+      card.addEventListener('pointermove', function onCardPointerMove(e) {
+        if (!drag) return;
+        const x = e.clientX - drag.dx;
+        const y = e.clientY - drag.dy;
+        if (bad) {
+          renderLayers(x, y); // the whole board, for every move
+          const { xs, ys } = measureEdges();
+          const sx = snapTo(xs, x, drag.w);
+          const sy = snapTo(ys, y, drag.h);
+          card.style.left = (sx ?? x) + 'px';
+          card.style.top = (sy ?? y) + 'px';
+          drawGuides(sx, sy);
+          return;
+        }
+        const sx = snapTo(drag.edges.xs, x, drag.w);
+        const sy = snapTo(drag.edges.ys, y, drag.h);
+        drag.next = { x: sx ?? x, y: sy ?? y, sx, sy };
+        if (drag.queued) return;
+        drag.queued = true;
+        requestAnimationFrame(function moveCard() {
+          if (!drag) return;
+          drag.queued = false;
+          const n = drag.next;
+          card.style.transform = `translate(${n.x - drag.x0}px, ${n.y - drag.y0}px)`;
+          drawGuides(n.sx, n.sy);
+        });
+      });
+
+      card.addEventListener('pointerup', function onCardPointerUp() {
+        card.classList.remove('dragging');
+        drawGuides(null, null);
+        drag = null;
+      });
+    </script>
+  </body>
+</html>
