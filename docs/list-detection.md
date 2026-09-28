@@ -1,58 +1,60 @@
 # Blank rows in lists
 
-When a virtualized list can't build its rows in time, the user flings into empty space, and dropped frames don't show it: in the costly test list, 97% of frames were on time while 91% were blank. `smoothness.scroll()` in full mode measures it directly from the trace's screenshots.
+A virtualized list that can't build its rows in time leaves the user scrolling through empty space, and the frame rate doesn't show it. In the costly test list below, 97% of frames were on time while 91% were blank. In full mode, `smoothness.scroll()` finds these blank frames in the trace's screenshots. The [README](../README.md#scroll-a-list) covers the options, and this page explains how the measurement works.
 
 ![A drawn list frame next to a blank one](hero.png)
 
-## How it works
+## Judging a frame
 
-For each measured run:
+Each measured run goes through four steps:
 
-1. After the page settles, before tracing, the library reads the list's client area (its box without borders or scrollbars, so a scrollbar can't count as content), resolves the colors that count as blank, and screenshots the list at rest as the reference.
-2. The gesture is traced with screenshots. Chrome records one JPEG per frame the compositor produces, about 200 for a 3.3-second fling, at a reduced size (500×500 for a 600×600 viewport; the scale is worked out per image).
+1. After the page settles, and before tracing starts, the library reads the list's client area (its box without borders or scrollbars, so a scrollbar can't count as content). It works out which colors count as blank and takes a screenshot of the list at rest to use as the reference.
+2. The scroll is traced with screenshots. Chrome records one JPEG for each frame the compositor produces, about 200 for a 3.3-second fling. The images are smaller than the page (500×500 for a 600×600 viewport), so the scale is worked out for each one.
 3. After tracing, each screenshot is cropped to the list and measured, and so is the reference.
 4. A frame is blank when it's drawn to less than half of the reference (`BLANK_FRAME_SHARE`).
 
-### What "drawn" means
+### Counting drawn lines
 
-A drawn list is still mostly background: padding, gaps, and each row's own fill. So counting background pixels says little. Instead the library counts lines: pixel rows for vertical scrolling, pixel columns for horizontal. A line has content when at least 1% of its pixels (and at least 2) differ from every blank color by more than 24 per channel. The tolerance absorbs JPEG noise.
+Even a fully drawn list is mostly background: padding, gaps and each row's own fill. Counting background pixels says little, so the library counts lines instead, meaning pixel rows for vertical scrolling and pixel columns for horizontal scrolling. A pixel is blank when each of its red, green and blue values is within 24 of a blank color, a tolerance that absorbs JPEG noise. A line has content when at least 1% of its pixels (and at least 2) aren't blank.
 
-A drawn row of the test list has content on 70 of its 80 lines: its 70px poster. So a fully drawn test list measures 87.5%. Comparing each frame with the list's own reference means sparse layouts aren't penalized for their whitespace.
-
-### Virtualized lists only
-
-Blank frames mean rows that weren't built in time, and that only happens in a virtualized list, which removes rows as they scroll out of view and builds new ones. While each run scrolls, a `MutationObserver` counts the elements removed from inside the scroller. If a run removed at least 3 (`MIN_REMOVED_ROWS`), the list is virtualized, and `list.virtualized` is `true` in the result. An ordinary page removes nothing as it scrolls, and neither does an infinite list that only appends.
-
-On a list that isn't virtualized, blank frames are still measured and reported, but they aren't gated: there, a frame drawn to less than half of the starting view means the content further down has more empty space, not that anything failed to draw. The result gets a note saying so, and its replay shows the frame rate without marking rows as not drawn. `list: { virtualized: true }` or `false` overrides the detection.
+Each row of the test list is 80 lines tall, and 70 of them have content (the row's 70px poster), so a fully drawn test list measures 87.5%. Because each frame is compared with the list's own reference, a sparse layout isn't penalized for its whitespace.
 
 ### Blank colors
 
-- `list.background: 'auto'` (the default) uses the list's computed background, walking up to the first ancestor with an opaque one, or white if there's none (with a note). It can also be any CSS color.
-- `list.placeholders` adds colors that count as blank: CSS colors, or selectors whose element's background is used, such as skeleton rows. A selector that matches nothing at the start of a run is ignored, with a note.
+- `list.background: 'auto'` (the default) uses the list's computed background. If that's transparent, it walks up to the first ancestor with an opaque background, and falls back to white with a note if there's none. It can also be set to any CSS color.
+- `list.placeholders` adds more colors that count as blank. Each entry is a CSS color or a selector, and for a selector the matching element's background color is used, which suits skeleton rows. A selector that matches nothing at the start of a run is ignored, with a note.
 
-### Why decode in the browser
+### Detecting a virtualized list
 
-Trace screenshots are JPEGs. The options were a JPEG decoder in Node (a dependency such as `jpeg-js`, a pure-JavaScript decoder), or the browser that's already running. The library decodes in a throwaway page of the same Chromium, with `createImageBitmap` and `OffscreenCanvas`, after tracing has stopped:
+While each run scrolls, a `MutationObserver` counts the elements removed from inside the scroller. If a run removes at least 3 (`MIN_REMOVED_ROWS`), the list counts as virtualized and `list.virtualized` is `true` in the result. An ordinary page removes nothing as it scrolls, and neither does an infinite list that only appends rows.
 
-- no dependency;
-- Chrome's native decoder: 200 frames decode and measure in about 0.5s locally and 1.2s on a 4-vCPU GitHub Actions runner, inside a 2-second budget (asserted in `tests/integration/list.spec.ts`);
-- the throwaway page is in its own browser context, so it can't affect the page being measured.
+On a list that isn't virtualized, blank frames are still measured and reported, but they aren't gated. There, a frame drawn to less than half of the starting view means the content further down has more empty space, and nothing was late to draw. The result gets a note saying so, and the replay shows the frame rate without marking any rows as not drawn. `list: { virtualized: true }` or `false` overrides the detection.
+
+### Decoding in the browser
+
+Trace screenshots are JPEGs. They could be decoded in Node with a dependency such as `jpeg-js` (a pure-JavaScript decoder), but the library uses the Chromium that's already running. After tracing stops, it decodes them in a throwaway page with `createImageBitmap` and `OffscreenCanvas`. This has three advantages:
+
+- It adds no dependency.
+- Chrome's native decoder is fast. 200 frames decode and measure in about 0.5s locally and 1.2s on a 4-vCPU GitHub Actions runner, inside a 2-second budget that `tests/integration/list.spec.ts` asserts.
+- The throwaway page has its own browser context, so it can't affect the page being measured.
 
 The line-counting function (`packages/smoothness-core/src/list/coverage.ts`) is plain code with no dependencies. It runs in that page, and unit tests call it directly in Node.
 
 ## Replays
 
-A replay turns a measured run's screenshots into a WebM video attached to the test (`smoothness replay: <label>`). The run chosen is the one whose blank-frame share is closest to the reported median. Each frame shows the list outlined; on a blank frame the outline turns red and a tag says **Rows not drawn yet**, leaving the empty list visible. Underneath, the frame rate over the last 250ms (of the frames that had something to show, the share presented, at 60Hz) is shown in large type beside a chart of the frame rate across the run. The chart draws in as the replay plays: black at 60 frames per second, red below it, where frames were dropped. A strip under the chart marks blank frames, and the key above it counts them. Below the chart, on the right, are how much of the list was drawn (when it went blank), the frames dropped so far and the elapsed time, with the frame number on the left of the same line. It plays at a quarter of real speed (`REPLAY_SLOWDOWN`), because at 60 frames a second a blank frame lasts 16ms.
+A replay turns one measured run's screenshots into a WebM video, attached to the test as `smoothness replay: <label>`. For `scroll()`, the run chosen is the one whose blank-frame share is closest to the reported median. The [README](../README.md#replays) covers when a replay is attached.
 
-![A frame from a replay: the empty list outlined in red and tagged Rows not drawn yet, with 60 frames per second in large type beside a frame-rate chart that marks frames whose rows weren't drawn, and 0% drawn beneath it](replay-frame.png)
+![A replay frame: the empty list is outlined in red and tagged "Rows not drawn yet". Beside a frame-rate chart, large type reads 60 frames per second, and 0% drawn is shown underneath.](replay-frame.png)
 
-- `replay: 'on-regression'` (the default) attaches one when a check got worse. `'on'` attaches one for every full-mode `scroll()`, and `'off'` never.
-- It's made after the test body, from frames the measurement already recorded, so it doesn't affect the numbers. When no replay is wanted, nothing is encoded.
-- Encoding uses WebCodecs (`VideoEncoder`, VP8) in a throwaway page of the same Chromium; that page is on `http://localhost` because WebCodecs needs a secure context. The WebM container is written by the library (`packages/smoothness-core/src/replay/webm.ts`), including cues, so the report's player can seek. There are no dependencies. A 3.3-second fling becomes a 15-second replay of about 550KB, encoded in under a second locally.
+Each frame of the video shows the list with an outline. On a blank frame, the outline turns red and a tag reads **Rows not drawn yet**, with the empty list still visible inside it. Below the list, the frame rate over the last 250ms appears in large type. It's the share of frames presented, out of those that had something to show, expressed at 60Hz. Next to it, a chart of the frame rate across the run draws in as the replay plays, in black at 60 frames per second and in red below that, where frames were dropped. A strip under the chart marks the blank frames, and the key above the chart counts them. On the line below the chart, the frame number is on the left, and on the right are how much of the list was drawn (when it went blank), the frames dropped so far and the elapsed time. The video plays at a quarter of real speed (`REPLAY_SLOWDOWN`), because at 60 frames a second a blank frame lasts only 16ms.
+
+The replay is made after the test body, from frames the measurement already recorded, so it doesn't change the numbers. When no replay is wanted, nothing is encoded.
+
+Encoding uses WebCodecs (`VideoEncoder`, VP8) in a throwaway page of the same Chromium. That page is served from `http://localhost`, because WebCodecs needs a secure context. The library writes the WebM container itself (`packages/smoothness-core/src/replay/webm.ts`), including cues so the report's player can seek, and has no dependencies for it. A 3.3-second fling becomes a 15-second replay of about 550KB, encoded in under a second locally.
 
 ## Results
 
-The test list (`test-pages/list.html`), 600×600, flung 20,000px at 6,000px/s with the mouse wheel, no CPU throttling, median of 3 runs. Locally, Chrome 153:
+These numbers come from the test list (`test-pages/list.html`), 600×600, flung 20,000px at 6,000px/s with the mouse wheel, with no CPU throttling. Each is the median of 3 runs, measured locally on Chrome 153:
 
 | List                                                               | Frames on time | Dropped | **Blank frames** | Least drawn |
 | ------------------------------------------------------------------ | -------------- | ------- | ---------------- | ----------- |
@@ -63,14 +65,14 @@ The test list (`test-pages/list.html`), 600×600, flung 20,000px at 6,000px/s wi
 | Horizontal, cheap / costly                                         | –              | –       | **0% / 92.2%**   | 100% / 0%   |
 | Skeleton rows (grey for 250ms), not named / named as a placeholder | –              | –       | **0% / 97.5%**   | 89.6% / 0%  |
 
-On GitHub Actions (AMD EPYC 9V74, 4 vCPU, PR #5): cheap 0%, costly 92.2% (188 of 204 frames, with 97.2% of frames on time), horizontal 0% / 92.6%, skeleton rows 0% / 97.5%. Analyzing 200 frames took 1.2s, inside the 2-second budget but with less room than locally (0.5s).
+On GitHub Actions (AMD EPYC 9V74, 4 vCPU, PR #5), the cheap list was 0% blank and the costly list 92.2% (188 of 204 frames, with 97.2% of frames on time). The horizontal lists were 0% / 92.6%, and the skeleton rows 0% / 97.5%. Analyzing 200 frames took 1.2s there, inside the 2-second budget but with less room to spare than the 0.5s it took locally.
 
 ## Limitations
 
-- Blank rows need full mode. Quick mode has no screenshots; `scroll()` in quick mode reports long frames and input, and notes that blank rows need full mode.
-- The list must be visible, and the reference must have some content: a list drawn in its own background color can't be judged, and is reported as unavailable.
-- Screenshots only cover the viewport, so parts of the list outside it aren't measured.
-- Touch scrolling is a series of flicks made of real touch events (`Input.dispatchTouchEvent`), and needs a touch-enabled context (`hasTouch: true`, or a mobile device): `scroll()` checks `navigator.maxTouchPoints` and throws if it's 0. `Input.synthesizeScrollGesture` with a touch source isn't used, because on Linux it scrolls nothing and reports no error (see measurements.md).
-- A list that doesn't move isn't measured. If no run scrolled it, `list` is null and listed in `unavailable`: 0% blank would describe a list that stood still.
-- `distance: 'end'` stops after 20,000px (`END_CAP_PX`), with a note giving the real distance to the end. The test list's end is 399,400px away: over a minute per run at 6,000px/s, a trace of hundreds of MB with screenshots, and a distance that changes whenever the data does. A pixel distance you pass isn't capped.
-- `input: 'keys'` presses arrow keys 100ms apart, at most 100 presses per run. Presses faster than 16ms aren't reported by Event Timing (its minimum threshold), so `input.interactions` counts the slow ones; `scroll.keyPresses` says how many there were.
+- Blank rows need full mode, because quick mode has no screenshots. In quick mode, `scroll()` reports long frames and input, with a note that blank rows need full mode.
+- The list must be visible, and the reference must have some content. A list drawn entirely in its own background color can't be judged, and is reported as unavailable.
+- Screenshots only cover the viewport, so any part of the list outside it isn't measured.
+- If no run scrolled the list, `list` is null and listed in `unavailable`, since 0% blank would describe a list that stood still.
+- Touch scrolling sends real touch events (`Input.dispatchTouchEvent`), and `scroll()` throws if `navigator.maxTouchPoints` is 0. `Input.synthesizeScrollGesture` with a touch source isn't used, because on Linux it scrolls nothing and reports no error ([measurements](measurements.md)).
+- `distance: 'end'` is capped at 20,000px (`END_CAP_PX`). The test list's end is 399,400px away, which would take over a minute per run at 6,000px/s, produce a trace of hundreds of MB with screenshots, and change whenever the data does.
+- `input: 'keys'` makes at most 100 presses per run. Event Timing doesn't report presses handled in under 16ms (its minimum threshold), so `input.interactions` only counts the slower ones, and `scroll.keyPresses` gives the total.

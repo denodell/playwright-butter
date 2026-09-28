@@ -1,10 +1,10 @@
 # Attribution with frameworks
 
-What does Long Animation Frame (LoAF) attribution look like when a framework sits between the browser and the app's event handler, and do source maps help name the app's function? This page records what `tests/integration/frameworks.spec.ts` measured.
+When a framework sits between the browser and your event handler, the Long Animation Frames API (LoAF) names the framework's code instead of yours. This page records what `tests/integration/frameworks.spec.ts` measured with React and Angular, whether source maps help, and how full mode's CPU profile names the handler.
 
-## Setup
+## Test apps
 
-Three apps, each with a button whose click handler blocks for 150ms (`onCheckout`) and a search input whose keydown handler blocks for 60ms (`onSearchKey`). Each app is built twice with esbuild: `prod` (minified, as teams ship) and `dev` (readable names), both with source maps. Built by `scripts/build-test-pages.mjs`.
+There are three apps. Each has a button whose click handler (`onCheckout`) blocks for 150ms, and a search input whose keydown handler (`onSearchKey`) blocks for 60ms. `scripts/build-test-pages.mjs` builds each app twice with esbuild, both times with source maps: `prod` is minified, the way teams ship, and `dev` keeps readable names.
 
 | App                     | How events reach the handler                                                                                   |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -12,11 +12,11 @@ Three apps, each with a button whose click handler blocks for 150ms (`onCheckout
 | Angular 21 with Zone.js | Listeners on the elements themselves, each wrapped by Zone.js. This is how most existing Angular apps run.     |
 | Angular 21 zoneless     | Listeners on the elements, called through Angular's own wrapper. The default for new Angular apps.             |
 
-Angular is bootstrapped in JIT mode (no Angular CLI). JIT and AOT builds register listeners the same way (Angular's `listener` instruction and, with Zone.js, its patched `addEventListener`), so JIT shouldn't hide anything AOT would show. If a team reports otherwise, an AOT build is the next check.
+Angular is bootstrapped in JIT mode, without the Angular CLI. JIT and AOT builds register listeners the same way (through Angular's `listener` instruction and, with Zone.js, its patched `addEventListener`), so JIT shouldn't hide anything an AOT build would show. If a team finds otherwise, an AOT build is the next thing to test.
 
-## What LoAF reports
+## LoAF attribution
 
-Chrome 153. Identical locally and on GitHub Actions (PR #2, run 35945190946):
+These results are from Chrome 153, and were identical locally and on GitHub Actions (PR #2, run 35945190946):
 
 | Page                    | LoAF `invoker`            | LoAF `sourceFunctionName`        | Event Timing target |
 | ----------------------- | ------------------------- | -------------------------------- | ------------------- |
@@ -27,24 +27,23 @@ Chrome 153. Identical locally and on GitHub Actions (PR #2, run 35945190946):
 | Angular zoneless, dev   | `BUTTON#checkout.onclick` | _(empty: an anonymous function)_ | `button#checkout`   |
 | Angular zoneless, prod  | `BUTTON#checkout.onclick` | _(empty)_                        | `button#checkout`   |
 
-The keydown results follow the same pattern (`DIV#root.onkeydown`, `INPUT#search.onkeydown`).
+Keydown follows the same pattern, with `DIV#root.onkeydown` for React and `INPUT#search.onkeydown` for Angular.
 
-In every case LoAF measured the work correctly: one long frame of at least 150ms for the click, and one per key press. But it never named `onCheckout` or `onSearchKey`.
+LoAF measured the work correctly every time, with one long frame of at least 150ms for the click and one for each key press, but it never named `onCheckout` or `onSearchKey`:
 
-- React blames its own root listener and dispatcher. The invoker names the root container, not the button.
-- Zone.js blames its wrapper. The invoker does name the right element, because Zone.js patches `addEventListener` on the element itself.
-- Zoneless Angular blames an anonymous wrapper, so there's no function name at all.
-- Event Timing names the real element every time, including through React's delegation.
+- With React, it names React's root listener and dispatcher. The invoker is the root container, not the button.
+- With Zone.js, it names the Zone.js wrapper. The invoker is the right element, because Zone.js patches `addEventListener` on the element itself.
+- With zoneless Angular, it names an anonymous wrapper, so there's no function name at all.
 
-## Why source maps don't fix LoAF
+Event Timing names the real element every time, including behind React's delegation.
 
-LoAF's `scripts[]` records only the _entry point_ of each script execution: the function the browser called. The browser calls the framework's dispatcher, and the dispatcher calls the app's handler. So `sourceURL` and `sourceCharPosition` point at the dispatcher. A source map would turn `QS` back into `dispatchDiscreteEvent` in `react-dom`, but it can't name `onCheckout`, because that function is never an entry point.
+## Source maps and LoAF
 
-So source maps can't name the handler from LoAF data. The library uses them only for the CPU profile (below), whose stacks do contain the handler.
+LoAF's `scripts[]` only records the entry point of each script execution, which is the function the browser called. The browser calls the framework's dispatcher, and the dispatcher calls your handler, so `sourceURL` and `sourceCharPosition` point at the dispatcher. A source map would turn `QS` back into `dispatchDiscreteEvent` in `react-dom`, but it can't name `onCheckout`, because that function is never an entry point. The library only uses source maps for the CPU profile, whose stacks do include the handler.
 
-## What the library does instead
+## Linking scripts to interactions
 
-Each entry in `longFrames.topScripts` has a `during` list: the interactions whose frames that script blocked, from Event Timing and the scroll listener. For example:
+Each entry in `longFrames.topScripts` has a `during` list of the interactions whose frames that script blocked, taken from Event Timing and the scroll listener:
 
 ```json
 {
@@ -56,13 +55,13 @@ Each entry in `longFrames.topScripts` has a `during` list: the interactions whos
 }
 ```
 
-That relies only on timing, so it works the same for React, Zone.js, zoneless Angular, and frameworks not tested here. Failure messages and the reporter summary lead with the element ("click on `button#checkout`: 180ms to paint") and show the script as supporting detail.
+This only relies on timing, so it works the same for React, Zone.js, zoneless Angular and frameworks that weren't tested here. Failure messages and the reporter summary lead with the element ("click on `button#checkout`: 180ms to paint"), and show the script as supporting detail.
 
-## Naming the handler: the CPU profile (full mode)
+## Naming the handler with the CPU profile
 
-Full mode records V8's sampling profiler in the same trace (`disabled-by-default-v8.cpu_profiler`, a sample about every 140µs). The library attributes the samples that fall inside the interaction's long frames and Event Timing windows to functions, and reports the top ones as `profile.hotFunctions`, each with self time, total time and its most common callers. A profile has whole stacks, not just entry points, so it can see past the dispatcher.
+In full mode, the trace also records V8's sampling profiler (`disabled-by-default-v8.cpu_profiler`), which takes a sample about every 140µs. The library takes the samples that fall inside the interaction's long frames and Event Timing windows, adds them up by function, and reports the top functions as `profile.hotFunctions`, each with its self time, total time and most common callers. A profile records whole call stacks, so it sees past the dispatcher to the functions it called.
 
-Minified names are mapped back through the page's source maps: V8 gives each function's position in the bundle (the `(` of its parameter list), the identifier just before it is the minified name, and the source map gives its original name and position. The bundle position is kept as `generated`.
+Minified names are mapped back through the page's source maps. V8 gives each function's position in the bundle (the `(` that opens its parameter list), the identifier just before that position is the minified name, and the source map gives the original name and position. The bundle position is kept as `generated`.
 
 | Page                    | Profile alone                                                                       | With source maps                                                       |
 | ----------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -72,11 +71,16 @@ Minified names are mapped back through the page's source maps: V8 gives each fun
 | Angular + Zone.js, prod | `QN` ← **`onCheckout`** ← `yv_Template_button_click_1_listener` ← …                 | `busyWait` ← **`onCheckout`** ← … ← `executeListenerWithErrorHandling` |
 | Angular zoneless, prod  | `V1` ← **`onCheckout`** ← `Eg_Template_button_click_1_listener` ← …                 | `busyWait` ← **`onCheckout`** ← …                                      |
 
-(`busyWait` is the test pages' stand-in for slow work, and `onCheckout` is the handler that calls it.)
+`busyWait` is the test pages' stand-in for slow work, and `onCheckout` is the handler that calls it. The handler is named on every build, minified or not, behind React's dispatcher, Zone.js and Angular's listener wrapper.
 
-- The handler is named on every build, minified or not, behind React's dispatcher, Zone.js, and Angular's listener wrapper.
-- Source maps are fetched the way the page would fetch them, through Playwright's request context, so cookies and HTTP credentials apply. `//# sourceMappingURL` comments, `data:` URLs and the `SourceMap` header all work. Pages that don't publish maps keep the names V8 reports, without a note, because those names are what the code is actually called. A map that is referenced but can't be loaded or parsed gets a note.
-- The decoder is in-house (`packages/smoothness-core/src/sourcemap/`, no dependencies). Index maps (with `sections`) aren't supported and are reported as such.
-- Workers are excluded. Each thread has its own profile, and the library reads only the one on the thread its start mark came from (the page's main thread). `test-pages/worker.html` keeps a worker busy next to a slow click handler; the worker's function never appears.
-- V8's optimizing compiler inlines small hot functions into their callers, and the sampled profile then attributes their time to the caller. In `examples/react-list`, `expensiveFormat()` is sometimes inlined into the `Row` component and sometimes not, from run to run, so the profile names one or the other (both at their `main.jsx` lines, through the source map). DevTools shows the same.
-- `(program)` is browser work outside JavaScript (style, layout, painting), and `now` is `performance.now()` itself.
+### Source map loading
+
+Source maps are fetched the way the page would fetch them, through Playwright's request context, so cookies and HTTP credentials apply. `//# sourceMappingURL` comments, `data:` URLs and the `SourceMap` header all work. A page that doesn't publish maps keeps the names V8 reports, without a note, because those are the names the code really has. A map that's referenced but can't be loaded or parsed gets a note.
+
+The decoder is written in-house (`packages/smoothness-core/src/sourcemap/`) with no dependencies. Index maps (maps with `sections`) aren't supported, and are reported as unsupported.
+
+### Profile limits
+
+- Workers are left out. Each thread has its own profile, and the library only reads the profile for the thread its start mark came from, which is the page's main thread. `test-pages/worker.html` keeps a worker busy next to a slow click handler, and the worker's function never appears.
+- V8's optimizing compiler inlines small hot functions into their callers, and the sampled profile then counts their time under the caller. In `examples/react-list`, `expensiveFormat()` is inlined into the `Row` component in some runs and not in others, so the profile names one or the other (both at their `main.jsx` lines, through the source map). DevTools shows the same thing.
+- `(program)` is browser work outside JavaScript (style, layout and painting), and `now` is `performance.now()` itself.

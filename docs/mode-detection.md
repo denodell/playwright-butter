@@ -1,6 +1,8 @@
-# How the mode is chosen
+# Mode detection
 
-`quick` mode measures with Event Timing and Long Animation Frames. `full` mode adds a Chrome trace (dropped frames) and screenshots (blank rows in lists). Full mode is slower and produces large traces, so the default is `quick` on pull requests and `full` on scheduled runs.
+Quick mode measures with Event Timing and Long Animation Frames. Full mode adds a Chrome trace for dropped frames and screenshots for blank rows in lists. Full mode is slower and produces large traces, so the default is quick mode on pull requests and full mode on scheduled runs.
+
+## Rules
 
 The first rule that applies wins:
 
@@ -17,6 +19,6 @@ The first rule that applies wins:
 
 4. Otherwise `quick`.
 
-The chosen mode is in every result as `mode`. The rule that chose it is in `settings.modeSource`.
+Every result records the chosen mode as `mode`, and the rule that chose it as `settings.modeSource`.
 
 The rules are implemented in `packages/smoothness-core/src/options.ts` (`detectMode`) and tested in `tests/unit/options.spec.ts`.

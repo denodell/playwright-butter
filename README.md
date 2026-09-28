@@ -1,22 +1,29 @@
 # playwright-smoothness
 
-`playwright-smoothness` fails the build when a web UI stops being smooth. It measures scripted interactions and list scrolling in Chromium, compares each one with a stored baseline, and names the element and the code responsible when it gets worse.
+Smoothness checks for [Playwright](https://playwright.dev). It measures interactions and list scrolling in Chromium, compares each one with a stored baseline, and tells you which element and which code got slower.
 
 ![A replay of a demo trail journal scrolled 3,000px, played at a quarter of real speed: the frame rate falls to about 30 frames per second as frames are dropped](docs/replay-frame-rate.gif)
 
-When a full-mode check gets worse, the test gets a replay like this one. The demo article has a smooth-scrolling script that moves the page itself on every frame, and half its frames are dropped: about 30 frames per second. No single frame took 50ms, so the browser's Long Animation Frames API never reported one; the dropped frames came from Chrome's own frame timeline.
+This demo journal scrolls itself with a script that moves the page on every frame. Half its frames are dropped, so it runs at about 30 frames per second. No single frame took 50ms, so the browser's Long Animation Frames API reported nothing. The dropped frames came from Chrome's own frame timeline. When a check like this gets worse, the test gets this replay attached.
 
-If you're deciding whether to add it, [Before you adopt it](docs/faq.md) covers how much time it adds to your suite, how it keeps CI from going flaky, and how it differs from Lighthouse and RUM. It only warns until you switch a check to fail, it has no runtime dependencies, and it doesn't send data anywhere.
+It only warns until you switch a check to fail, has no third-party runtime dependencies, and sends no data anywhere. The [FAQ](docs/faq.md) covers how much time it adds to a suite, how it stays steady in CI, and how it differs from Lighthouse and real-user monitoring.
 
-## Quick start
+## Install
 
 ```bash
 npm install -D playwright-smoothness
 ```
 
-Requires Node 20 or later and `@playwright/test` 1.49 or later.
+It needs Node 20 or later and `@playwright/test` 1.49 or later. Measurements run in Chromium, and new headless mode is closest to real Chrome:
 
-### Every test, with one line
+```ts
+// playwright.config.ts
+use: { browserName: 'chromium', channel: 'chromium' },
+```
+
+## Usage
+
+### Measure every test
 
 ```ts
 // tests/fixtures.ts
@@ -26,11 +33,9 @@ export const test = withSmoothness(base, { auto: true });
 export { expect } from '@playwright/test';
 ```
 
-Tests that import `test` from this file are measured as they run, with no other changes. Each one is measured once for its whole run, across navigations, and every interaction is listed with its element (`click on button#checkout: 180ms`). Each test is compared with the median of its recent passing runs on your main branch, and those runs are recorded by your CI's main-branch builds. Until a test has three of them, its result says it's building history. Nothing fails: anything that got worse gets an annotation. [docs/automatic-mode.md](docs/automatic-mode.md) covers keeping the history in CI.
+Tests that import `test` from this file are measured as they run, with no other changes. Each test is measured once across its whole run, and every interaction is listed with its element, such as `click on button#checkout: 180ms`. A test is compared with the median of its recent passing runs on your main branch, and anything that got worse gets an annotation. [Automatic mode](docs/automatic-mode.md) covers how that history is kept in CI.
 
-### Specific interactions and lists
-
-For the interactions you care most about, `measure()` and `scroll()` run the action several times under CPU throttling and compare with a baseline stored next to the test:
+### Measure an interaction
 
 ```ts
 // tests/smoothness.spec.ts
@@ -43,47 +48,13 @@ test('filters open smoothly', async ({ page, smoothness }) => {
   });
   expect(result).toBeSmooth();
 });
-
-test.describe('lists', () => {
-  test.use({ hasTouch: true }); // input: 'touch' needs a touch-enabled context
-  test('catalog flick stays drawn', async ({ page, smoothness }) => {
-    await page.goto('/catalog');
-    const result = await smoothness.scroll(page.getByRole('list', { name: 'Trending' }), {
-      mode: 'full', // blank rows need the trace's screenshots
-      input: 'touch', // 'wheel' | 'touch' | 'keys'
-      speed: 'fast', // 'slow' | 'normal' | 'fast' | pixels per second
-      distance: 20_000, // or 'end'
-    });
-    expect(result).toBeSmooth();
-  });
-});
 ```
 
-New headless Chromium is closer to real Chrome than the default headless shell, so it's the one to run:
+`measure()` slows the CPU 4x, runs your action once as a warm-up, then reloads the page and runs it 5 more times, waiting each time until the page has loaded and gone quiet. It reports the median of each number. Only work caused by the interaction counts: frames from page load, background timers and `setInterval` callbacks are left out.
 
-```ts
-// playwright.config.ts
-use: { browserName: 'chromium', channel: 'chromium' },
-```
+That takes several times as long as the interaction itself, so these tests usually need a longer `timeout` than Playwright's 30-second default.
 
-The first run records a baseline next to your test, the way `toMatchSnapshot()` does, and passes. Later runs compare with it. `npx playwright test --update-snapshots` re-records baselines: `=all` replaces every baseline, `=changed` only those that got worse, and `=none` never writes (a missing baseline is then reported as not compared). Renaming a test starts a fresh baseline, because the test title is part of its key.
-
-Baselines are per machine (see [Baselines and CI machines](#baselines-and-ci-machines)), so baselines from your laptop aren't used in CI. In CI, the baselines come from your main branch and reach pull-request runs through `baselineDir`. [docs/ci.md](docs/ci.md) has a GitHub Actions recipe.
-
-## Measure an interaction
-
-1. Slows the CPU 4x (`cpuThrottling`), because on a fast machine moderate jank produces no long frames at all.
-2. Runs your action once as a warm-up and discards it.
-3. Reloads the page, waits until it has loaded and gone quiet (no long frames for 500ms), and runs your action again. It does this 5 times (`runs`).
-4. Reports the median of each number, and its spread across runs.
-
-A measurement takes several times as long as the interaction itself, and a traced list fling can take a minute, so these tests usually need a longer Playwright `timeout` than the 30-second default.
-
-Only work caused by the interaction counts. Long frames during page load or from background timers are left out, and so is work that was already running when the input arrived. `setInterval` callbacks never count as an interaction's work, even when they run in the middle of one, because they run on a fixed schedule whatever the user does.
-
-In full mode, a check that got worse also gets a video replay of the interaction, described under [Scroll a list](#scroll-a-list).
-
-If your action can't be repeated after a plain reload, a `reset` function puts the page back into the state it needs:
+If a plain reload doesn't put the page back in the state your action needs, `reset` does it instead:
 
 ```ts
 await smoothness.measure('add to cart', action, {
@@ -94,61 +65,76 @@ await smoothness.measure('add to cart', action, {
 });
 ```
 
-## Scroll a list
+### Scroll a list
 
 ![A replay of a demo cycling club feed flung at 6,000px/s: the page keeps 60 frames per second, but the posts disappear and 114 of 122 frames are blank](docs/replay-blank-rows.gif)
 
-Dropped frames don't show a list going blank. In this demo feed, whose posts take too long to build, the page keeps 60 frames per second while the list is empty in 114 of 123 frames. `scroll()` measures both.
+A list can go blank without dropping a frame. This demo feed builds its posts too slowly, so it keeps 60 frames per second while the list is empty in 114 of 122 frames. `scroll()` measures both.
 
-`smoothness.scroll(locator, options)` does the same repeated, reloaded runs as `measure()`, with the scroll as the action:
+```ts
+test.use({ hasTouch: true }); // input: 'touch' needs a touch-enabled context
 
-- `input: 'wheel'` (default) sends a compositor-driven wheel gesture (`Input.synthesizeScrollGesture`).
-- `input: 'touch'` flicks with real touch events: press, drag across the list at the requested speed, release (the list flings on), and repeat until the distance is covered. It needs a touch-enabled context (`hasTouch: true`, or a mobile device), and throws without one.
-- `input: 'keys'` presses the arrow keys 100ms apart and measures each press as an interaction.
-- `direction: 'vertical'` (default) or `'horizontal'`. `distance: 'end'` (default) or pixels. `'end'` stops after 20,000px, and the result says how far the end really was: the end of a 5,000-row list is minutes away, and a baseline shouldn't move because the data grew. A pixel distance isn't capped.
+test('catalog flick stays drawn', async ({ page, smoothness }) => {
+  await page.goto('/catalog');
+  const result = await smoothness.scroll(page.getByRole('list', { name: 'Trending' }), {
+    mode: 'full', // blank rows need the trace's screenshots
+    input: 'touch', // 'wheel' (default) | 'touch' | 'keys'
+    speed: 'fast', // 'slow' | 'normal' (default) | 'fast' | pixels per second
+    distance: 20_000, // 'end' (default) | pixels
+  });
+  expect(result).toBeSmooth();
+});
+```
 
-If the list never moves (for example, the locator isn't the element that scrolls), its blank-frame numbers are reported as unavailable, not as 0%.
+`scroll()` makes the same repeated, reloaded runs as `measure()`, with the scroll as the action:
 
-In full mode it also finds blank frames. It screenshots the list at rest, then compares each frame the compositor produced during the scroll with it. A frame drawn to less than half of the resting list is blank. Blank frames mean rows that weren't built in time, which happens in virtualized lists: lists that remove rows as they scroll out of view and build new ones. `scroll()` detects that by watching for removed rows, and only gates blank frames on a virtualized list. On any other page they'd mean empty space in the content, so they're reported but not gated, with a note; `list: { virtualized: true }` overrides the detection. Skeleton rows should count as blank too, and `list.placeholders` names them:
+- `'wheel'` sends a wheel gesture that the compositor scrolls.
+- `'touch'` flicks with real touch events, and throws in a context without touch support (`hasTouch: true`, or a mobile device).
+- `'keys'` presses the arrow keys 100ms apart and measures each press as an interaction.
+- `direction` is `'vertical'` (default) or `'horizontal'`.
+- `distance: 'end'` stops after 20,000px, and the result says how far the end really was. A pixel distance isn't capped.
+
+In full mode, `scroll()` also counts blank frames: frames where the list was drawn to less than half of how it looks at rest. They mean rows that weren't built in time, which only happens in a virtualized list (one that removes rows as they scroll away and builds new ones). `scroll()` detects that by watching for removed rows, and only gates blank frames on a virtualized list. `list: { virtualized: true }` overrides the detection, and `list.placeholders` makes skeleton rows count as blank:
 
 ```ts
 await smoothness.scroll(list, { mode: 'full', list: { placeholders: ['.skeleton-row', '#e5e7eb'] } });
 ```
 
-When a full-mode `scroll()` or `measure()` check gets worse, a video of one measured run is attached to the test in the Playwright report. It plays at a quarter of real speed. Each frame shows the frame rate at that moment and, when a list went blank, how drawn it was. A chart of the whole run draws the frame rate as it plays, black at 60 frames per second and red below it, where frames were dropped, with blank frames (for `scroll()`) or long frames (for `measure()`) marked underneath; `measure()` replays also mark when each input arrived. `replay: 'on'` attaches one every time, and `'off'` never. `scroll()` replays are built from the screenshots blank-row detection already records. Screenshots cost the compositor frames, so `measure()` makes one extra run for its replay after the measured runs, and the numbers never include it; `replay: 'off'` skips that run.
+If the list never moves, for example because the locator isn't the element that scrolls, its blank-frame numbers are reported as unavailable, not as 0%. [List detection](docs/list-detection.md) explains how blank frames are found and what the detection can't see.
 
-[docs/list-detection.md](docs/list-detection.md) explains how blank frames are detected, and what the detection can't see.
+### Replays
 
-## Read the numbers
+When a full-mode `measure()` or `scroll()` check gets worse, a video of one run is attached to the test in the Playwright report, played at a quarter of real speed. It shows the frame rate at each moment, a chart of the frame rate across the run with dropped frames in red, and blank frames (for `scroll()`) or inputs and long frames (for `measure()`). `replay: 'on'` attaches one every time, and `'off'` never does. `measure()` makes one extra run for its replay, because screenshots take compositor time, and that run is never counted.
 
-| Field                        | Meaning                                                                                                | Gated    |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------ | -------- |
-| `input.p95ToPaintMs`         | Time from input (click, tap, key press) to the next paint, 95th percentile, from the Event Timing API. | Yes      |
-| `input.byTarget`             | The same, per element, such as `click on button#checkout`.                                             | No       |
-| `longFrames.count`           | Animation frames over 50ms caused by the interaction, from the Long Animation Frames API.              | Yes      |
-| `longFrames.totalBlockingMs` | Frame time beyond 50ms, summed. Noisy, so only gated with `gateTotalBlocking: true`.                   | Optional |
-| `longFrames.topScripts`      | The scripts that ran in those frames, with `during`: the interactions they blocked.                    | No       |
+## Baselines
 
-In full mode (`mode: 'full'`), each run is also traced:
+The first run records a baseline next to your test, the way `toMatchSnapshot()` does, and passes. Later runs compare with it, and `npx playwright test --update-snapshots` records it again: `=all` replaces every baseline, `=changed` only those that got worse, and `=none` never writes. Renaming a test starts a new baseline.
 
-| Field                    | Meaning                                                                                                                                                                    | Gated |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| `frames.onTimePercent`   | Frames presented on time, out of frames that had an update to show, from Chrome's frame reporter in the trace. Catches drops that are too short for Long Animation Frames. | Yes   |
-| `frames.dropped`         | Frames whose update missed its deadline.                                                                                                                                   | No    |
-| `list.blankFramePercent` | `scroll()` only: frames where the list was drawn to less than half of its resting state. Gated only on a virtualized list (`list.virtualized`).                            | Yes   |
-| `list.leastDrawnPercent` | `scroll()` only: the emptiest frame, as a percentage of the list at rest.                                                                                                  | No    |
-| `profile.hotFunctions`   | Functions that used the most CPU during the interaction, from V8's sampling profiler, with their callers. Names your handler even behind React's or Angular's dispatcher.  | Never |
-| `budget120`              | With `refreshRate: 120`: main-thread frames over 8.33ms. A prediction, because headless Chrome runs at 60Hz.                                                               | Never |
+A baseline belongs to one machine. Its key includes the label, test, project, platform, mode, refresh rate, CPU throttling and CPU model, because the same work took 150ms, 197ms or 226ms on different GitHub-hosted runners ([measurements](docs/measurements.md)). A baseline from your laptop isn't used in CI. In CI, baselines come from your main branch through `baselineDir`, and a run on a CPU model with no baseline yet skips its checks. The [CI guide](docs/ci.md) has a GitHub Actions recipe, and a dedicated or self-hosted runner gives the steadiest numbers.
 
-Full mode adds about 5–25% to each measurement's time and doesn't change the other numbers ([docs/trace-categories.md](docs/trace-categories.md)).
+## Results
 
-A check fails when it gets worse than its baseline by more than `maxIncrease` (15% by default), with a small floor so rounding can't fail it: 16ms for input-to-paint (Event Timing reports in 8ms steps), 1 long frame, and 1 percentage point of frames. On-time frames are compared on the missed share, so 95% → 81% can't pass as "within 15%".
+| Field                        | Meaning                                                                                                     | Gated    |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------- | -------- |
+| `input.p95ToPaintMs`         | Time from input (a click, tap or key press) to the next paint, 95th percentile, from Event Timing.          | Yes      |
+| `input.byTarget`             | The same, per element, such as `click on button#checkout`.                                                  | No       |
+| `longFrames.count`           | Animation frames over 50ms caused by the interaction, from the Long Animation Frames API.                   | Yes      |
+| `longFrames.totalBlockingMs` | Frame time beyond 50ms, added up. It's noisy, so it's only gated with `gateTotalBlocking: true`.            | Optional |
+| `longFrames.topScripts`      | The scripts that ran in those frames, with the interactions they blocked (`during`).                        | No       |
+| `frames.onTimePercent`       | Full mode: frames presented on time, out of those with an update to show. Catches drops too short for LoAF. | Yes      |
+| `frames.dropped`             | Full mode: frames that missed their deadline.                                                               | No       |
+| `list.blankFramePercent`     | Full-mode `scroll()`: frames where the list was less than half drawn. Gated on a virtualized list only.     | Yes      |
+| `list.leastDrawnPercent`     | Full-mode `scroll()`: the emptiest frame, as a percentage of the list at rest.                              | No       |
+| `profile.hotFunctions`       | Full mode: the functions that used the most CPU, with their callers, from V8's sampling profiler.           | Never    |
+| `budget120`                  | Full mode with `refreshRate: 120`: main-thread frames over 8.33ms, a prediction for 120Hz screens.          | Never    |
 
-Numbers that couldn't be measured are `null` and listed in `unavailable` with a reason. They're never reported as zero.
+A check gets worse when it grows by more than `maxIncrease` (15% by default) over its baseline, with a small floor so rounding can't trip it: 16ms of input-to-paint, 1 long frame, or 1 percentage point. On-time frames are compared on the share that was missed, so a fall from 95% to 81% can't pass as "within 15%". A number that couldn't be measured is `null`, never zero, and its reason is listed in `unavailable`.
+
+Full mode traces each run, which adds about 5–25% to its time without changing the other numbers ([trace categories](docs/trace-categories.md)). With React and Angular, the Long Animation Frames API names the framework's event dispatcher rather than your handler. The CPU profile in full mode names the handler itself, through your source maps when the build is minified ([frameworks](docs/frameworks.md)).
 
 ## Warn first, then fail
 
-`enforce: 'warn'` is the default. A regression adds a `smoothness-warning` annotation, prints the full report, and in GitHub Actions adds a `::warning` to the pull request, but the test passes. Once you trust a check, `'fail'` makes a regression fail the test:
+`enforce: 'warn'` is the default. A check that got worse adds a `smoothness-warning` annotation, prints the full report and, in GitHub Actions, a `::warning` on the pull request, but the test passes. Once you trust a check, `'fail'` makes it fail the test:
 
 ```ts
 test.use({ smoothnessOptions: { enforce: 'fail' } });
@@ -156,7 +142,7 @@ test.use({ smoothnessOptions: { enforce: 'fail' } });
 expect(result).toBeSmooth({ enforce: 'fail' });
 ```
 
-A failure message leads with what got worse and which scripts were responsible:
+The message starts with what got worse and the scripts responsible:
 
 ```
 "checkout" is less smooth than its baseline:
@@ -168,9 +154,10 @@ Scripts blocking the interaction:
 
 ## Options
 
-Options can be set for a file with `test.use({ smoothnessOptions: { ... } })`, per call as the third argument to `measure()`, or for a whole project in `playwright.config.ts`:
+Options can be set for a whole project, for a file with `test.use({ smoothnessOptions: { ... } })`, or for one call as the last argument to `measure()` or `scroll()`:
 
 ```ts
+// playwright.config.ts
 import { defineConfig } from '@playwright/test';
 import type { SmoothnessTestOptions } from 'playwright-smoothness';
 
@@ -179,76 +166,71 @@ export default defineConfig<SmoothnessTestOptions>({
 });
 ```
 
-| Option              | Default                                                         |                                                                                                                     |
-| ------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `runs`              | `5`                                                             | Measured runs. The median is reported.                                                                              |
-| `cpuThrottling`     | `4`                                                             | How many times slower the CPU runs. `1` turns throttling off.                                                       |
-| `maxIncrease`       | `0.15`                                                          | Allowed increase over the baseline.                                                                                 |
-| `enforce`           | `'warn'`                                                        | `'warn'` or `'fail'`.                                                                                               |
-| `reset`             | `'reload'`                                                      | `'reload'`, `'none'`, or an async function.                                                                         |
-| `baselineDir`       | none                                                            | A directory of baselines from your main branch, checked before the ones next to the test.                           |
-| `gateTotalBlocking` | `false`                                                         | Also gate total blocking time.                                                                                      |
-| `mode`              | see below                                                       | `'quick'` or `'full'`. Full mode adds a Chrome trace: dropped frames, a CPU profile, and blank rows for `scroll()`. |
-| `list`              | `{ background: 'auto', placeholders: [], virtualized: 'auto' }` | `scroll()` in full mode: what counts as blank, and whether the list is virtualized (`'auto'` detects it).           |
-| `replay`            | `'on-regression'`                                               | Full mode: attach a video replay when a check got worse (`'on'`: always, `'off'`: never).                           |
-| `refreshRate`       | `60`                                                            | `120` adds a reported-only 120Hz prediction in full mode.                                                           |
+| Option              | Default                                                         | Description                                                                                  |
+| ------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `runs`              | `5`                                                             | Measured runs. The median is reported.                                                       |
+| `cpuThrottling`     | `4`                                                             | How many times slower the CPU runs. `1` turns throttling off.                                |
+| `maxIncrease`       | `0.15`                                                          | Allowed increase over the baseline.                                                          |
+| `enforce`           | `'warn'`                                                        | `'warn'` or `'fail'`.                                                                        |
+| `reset`             | `'reload'`                                                      | `'reload'`, `'none'`, or an async function.                                                  |
+| `baselineDir`       | none                                                            | A folder of baselines from your main branch, checked before the ones next to the test.       |
+| `gateTotalBlocking` | `false`                                                         | Also gate total blocking time.                                                               |
+| `mode`              | `'quick'`                                                       | `'full'` adds a Chrome trace: dropped frames, a CPU profile and, for `scroll()`, blank rows. |
+| `list`              | `{ background: 'auto', placeholders: [], virtualized: 'auto' }` | Full-mode `scroll()`: what counts as blank, and whether the list is virtualized.             |
+| `replay`            | `'on-regression'`                                               | Full mode: when to attach a replay (`'on'`, `'off'`).                                        |
+| `refreshRate`       | `60`                                                            | `120` adds a 120Hz prediction in full mode that's reported but never gated.                  |
 
-The mode comes from the option, then `SMOOTHNESS_MODE`, then scheduled CI runs (`full`), then `quick`. See [docs/mode-detection.md](docs/mode-detection.md).
+The mode can also come from the `SMOOTHNESS_MODE` environment variable, and scheduled CI runs use full mode by default ([mode detection](docs/mode-detection.md)).
 
-## Summarize results on pull requests
-
-The reporter goes next to your usual one:
+## Reporter
 
 ```ts
 // playwright.config.ts
 reporter: [['list'], ['playwright-smoothness/reporter']],
 ```
 
-It writes `test-results/smoothness/summary.md`: every check's change against its baseline (`129ms (+20ms, +18%)`), the scripts and functions behind anything that got worse, and everything that couldn't be measured or compared. In GitHub Actions it's also added to the job summary. Options: `outputFile`, `title`, and `githubSummary` (default: on when `$GITHUB_STEP_SUMMARY` is set). [docs/ci.md](docs/ci.md) shows how to post it as a pull-request comment.
+The reporter writes `test-results/smoothness/summary.md`: each check's change against its baseline, such as `129ms (+20ms, +18%)`, the scripts and functions behind anything that got worse, and anything that couldn't be measured or compared. In GitHub Actions it's added to the job summary too. Its options are `outputFile`, `title` and `githubSummary`. Every result is also written as JSON (`schemaVersion: 1`) under `test-results/smoothness/` and attached to the test.
 
-## Choose `maxIncrease` with calibrate
+## Choose `maxIncrease`
 
 ```bash
 npx playwright-smoothness calibrate --runs 5 -- --project=chromium
 ```
 
-This runs your suite 5 times on unchanged code, with `toBeSmooth()` neither comparing nor recording, and prints how much each check's numbers moved between runs, with the smallest `maxIncrease` (in steps of 0.05) that would have absorbed it. It warns when a check needs more than the default 0.15 and names the noisy metric. Changes within a check's floors (16ms, 1 long frame, 1 point) can't fail it, and calibrate says so. Everything after `--` goes to `playwright test`. Results are also written to `smoothness-calibration.json`. It belongs on the machine that gates, such as your CI runner, because that's where the noise matters.
+`calibrate` runs your suite 5 times on unchanged code, without comparing or recording baselines, and prints how much each check moved between runs. For each check it suggests the smallest `maxIncrease`, in steps of 0.05, that covers that movement, and warns when a check needs more than the default. Arguments after `--` go to `playwright test`, and the results are also saved to `smoothness-calibration.json`. Run it on the machine that gates your builds, since that's where the noise matters.
 
-## Run it in CI
+## CI
 
-[docs/ci.md](docs/ci.md) has the full recipe, and [examples/github-actions](examples/github-actions) has the workflow ready to copy.
-
-The main branch re-records its baselines with `--update-snapshots=all` and uploads them as an artifact. Pull requests download that artifact and point `baselineDir` at it, so every check compares against main. Numbers depend on the CPU, and GitHub's hosted runners vary by up to 1.5x between jobs, so a dedicated or self-hosted runner gives the steadiest baselines. On hosted runners, a job that lands on a CPU model with no baseline yet skips its checks.
-
-Pull requests run in quick mode, which is the default. Scheduled runs switch to full mode by themselves and add dropped frames, blank rows and the CPU profile. A check stays on `enforce: 'warn'` until `calibrate` shows it's steady on your runner, and then moves to `'fail'`. The reporter summarizes each run, and a `gh pr comment` step can post that summary on the pull request.
-
-## Baselines and CI machines
-
-Baselines are keyed by label, test, project, platform, mode, refresh rate, CPU throttling, and CPU model. On GitHub's hosted runners the same job lands on different CPUs, and the same work took 150ms, 197ms, or 226ms depending on which one ([measurements](docs/measurements.md)). A baseline from one CPU model is never compared with a run on another. The result says which machines have baselines instead. Stable gating needs a dedicated runner, or baselines for each CPU model your hosted runners use.
-
-## Frameworks
-
-With React, Angular (with or without Zone.js), and likely other frameworks, the browser's Long Animation Frames API names the framework's event dispatcher, not your handler, because it only records the function the browser called. Event Timing does name the element, so every script in a report is linked to the interactions it blocked. In full mode, the CPU profile goes further and names the handler itself, such as `busyWait ← onCheckout ← executeDispatch`, using your source maps to undo minification when the page publishes them. See [docs/frameworks.md](docs/frameworks.md).
-
-## Output
-
-Every result is written as JSON (`schemaVersion: 1`) under `test-results/smoothness/` and attached to the Playwright report, with the comparison included.
+On the main branch, CI records baselines with `--update-snapshots=all` and uploads them. Pull requests download them and point `baselineDir` at them, so every check compares against main. Pull requests run in quick mode, and scheduled runs switch to full mode on their own. The [CI guide](docs/ci.md) has the whole recipe, including posting the summary on the pull request, and [`examples/github-actions`](examples/github-actions) has the workflow ready to copy.
 
 ## Limitations
 
-- It only measures in Chromium. In Firefox and WebKit, measurements are skipped with a `smoothness-skipped` annotation and `null` results.
-- Long frames and scripts come from the main thread, so jank on the compositor thread isn't attributed to any script.
-- Results within one CI job are steady (about ±2% on GitHub's runners), but runner hardware varies between jobs, as described above.
-- It's built for new headless (`channel: 'chromium'`). The older headless shell is detected and warned about.
-- Headless Chrome runs at 60Hz, so the 120Hz numbers are a prediction: `budget120` counts main-thread frames over 8.33ms and is never gated.
-- The browser doesn't report interactions under 16ms to Event Timing, so `input.interactions` only counts slower ones.
-- An action that navigates to a new document can't be measured, and the result says so.
+- It measures in Chromium only. In Firefox and WebKit, measurements are skipped with a `smoothness-skipped` annotation.
+- Long frames and scripts come from the main thread, so jank on the compositor thread isn't blamed on any script.
+- Headless Chrome runs at 60Hz, so 120Hz numbers are a prediction.
+- Event Timing doesn't report interactions under 16ms, so `input.interactions` only counts slower ones.
+- An action that navigates to a new page can't be measured, and the result says so.
+
+## Documentation
+
+- [FAQ](docs/faq.md): suite time, flakiness, requirements, privacy, and how it compares with Lighthouse and real-user monitoring
+- [CI](docs/ci.md): baselines in GitHub Actions, dedicated runners, full mode on a schedule, and the pull-request summary
+- [Automatic mode](docs/automatic-mode.md): measuring every test with `withSmoothness()`
+- [List detection](docs/list-detection.md): how blank rows are found, and replays
+- [Frameworks](docs/frameworks.md): React, Angular, and naming your handler through the CPU profile
+- [How it works](docs/how-it-works.md): the browser signals used, how frames are classified, and how baselines are compared
+- [Measurements](docs/measurements.md): the evidence behind the defaults
 
 ## Examples
 
-- [`examples/plain-site`](examples/plain-site): a static page with a button and a long list. CI checks the baseline recipe against it end to end.
+- [`examples/plain-site`](examples/plain-site): a static page with a button and a long list. CI tests the baseline recipe against it.
 - [`examples/react-list`](examples/react-list): a minified React windowed list, where full mode names the slow component through source maps.
-- [`examples/github-actions`](examples/github-actions): the CI workflow from [docs/ci.md](docs/ci.md), ready to copy.
+- [`examples/github-actions`](examples/github-actions): the CI workflow from the CI guide.
+- [`demos`](demos): six small apps, each with a fast and a slow version.
+
+## Packages
+
+This repository publishes two packages. `playwright-smoothness` is the one to install. It depends on [`smoothness-core`](packages/smoothness-core), the measuring engine, which other browser libraries can drive through a small adapter.
 
 ## License
 

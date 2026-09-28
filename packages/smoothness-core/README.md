@@ -4,7 +4,7 @@ The measuring engine behind [playwright-smoothness](https://www.npmjs.com/packag
 
 If you test with Playwright, install `playwright-smoothness` instead. It includes this package, and its [README](https://github.com/denodell/playwright-smoothness#readme) covers everything you need.
 
-## Who this package is for
+## Writing an adapter
 
 This package is for people writing an adapter for another browser automation library, such as Puppeteer. The engine never talks to a browser library directly. It uses two small interfaces from `driver.ts`, and your adapter implements them:
 

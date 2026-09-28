@@ -1,11 +1,11 @@
 # Baselines in CI
 
-A baseline only means something on the machine that gates, so baselines come from CI, not from developer laptops. The flow:
+A baseline only means something on the machine that gates, so in CI the baselines come from CI runs on your main branch, never from developer laptops:
 
-1. On the main branch, run the suite with `--update-snapshots=all`, so every baseline is re-recorded from main, and upload the snapshot files as an artifact.
-2. On pull requests, download the latest artifact from main into a directory and point `baselineDir` at it. Each check then compares against main.
+1. On the main branch, the suite runs with `--update-snapshots=all`, so every baseline is re-recorded from main, and the snapshot files are uploaded as an artifact.
+2. On pull requests, the latest artifact from main is downloaded into a directory, and `baselineDir` points at it. Each check then compares against main.
 
-`baselineDir` mirrors your snapshot layout: a baseline at `<snapshotDir>/<path>` is looked for at `<baselineDir>/<path>` first. Baselines are matched on CPU model, so an artifact built on one hosted-runner CPU won't be used on another. Keep each CPU model's files (the recipe below merges them), or use a dedicated runner.
+`baselineDir` mirrors your snapshot layout: a baseline at `<snapshotDir>/<path>` is looked for at `<baselineDir>/<path>` first. Baselines are matched on CPU model, so an artifact built on one hosted-runner CPU won't be used on another. The recipe below keeps each CPU model's files by merging them, and a dedicated runner avoids the problem.
 
 ## GitHub Actions
 
@@ -71,9 +71,10 @@ jobs:
           retention-days: 90
 ```
 
-And in `playwright.config.ts` (the type parameter lets `use` accept `smoothnessOptions`):
+The config reads the directory from the environment. The type parameter lets `use` accept `smoothnessOptions`:
 
 ```ts
+// playwright.config.ts
 import { defineConfig } from '@playwright/test';
 import type { SmoothnessTestOptions } from 'playwright-smoothness';
 
@@ -85,17 +86,17 @@ export default defineConfig<SmoothnessTestOptions>({
 });
 ```
 
-This example assumes `snapshotDir` is `tests` (the default when `testDir` is `tests`). `dawidd6/action-download-artifact` is a third-party action; GitHub's own `actions/download-artifact` can only read artifacts from the same workflow run.
+The workflow assumes `snapshotDir` is `tests`, which is the default when `testDir` is `tests`. `dawidd6/action-download-artifact` is a third-party action, used because GitHub's own `actions/download-artifact` can only read artifacts from the same workflow run.
 
 ## Use a dedicated runner if you can
 
-Baselines are only compared on the same CPU model ([measurements.md](measurements.md) has the numbers). GitHub's hosted `ubuntu-latest` runners landed on three different AMD EPYC models in this project's CI, with up to 1.5x difference in speed. On hosted runners the recipe still works: the artifact collects a baseline per CPU model over time. But a pull request that lands on a model with no baseline isn't compared ("No baseline for this machine").
+GitHub's hosted `ubuntu-latest` runners landed on three different AMD EPYC models in this project's CI, with up to 1.5x difference in speed ([measurements.md](measurements.md) has the numbers). The recipe still works on hosted runners, because the artifact collects a baseline per CPU model over time. A pull request that lands on a model with no baseline yet isn't compared, and its result says "No baseline for this machine".
 
-A self-hosted or larger dedicated runner (`runs-on: [self-hosted, linux]`, or a GitHub larger runner) runs every job on the same hardware, so every check is compared every time. Keep other work off it while smoothness tests run: they measure CPU time, and a busy machine is a noisy one.
+A self-hosted or larger dedicated runner (`runs-on: [self-hosted, linux]`, or a GitHub larger runner) runs every job on the same hardware, so every check is compared every time. The tests measure CPU time, so other work on that machine while they run makes the numbers noisier.
 
-## The summary, on the pull request
+## Post the summary on the pull request
 
-With the reporter in your config (`reporter: [['list'], ['playwright-smoothness/reporter']]`), each run adds the smoothness summary to the GitHub Actions job summary. To post it as a comment on the pull request as well:
+With the reporter in your config (`reporter: [['list'], ['playwright-smoothness/reporter']]`), each run adds the smoothness summary to the GitHub Actions job summary. This step also posts it as a comment on the pull request:
 
 ```yaml
 - name: 'Pull request: comment with the summary'
@@ -107,13 +108,9 @@ With the reporter in your config (`reporter: [['list'], ['playwright-smoothness/
 
 The job needs `permissions: pull-requests: write`. `--edit-last` updates the previous comment, so each push doesn't add a new one.
 
-## How this recipe is tested
+## Run full mode on a schedule
 
-`scripts/verify-ci-recipe.sh` runs these steps against `examples/plain-site` on every pull request to this project (the Examples workflow). It records on "main", collects the baselines as above, runs as a fresh pull request with `baselineDir`, checks that every result was compared against the collected baseline, and checks that a deliberate regression fails. The one step it can't exercise is downloading an artifact from a different workflow run.
-
-## Full mode on a schedule
-
-Scheduled runs use full mode automatically (see [mode-detection.md](mode-detection.md)), and full-mode baselines are kept separately from quick-mode ones. To gate them, add `schedule:` to `on:` and a step that compares before the main-branch step re-records:
+Scheduled runs use full mode automatically ([mode detection](mode-detection.md)), and full-mode baselines are kept separately from quick-mode ones. Gating them takes a `schedule:` trigger under `on:` and a step that compares before the main-branch steps re-record:
 
 ```yaml
 - name: 'Scheduled: compare with the last scheduled run'
@@ -123,4 +120,8 @@ Scheduled runs use full mode automatically (see [mode-detection.md](mode-detecti
     SMOOTHNESS_BASELINE_DIR: smoothness-baselines
 ```
 
-Put it before the "Main" steps. Those already run on scheduled runs, because a scheduled run on the default branch has `github.ref` set to `refs/heads/main`, so they re-record afterwards and the artifact carries both quick-mode and full-mode baselines.
+This step goes before the "Main" steps. A scheduled run on the default branch has `github.ref` set to `refs/heads/main`, so the "Main" steps run afterwards, re-record, and the artifact carries both quick-mode and full-mode baselines.
+
+## Recipe tests
+
+`scripts/verify-ci-recipe.sh` runs these steps against `examples/plain-site` on every pull request to this project, in the Examples workflow. It records on "main", collects the baselines as above, runs as a fresh pull request with `baselineDir`, checks that every result was compared against the collected baseline, and checks that a deliberate regression fails. The one step it can't exercise is downloading an artifact from a different workflow run.
