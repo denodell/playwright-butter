@@ -52,3 +52,9 @@ Event Timing reports the element actually clicked, which is often a `span` insid
 - Total blocking time is reported but only gated with `gateTotalBlocking: true`, because it's the noisiest number.
 - Warn mode passes the test, adds a `smoothness-warning` annotation, prints the full report, and in GitHub Actions prints a `::warning` on the test's line. It doesn't use `expect.soft`, which fails the test.
 - While calibrating (`SMOOTHNESS_CALIBRATE=1`, set by the CLI), nothing is compared or written. Calibrate measures the run-to-run variation of the medians, which is what a baseline comparison actually meets, and suggests the smallest 0.05 step above the worst case.
+
+## The engine and the browser
+
+The measuring engine doesn't depend on Playwright. It talks to the browser through a small interface in `src/driver.ts`. That interface covers running a function in the page, adding an init script, reloading, a CDP session, screenshots, tracing, a click, a key press, fetching a source map, and opening a scratch page for image work and replay encoding. A list to scroll is an element target with its own `evaluate`, `scrollIntoView` and `focus`.
+
+`src/playwright/driver.ts` implements that interface for a Playwright page and locator. The Playwright Test parts (the fixture, `toBeSmooth()`, automatic mode and the reporter) sit on top. A lint rule stops the rest of `src/` from importing Playwright, so the engine can become its own package (`smoothness-core`), and another library such as Puppeteer can drive it with its own adapter. The engine still needs Chromium, because it relies on the Chrome DevTools Protocol and Chrome's trace events.

@@ -1,4 +1,4 @@
-import type { Browser, Locator, Page } from '@playwright/test';
+import type { ElementTarget, PageDriver } from '../driver.js';
 import type { ListOptions, ListResult } from '../types.js';
 import { analyzeFrames } from './analyze.js';
 import { blankColors, listGeometry, referenceShot, type ListGeometry } from './probe.js';
@@ -25,9 +25,8 @@ export interface ListPrepared {
 const MIN_REFERENCE_COVERAGE = 0.05;
 
 export function listMeasurement(
-  page: Page,
-  browser: Browser,
-  target: Locator,
+  page: PageDriver,
+  target: ElementTarget,
   direction: 'vertical' | 'horizontal',
   options: Required<ListOptions>,
 ): ListMeasurement {
@@ -45,7 +44,7 @@ export function listMeasurement(
       }
     },
     async analyze(prepared, jpegs) {
-      const a = await analyzeFrames(browser, {
+      const a = await analyzeFrames(page, {
         jpegs,
         referencePng: prepared.referencePng,
         geometry: prepared.geometry,

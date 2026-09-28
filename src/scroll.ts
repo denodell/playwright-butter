@@ -1,4 +1,4 @@
-import type { CDPSession, Locator, Page } from '@playwright/test';
+import type { CdpSession, ElementTarget, PageDriver } from './driver.js';
 import { listGeometry, type ListGeometry } from './list/probe.js';
 
 /** Named speeds, in pixels per second. */
@@ -34,7 +34,7 @@ export interface ScrollOptions {
   input?: 'wheel' | 'touch' | 'keys';
   /** `'slow'` (1,500px/s), `'normal'` (3,000px/s, default), `'fast'` (6,000px/s), or pixels per second. Ignored for keys. */
   speed?: keyof typeof SPEEDS | number;
-  /** Names the baseline. Default: built from the locator and these options. */
+  /** Names the baseline. Default: built from the target and these options. */
   label?: string;
 }
 
@@ -62,14 +62,16 @@ export function resolveScroll(o: ScrollOptions): ResolvedScroll {
 }
 
 /** `scroll getByRole('list', { name: 'Trending' })`, plus any options that differ from the defaults. */
-export function defaultScrollLabel(target: Locator, s: ResolvedScroll): string {
-  const parts = [`scroll ${String(target)}`];
+export function defaultScrollLabel(target: ElementTarget, s: ResolvedScroll): string {
+  const parts = [`scroll ${target.description}`];
   if (s.direction !== 'vertical') parts.push(s.direction);
   if (s.input !== 'wheel') parts.push(s.input);
   if (s.input !== 'keys' && s.speedPxPerSec !== SPEEDS.normal) parts.push(`${s.speedPxPerSec}px/s`);
   if (s.distance !== 'end') parts.push(`${s.distance}px`);
   return parts.join(' ');
 }
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const position = (g: ListGeometry, s: ResolvedScroll) =>
   s.direction === 'vertical' ? g.scroll.top : g.scroll.left;
@@ -81,12 +83,12 @@ const maximum = (g: ListGeometry, s: ResolvedScroll) =>
  * rAF callbacks can stall while a synthetic gesture is still being delivered, and this wait
  * must always end by REST_TIMEOUT_MS.
  */
-async function waitForRest(target: Locator, s: ResolvedScroll): Promise<number> {
+async function waitForRest(target: ElementTarget, s: ResolvedScroll): Promise<number> {
   const began = Date.now();
   let last = position(await listGeometry(target), s);
   let still = 0;
   while (still < REST_POLLS && Date.now() - began < REST_TIMEOUT_MS) {
-    await new Promise((r) => setTimeout(r, REST_POLL_MS));
+    await sleep(REST_POLL_MS);
     const now = position(await listGeometry(target), s);
     still = now === last ? still + 1 : 0;
     last = now;
@@ -113,9 +115,8 @@ const MAX_FLICKS = 200;
  * nothing on Linux, with no error (docs/measurements.md).
  */
 async function flick(
-  page: Page,
-  cdp: CDPSession,
-  target: Locator,
+  cdp: CdpSession,
+  target: ElementTarget,
   s: ResolvedScroll,
   box: { x0: number; y0: number; x1: number; y1: number },
   start: number,
@@ -140,16 +141,15 @@ async function flick(
     const began = Date.now();
     for (let moved = 0, step = 1; moved < span; step++) {
       const wait = began + step * TOUCH_MOVE_MS - Date.now();
-      if (wait > 0) await page.waitForTimeout(wait);
+      if (wait > 0) await sleep(wait);
       moved = Math.min(span, ((Date.now() - began) / 1000) * s.speedPxPerSec);
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: point(moved) });
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await page.waitForTimeout(FLICK_GAP_MS);
+    await sleep(FLICK_GAP_MS);
   }
 }
 
-/**
 /**
  * How far one run scrolls, given the pixels left to the end of the list. `toEnd` is set when
  * `'end'` was capped, so the result can say how far the end really was.
@@ -163,14 +163,10 @@ export function scrollDistance(
 }
 
 /**
- * Scrolls the target once. Returns the pixels requested and actually scrolled (a fling can
- * overshoot a pixel distance; the end of the list stops it short).
- */
-/**
  * Starts counting elements removed from inside the scroller. A virtualized list removes rows as
  * they scroll out of view; an ordinary page, or an infinite list that only appends, doesn't.
  */
-async function watchRemovals(target: Locator): Promise<void> {
+async function watchRemovals(target: ElementTarget): Promise<void> {
   await target
     .evaluate((el) => {
       const doc = el === document.scrollingElement || el === document.documentElement || el === document.body;
@@ -190,7 +186,7 @@ async function watchRemovals(target: Locator): Promise<void> {
 }
 
 /** How many elements were removed since watchRemovals, and stops counting. */
-async function removalsSeen(target: Locator): Promise<number> {
+async function removalsSeen(target: ElementTarget): Promise<number> {
   return target
     .evaluate(() => {
       const w = window as unknown as { __smoothnessRemovals?: { n: number; mo: MutationObserver } };
@@ -204,12 +200,12 @@ async function removalsSeen(target: Locator): Promise<number> {
 }
 
 /** Where the scroller is along the scroll direction, in pixels. */
-export async function scrollPosition(target: Locator, s: ResolvedScroll): Promise<number> {
+export async function scrollPosition(target: ElementTarget, s: ResolvedScroll): Promise<number> {
   return position(await listGeometry(target), s);
 }
 
 /** Moves the scroller straight to `px` along the scroll direction, with no smooth scrolling. */
-export async function restoreScroll(target: Locator, s: ResolvedScroll, px: number): Promise<void> {
+export async function restoreScroll(target: ElementTarget, s: ResolvedScroll, px: number): Promise<void> {
   await target.evaluate(
     (el, [to, vertical]) => {
       const doc = el === document.scrollingElement || el === document.documentElement || el === document.body;
@@ -220,13 +216,17 @@ export async function restoreScroll(target: Locator, s: ResolvedScroll, px: numb
   );
 }
 
+/**
+ * Scrolls the target once. Returns the pixels requested and actually scrolled (a fling can
+ * overshoot a pixel distance; the end of the list stops it short).
+ */
 export async function performScroll(
-  page: Page,
-  cdp: CDPSession,
-  target: Locator,
+  page: PageDriver,
+  cdp: CdpSession,
+  target: ElementTarget,
   s: ResolvedScroll,
 ): Promise<{ requested: number; scrolled: number; presses?: number; toEnd?: number; removed: number }> {
-  await target.scrollIntoViewIfNeeded();
+  await target.scrollIntoView();
   const g = await listGeometry(target);
   const start = position(g, s);
   const { px: requested, toEnd } = scrollDistance(s, maximum(g, s) - start);
@@ -242,12 +242,12 @@ export async function performScroll(
     );
     if (!focused && !g.document) {
       // Not focusable: click just inside its top-left corner so Chrome scrolls it with the keys.
-      await page.mouse.click(g.rect.x + 2, g.rect.y + 2);
+      await page.click(g.rect.x + 2, g.rect.y + 2);
     }
     presses = Math.min(MAX_KEY_PRESSES, Math.ceil(requested / PX_PER_ARROW_KEY));
     for (let i = 0; i < presses; i++) {
-      await page.keyboard.press(key);
-      await page.waitForTimeout(KEY_INTERVAL_MS);
+      await page.press(key);
+      await sleep(KEY_INTERVAL_MS);
     }
   } else {
     // The visible part of the list, in viewport coordinates.
@@ -258,7 +258,7 @@ export async function performScroll(
       y1: Math.min(g.viewport.height, g.rect.y + g.rect.height),
     };
     if (s.input === 'touch') {
-      await flick(page, cdp, target, s, box, start, requested);
+      await flick(cdp, target, s, box, start, requested);
     } else {
       // https://chromedevtools.github.io/devtools-protocol/tot/Input/#method-synthesizeScrollGesture
       // Negative distances move the content up (or left): scrolling towards the end. The call

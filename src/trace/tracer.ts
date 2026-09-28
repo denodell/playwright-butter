@@ -1,4 +1,4 @@
-import type { Browser, Page } from '@playwright/test';
+import type { PageDriver, Tracer } from '../driver.js';
 import { emptyTrace, MARK_END, MARK_START, parseTrace, type ParsedTrace, type TraceEvent } from './parse.js';
 
 /**
@@ -6,13 +6,13 @@ import { emptyTrace, MARK_END, MARK_START, parseTrace, type ParsedTrace, type Tr
  * here, never kept: with screenshots a trace is 12-22MB (docs/measurements.md).
  */
 export async function traceRun(
-  browser: Browser,
-  page: Page,
+  tracer: Tracer,
+  page: PageDriver,
   categories: string[],
   measured: () => Promise<void>,
   options: { browserVersion: string; budget120: boolean; profile: boolean; screenshots: boolean },
 ): Promise<ParsedTrace> {
-  await browser.startTracing(page, { categories, screenshots: options.screenshots });
+  await tracer.start(categories, { screenshots: options.screenshots });
   let buffer: Buffer;
   try {
     // Two frames after tracing starts, so the start mark isn't inside tracing's own start-up.
@@ -22,7 +22,7 @@ export async function traceRun(
     await page.evaluate((name) => performance.mark(name), MARK_END).catch(() => undefined);
   } finally {
     // Always stop, or the next run (and the next test in this worker) can't trace.
-    buffer = await browser.stopTracing();
+    buffer = await tracer.stop();
   }
   await page
     .evaluate(

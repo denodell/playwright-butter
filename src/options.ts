@@ -43,11 +43,12 @@ export function detectMode(
 }
 
 /** Applies defaults and validates. Later sources override earlier ones. */
-export function resolveOptions(
-  sources: (SmoothnessOptions | undefined)[],
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function resolveOptions<P = any>(
+  sources: (SmoothnessOptions<P> | undefined)[],
   env: Env = process.env,
-): ResolvedOptions {
-  const o: SmoothnessOptions = Object.assign({}, ...sources.filter(Boolean));
+): ResolvedOptions<P> {
+  const o: SmoothnessOptions<P> = Object.assign({}, ...sources.filter(Boolean));
   const { mode, source } = detectMode(o.mode, env);
   const runs = o.runs ?? DEFAULT_RUNS;
   if (!Number.isInteger(runs) || runs < 1)
