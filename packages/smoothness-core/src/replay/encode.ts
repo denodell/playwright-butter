@@ -92,10 +92,13 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   // has no such setting), so a readout doesn't shift as its digits change. A figure space
   // (U+2007) is a blank digit.
   const isDigit = (ch: string) => (ch >= '0' && ch <= '9') || ch === '\u2007';
+  // Numbers are set a little tighter than the font's default spacing, more so at display sizes,
+  // where the default gaps between digits look loose.
+  const tracking = (size: number) => size * (size >= 20 ? -0.06 : -0.02);
   const numWidth = (s: string, size: number, weight: number) => {
     g.font = `${weight} ${size}px ${sans}`;
-    const cell = g.measureText('0').width;
-    return [...s].reduce((w, ch) => w + (isDigit(ch) ? cell : g.measureText(ch).width), 0);
+    const cell = g.measureText('0').width + tracking(size);
+    return [...s].reduce((w, ch) => w + (isDigit(ch) ? cell : g.measureText(ch).width + tracking(size)), 0);
   };
   const num = (
     s: string,
@@ -104,7 +107,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     { size = 12, weight = 400, fill = c.muted, align = 'left' as 'left' | 'right' } = {},
   ) => {
     const w = numWidth(s, size, weight);
-    const cell = g.measureText('0').width;
+    const cell = g.measureText('0').width + tracking(size);
     g.fillStyle = fill;
     let cx = align === 'right' ? x - w : x;
     for (const ch of s) {
@@ -115,7 +118,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       } else {
         g.textAlign = 'left';
         g.fillText(ch, cx, y);
-        cx += g.measureText(ch).width;
+        cx += g.measureText(ch).width + tracking(size);
       }
     }
     return w;
@@ -286,12 +289,12 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     const chartH = 60;
     const chartBottom = chartTop + chartH;
     text('Frame rate', left, chartTop + 2, { fill: c.muted });
-    num(fps === null ? '–' : String(fps), left - 2, chartTop + 48, {
+    num(fps === null ? '–' : String(fps), left - 2, chartTop + 44, {
       size: 44,
       weight: 600,
       fill: droppingNow ? c.bad : c.ink,
     });
-    text('fps', left, chartTop + 66, { size: 13, fill: c.faint });
+    text('fps', left, chartTop + 62, { size: 13, fill: c.faint });
 
     // The frame rate across the run, drawn in as the replay plays: black at 60fps, red below
     // it, where frames were dropped. A gridline at 60 and 30.
@@ -404,10 +407,21 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       bad: droppedSoFar > 0,
     });
     stats.push({ words: ['Elapsed', 'time'], value: secs(now), widest: secs(total) });
+    // Each number is as tall as its two-line label: the tops of its digits line up with the tops of
+    // the first line's capitals, and it shares the second line's baseline.
+    g.font = `400 11px ${sans}`;
+    const labelHeight = 12 + g.measureText('D').actualBoundingBoxAscent;
+    g.font = `600 100px ${sans}`;
+    const statSize = (labelHeight / g.measureText('0').actualBoundingBoxAscent) * 100;
     let sx2 = right;
     for (const st of [...stats].reverse()) {
-      num(st.value, sx2, statY, { size: 22, weight: 600, fill: st.bad ? c.bad : c.ink, align: 'right' });
-      const lx = sx2 - numWidth(st.widest, 22, 600) - 8;
+      num(st.value, sx2, statY, {
+        size: statSize,
+        weight: 600,
+        fill: st.bad ? c.bad : c.ink,
+        align: 'right',
+      });
+      const lx = sx2 - numWidth(st.widest, statSize, 600) - 5;
       text(st.words[0], lx, statY - 12, { size: 11, fill: c.muted, align: 'right' });
       text(st.words[1], lx, statY, { size: 11, fill: c.muted, align: 'right' });
       g.font = `400 11px ${sans}`;
