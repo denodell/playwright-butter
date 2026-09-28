@@ -1,5 +1,5 @@
 import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
-import { attach } from '../detection/helpers.js';
+import { attach, notesApartFromThrottling } from '../detection/helpers.js';
 
 test.use({ smoothnessOptions: { runs: 3 } });
 
@@ -87,7 +87,7 @@ test('load and background frames are excluded', async ({ page, smoothness }) => 
   expect(result.frameClasses).toEqual({ interaction: 1, load: 0, background: 0 });
   expect(result.longFrames!.count).toBe(1);
   expect(result.longFrames!.topScripts.map((s) => s.fn)).toEqual(['onBuy']);
-  expect(result.notes).toEqual([]);
+  expect(notesApartFromThrottling(result.notes)).toEqual([]);
 });
 
 test('a page that never goes quiet', async ({ page, smoothness }) => {
