@@ -4,7 +4,7 @@ import { test, expect } from '../../packages/playwright-smoothness/src/index.js'
 import type { Page } from '@playwright/test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { save } from '../detection/helpers.js';
+import { notesApartFromThrottling, save } from '../detection/helpers.js';
 import { traceRun } from '../../packages/smoothness-core/src/trace/tracer.js';
 import {
   FRAME_CATEGORIES,
@@ -83,7 +83,7 @@ test("background 'auto' reads the list's own color (a dark list)", async ({ page
   await page.goto('/list.html?cost=15&overscan=0&bg=%23202020');
   const r = await smoothness.scroll(list(page), FLING);
   expect(r.list!.blankFramePercent).toBeGreaterThan(50);
-  expect(r.notes).toEqual([]);
+  expect(notesApartFromThrottling(r.notes)).toEqual([]);
 });
 
 test('horizontal lists', async ({ page, smoothness }) => {

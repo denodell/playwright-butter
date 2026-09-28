@@ -2,7 +2,7 @@
 // browser and the app's handler. React delegates events to its root; Angular with Zone.js
 // wraps every listener. Findings are written up in docs/frameworks.md.
 import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
-import { save } from '../detection/helpers.js';
+import { notesApartFromThrottling, save } from '../detection/helpers.js';
 
 const PAGES = [
   'react.prod',
@@ -78,6 +78,6 @@ for (const name of PAGES) {
     expect(top.generated!.url).toMatch(new RegExp(`/frameworks/dist/${name.replace('.', '\\.')}\\.js$`));
     if (name.endsWith('.prod')) expect(top.generated!.fn).not.toBe('busyWait');
     // Only the page's own compositor is counted, so there's nothing to note.
-    expect(result.notes).toEqual([]);
+    expect(notesApartFromThrottling(result.notes)).toEqual([]);
   });
 }

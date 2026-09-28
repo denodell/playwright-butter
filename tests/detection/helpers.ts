@@ -292,3 +292,12 @@ export function median(values: number[]): number {
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
 }
+
+/**
+ * A result's notes, apart from the one saying Chrome didn't apply CPU throttling. That happens on
+ * some CI runners (docs/faq.md), and the library rightly says so, but it isn't what a test that
+ * expects no notes is checking.
+ */
+export function notesApartFromThrottling(notes: string[]): string[] {
+  return notes.filter((n) => !n.startsWith("CPU throttling didn't take effect"));
+}
