@@ -123,7 +123,9 @@ test('comparing against the history', () => {
   expect(buyHistory(run({ SMOOTHNESS_RECORD: '1' })).entries).toHaveLength(2);
   const r = run(); // not main: compare only
   expect(r.code, r.output).toBe(0);
-  expect(buy(r).comparison!.status).toBe('pass');
+  // Automatic mode measures once, with no repeats, so on a noisy runner one run can land more
+  // than 15% from the median and warn. Either way it was compared, and warn doesn't fail.
+  expect(['pass', 'warn']).toContain(buy(r).comparison!.status);
   expect(buy(r).comparison!.baseline!.source).toBe('history');
   expect(buyHistory(r).entries).toHaveLength(2);
 });
