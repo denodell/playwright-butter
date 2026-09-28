@@ -1,7 +1,7 @@
 import type { Comparison, Enforce, SmoothnessResult } from '../types.js';
 import { baselineKey } from './key.js';
 import { compareMetrics } from './compare.js';
-import { loadBaseline, locateBaseline, writeBaseline } from './store.js';
+import { loadBaseline, locateBaseline, writeBaseline, type BaselineTarget } from './store.js';
 
 export interface MatcherOptions {
   /** Overrides the result's maxIncrease for this assertion. */
@@ -12,17 +12,10 @@ export interface MatcherOptions {
   gateTotalBlocking?: boolean;
 }
 
-export interface EvaluateInfo {
-  snapshotPath(...name: string[]): string;
-  titlePath: string[];
-  project: { name: string; snapshotDir: string };
-  config: { updateSnapshots: string };
-}
-
-/** Loads the baseline, compares, and creates or updates it as `--update-snapshots` says. */
+/** Loads the baseline, compares, and creates or updates it as the target's update mode says. */
 export function evaluate(
   result: SmoothnessResult,
-  info: EvaluateInfo,
+  target: BaselineTarget,
   overrides: MatcherOptions = {},
 ): Comparison {
   const settings = { ...result.settings, ...definedOnly(overrides) };
@@ -34,16 +27,17 @@ export function evaluate(
     return { status: 'not-compared', checks: [], baseline: null, notes: [`Nothing was measured: ${why}.`] };
   }
 
-  const key = baselineKey(result, info.project.name);
-  const where = locateBaseline(key, info, settings.baselineDir);
-  const update = info.config.updateSnapshots;
+  const key = baselineKey(result, target.project);
+  const where = locateBaseline(key, target, settings.baselineDir);
+  const update = target.update ?? 'missing';
+  const describe = target.describeUpdate ?? ((mode) => `update: '${mode}'`);
   const loaded = loadBaseline(key, where);
 
   if (!loaded.found) {
     notes.push(...loaded.notes);
     if (update === 'none') {
       notes.push(
-        `No baseline exists at ${where.snapshotPath}, and --update-snapshots=none, so nothing was compared.`,
+        `No baseline exists at ${where.snapshotPath}, and ${describe('none')}, so nothing was compared.`,
       );
       return { status: 'not-compared', checks: [], baseline: null, notes };
     }
@@ -65,7 +59,7 @@ export function evaluate(
 
   if (update === 'all' || (update === 'changed' && worse)) {
     const baseline = writeBaseline(where.snapshotPath, key, result);
-    notes.push(`--update-snapshots=${update}: the baseline was replaced with this result.`);
+    notes.push(`${describe(update)}: the baseline was replaced with this result.`);
     return { status: 'baseline-updated', checks, baseline, notes };
   }
 

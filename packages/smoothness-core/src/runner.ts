@@ -61,6 +61,15 @@ export const COLLECTOR_CONFIG: CollectorConfig = {
 };
 
 /**
+ * Installs the in-page collector in every document the page loads from now on. Call it before
+ * the page's first navigation. Without it, the first measurement injects the collector late
+ * (Event Timing can then miss earlier input) and says so in a note.
+ */
+export async function preparePage(page: PageDriver): Promise<void> {
+  await page.addInitScript(installCollector, COLLECTOR_CONFIG);
+}
+
+/**
  * Quiet period required after load before a run starts: no long animation frame may end
  * within it. Long enough to cover a timer fired a few hundred ms after load, and the delay before
  * its LoAF entry is delivered.

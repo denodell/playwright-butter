@@ -58,7 +58,11 @@ export interface PageDriver {
   openScratchPage(options: { secure: boolean }): Promise<ScratchPage> | null;
 }
 
-/** An element on the page, such as the list to scroll. */
+/**
+ * An element on the page, such as the list to scroll. Each method must find the element again
+ * when it's called, not hold on to one found earlier: every run reloads the page, which replaces
+ * the element. (A Playwright locator does this by itself; a Puppeteer element handle doesn't.)
+ */
 export interface ElementTarget {
   /** How the element is described in default labels, such as `getByRole('list')`. */
   readonly description: string;

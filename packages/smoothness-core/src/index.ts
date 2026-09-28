@@ -12,6 +12,7 @@ export {
   emptyResult,
   machine,
   measure,
+  preparePage,
   settingsOf,
   type MeasureContext,
 } from './runner.js';
@@ -41,6 +42,8 @@ export {
 // Baselines, history and reports.
 export { evaluate, type MatcherOptions } from './baseline/evaluate.js';
 export { compareMetrics } from './baseline/compare.js';
+export type { BaselineTarget, UpdateMode } from './baseline/store.js';
+export { slug } from './baseline/key.js';
 export { formatMessage, formatSummary } from './baseline/message.js';
 export {
   appendHistory,

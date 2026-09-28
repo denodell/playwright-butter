@@ -12,6 +12,7 @@ import {
   type MatcherOptions,
   type SmoothnessResult,
 } from 'smoothness-core';
+import { baselineTarget, resultDir } from './testinfo.js';
 
 function isResult(v: unknown): v is SmoothnessResult {
   return (
@@ -45,9 +46,9 @@ export const expect = baseExpect.extend({
           baseline: null,
           notes: ['Calibrating: not compared, and no baseline written.'],
         }
-      : evaluate(received, testInfo, options);
+      : evaluate(received, baselineTarget(testInfo), options);
     received.comparison = comparison;
-    writeResult(received, writtenPath(received) ?? resultPath(testInfo, received.label));
+    writeResult(received, writtenPath(received) ?? resultPath(resultDir(testInfo), received.label));
 
     const message = formatMessage(received, comparison);
     const summary = formatSummary(received, comparison);

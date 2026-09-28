@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import type { BaselineInfo, SmoothnessResult, Spread } from '../types.js';
 import { FORMAT_NAME } from '../constants.js';
-import { baselineFileName, baselinePrefix, sameKey, slug, type BaselineKey } from './key.js';
+import { baselineFileName, baselinePrefix, sameKey, type BaselineKey } from './key.js';
 import { metricsOf, type BaselineMetrics } from './compare.js';
 import { writeJsonAtomic } from '../output.js';
 
@@ -28,24 +28,34 @@ export interface BaselineLocation {
   baselineDirPath: string | null;
 }
 
-interface SnapshotInfo {
-  snapshotPath(...name: string[]): string;
-  titlePath: string[];
-  project: { snapshotDir: string };
-}
+/** When a baseline is written: only when it's missing (the default), always, when the check got worse, or never. */
+export type UpdateMode = 'missing' | 'all' | 'changed' | 'none';
 
 /**
- * `<spec>-snapshots/smoothness/<test title>/<label>-<mode>-…json`. The test title keeps two tests in
- * one file that use the same label apart; renaming a test starts a new baseline.
+ * Where one test's baselines live, and when to write them. The runner decides the paths:
+ * playwright-smoothness puts them in the test's snapshot folder, named by its snapshot template.
  */
+export interface BaselineTarget {
+  /** The path for a baseline file of this name. Each check in a test has its own name. */
+  path(fileName: string): string;
+  /** The folder that `path()` results sit under. A baselineDir holds the same files at the same paths relative to it. */
+  root: string;
+  /** The runner's project or configuration name. Results from different projects are never compared. */
+  project: string;
+  /** Default `'missing'`. */
+  update?: UpdateMode;
+  /** How the update mode is written in notes, such as `--update-snapshots=none`. Default `update: 'none'`. */
+  describeUpdate?: (mode: UpdateMode) => string;
+}
+
+/** The baseline's path for this check, and the same file under baselineDir. */
 export function locateBaseline(
   key: BaselineKey,
-  testInfo: SnapshotInfo,
+  target: BaselineTarget,
   baselineDir: string | null,
 ): BaselineLocation {
-  const title = slug(testInfo.titlePath.slice(1).join(' '), 80);
-  const snapshotPath = testInfo.snapshotPath('smoothness', title, baselineFileName(key));
-  const rel = relative(testInfo.project.snapshotDir, snapshotPath);
+  const snapshotPath = target.path(baselineFileName(key));
+  const rel = relative(target.root, snapshotPath);
   return { snapshotPath, baselineDirPath: baselineDir ? join(baselineDir, rel) : null };
 }
 
