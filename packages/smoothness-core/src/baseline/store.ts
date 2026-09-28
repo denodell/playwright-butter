@@ -1,12 +1,12 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import type { BaselineInfo, SmoothnessResult, Spread } from '../types.js';
-import { PACKAGE_NAME } from '../constants.js';
+import { FORMAT_NAME } from '../constants.js';
 import { baselineFileName, baselinePrefix, sameKey, slug, type BaselineKey } from './key.js';
 import { metricsOf, type BaselineMetrics } from './compare.js';
 import { writeJsonAtomic } from '../output.js';
 
-const BASELINE_KIND = `${PACKAGE_NAME}-baseline`;
+const BASELINE_KIND = `${FORMAT_NAME}-baseline`;
 
 /** What a baseline file holds. Versioned like results. */
 export interface BaselineFile {
@@ -56,7 +56,7 @@ export type LoadOutcome =
 function readBaseline(path: string): BaselineFile | string {
   try {
     const data = JSON.parse(readFileSync(path, 'utf8')) as BaselineFile;
-    if (data.kind !== BASELINE_KIND) return `${path} is not a ${PACKAGE_NAME} baseline`;
+    if (data.kind !== BASELINE_KIND) return `${path} is not a ${FORMAT_NAME} baseline`;
     if (data.schemaVersion !== 1)
       return `${path} has schemaVersion ${data.schemaVersion}; this version reads 1`;
     return data;

@@ -9,10 +9,10 @@ import {
   type CollectorApi,
   type CollectorSnapshot,
   type LoafRecord,
-} from '../../src/collector/collector.js';
-import { COLLECTOR_CONFIG } from '../../src/runner.js';
-import { groupInteractions } from '../../src/analysis/interactions.js';
-import { classifyFrames, type FrameClass } from '../../src/analysis/classify.js';
+} from '../../packages/smoothness-core/src/collector/collector.js';
+import { COLLECTOR_CONFIG } from '../../packages/smoothness-core/src/runner.js';
+import { groupInteractions } from '../../packages/smoothness-core/src/analysis/interactions.js';
+import { classifyFrames, type FrameClass } from '../../packages/smoothness-core/src/analysis/classify.js';
 
 const RUNS = 20;
 const REQUIRED = 19;

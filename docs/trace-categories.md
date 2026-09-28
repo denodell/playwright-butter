@@ -23,7 +23,7 @@ Where each event lives:
 - `performance.mark()` calls are in `blink.user_timing`. Each mark's `args.data.startTime` is its `performance.now()` value, so the marks line the trace up with the page's clock exactly.
 - `EventLatency` is in `cc,benchmark,input,input.scrolling`. The detection suite used it to find the input window. The library doesn't need it, because it places its own marks.
 
-Chosen sets (`src/trace/categories.ts`):
+Chosen sets (`packages/smoothness-core/src/trace/categories.ts`):
 
 | Use                                                                                      | Categories                                                         | Size for this interaction                         |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------- |

@@ -1,4 +1,4 @@
-import { test, expect } from '../../../src/index.js';
+import { test, expect } from '../../../packages/playwright-smoothness/src/index.js';
 
 test('catalogue fling', async ({ page, smoothness }) => {
   await page.goto(

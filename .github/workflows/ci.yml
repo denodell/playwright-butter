@@ -23,10 +23,12 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
-      - name: Built package loads as CommonJS and ESM
+      - name: Built packages load as CommonJS and ESM
         run: |
-          node -e "const m=require('./dist/index.cjs'); if (typeof m.test !== 'function') process.exit(1)"
-          node --input-type=module -e "const m=await import('./dist/index.js'); if (typeof m.test !== 'function') process.exit(1)"
+          node -e "const m=require('playwright-smoothness'); if (typeof m.test !== 'function') process.exit(1)"
+          node --input-type=module -e "const m=await import('playwright-smoothness'); if (typeof m.test !== 'function') process.exit(1)"
+          node -e "const m=require('smoothness-core'); if (typeof m.measure !== 'function') process.exit(1)"
+          node --input-type=module -e "const m=await import('smoothness-core'); if (typeof m.measure !== 'function') process.exit(1)"
       - run: npm run test:unit
 
   integration:

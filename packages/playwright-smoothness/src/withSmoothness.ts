@@ -16,40 +16,46 @@ import type {
 } from '@playwright/test';
 import { dirname, relative, resolve as resolvePath } from 'node:path';
 import {
+  CALIBRATE_ENV,
+  COLLECTOR_CONFIG,
   COLLECTOR_KEY,
-  installCollector,
-  type EventRecord,
-  type LoafRecord,
-  type ScrollRecord,
-  type StreamBatch,
-} from '../collector/collector.js';
-import { COLLECTOR_CONFIG, machine, settingsOf } from '../runner.js';
-import { groupInteractions, type Interaction } from '../analysis/interactions.js';
-import { classifyFrames, type FrameClass } from '../analysis/classify.js';
-import {
+  SCHEMA_VERSION,
+  appendHistory,
   attributeFrames,
+  classifyFrames,
+  compareMetrics,
+  formatMessage,
+  formatSummary,
+  groupInteractions,
+  historyPath,
+  installCollector,
+  machine,
+  medianMetrics,
+  onMainBranch,
+  readHistory,
+  resolveOptions,
+  resultPath,
+  settingsOf,
+  specHash,
   summarizeInput,
   summarizeLongFrames,
+  warnInGitHubActions,
+  writeResult,
   type AttributedFrame,
-} from '../analysis/aggregate.js';
-import { compareMetrics } from '../baseline/compare.js';
-import { formatMessage, formatSummary } from '../baseline/message.js';
-import { resolveOptions } from '../options.js';
-import type { BrowserEnvironment } from '../environment.js';
-import { browserEnvironment } from '../playwright/driver.js';
-import { onMainBranch, warnInGitHubActions } from '../ci.js';
-import { resultPath, writeResult } from '../output.js';
-import { CALIBRATE_ENV, SCHEMA_VERSION } from '../constants.js';
-import { smoothnessFixtures, type SmoothnessFixtures, type SmoothnessOptions } from '../fixture.js';
-import {
-  appendHistory,
-  historyPath,
-  medianMetrics,
-  readHistory,
-  specHash,
+  type BrowserEnvironment,
+  type Comparison,
+  type EventRecord,
+  type FrameClass,
   type HistoryEntry,
-} from './history.js';
-import type { Comparison, ResolvedOptions, SmoothnessResult } from '../types.js';
+  type Interaction,
+  type LoafRecord,
+  type ResolvedOptions,
+  type ScrollRecord,
+  type SmoothnessResult,
+  type StreamBatch,
+} from 'smoothness-core';
+import { browserEnvironment } from './driver.js';
+import { smoothnessFixtures, type SmoothnessFixtures, type SmoothnessOptions } from './fixture.js';
 
 export interface AutoOptions extends SmoothnessOptions {
   /** Measure every test automatically. */

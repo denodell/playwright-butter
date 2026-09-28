@@ -1,7 +1,7 @@
 // The pull-request summary: every check's change against its baseline, the scripts behind
 // anything that got worse, and everything that couldn't be measured or compared.
 import type { Check, SmoothnessResult } from '../types.js';
-import { PACKAGE_NAME } from '../constants.js';
+import { FORMAT_NAME } from '../constants.js';
 import { describeHotFunction, describeScript, formatChange, formatValue } from '../baseline/message.js';
 
 export interface ReportEntry {
@@ -115,7 +115,7 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness'): str
       for (const c of noisy) {
         lines.push(
           '',
-          `> ${c.name} varied ${c.spreadPercent}% across runs, more than the allowed ${Math.round(r.settings.maxIncrease * 100)}%. Run \`npx ${PACKAGE_NAME} calibrate\`.`,
+          `> ${c.name} varied ${c.spreadPercent}% across runs, more than the allowed ${Math.round(r.settings.maxIncrease * 100)}%. Run \`npx ${FORMAT_NAME} calibrate\`.`,
         );
       }
       lines.push('');

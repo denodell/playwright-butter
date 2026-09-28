@@ -3,10 +3,8 @@
 //   reporter: [['list'], ['playwright-smoothness/reporter', { outputFile: 'smoothness.md' }]]
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import { forwardSlashes } from '../output.js';
+import { buildMarkdown, forwardSlashes, type ReportEntry, type SmoothnessResult } from 'smoothness-core';
 import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
-import type { SmoothnessResult } from '../types.js';
-import { buildMarkdown, type ReportEntry } from './markdown.js';
 
 export interface SmoothnessReporterOptions {
   /** Where to write the markdown. Default: `smoothness/summary.md` in the first project's output directory. */

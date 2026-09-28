@@ -1,7 +1,7 @@
 // Framework check: what LoAF attribution looks like when a framework sits between the
 // browser and the app's handler. React delegates events to its root; Angular with Zone.js
 // wraps every listener. Findings are written up in docs/frameworks.md.
-import { test, expect } from '../../src/index.js';
+import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
 import { save } from '../detection/helpers.js';
 
 const PAGES = [

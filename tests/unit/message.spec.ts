@@ -1,8 +1,13 @@
 // Snapshot tests for toBeSmooth() messages. Update with --update-snapshots.
 import { test, expect } from '@playwright/test';
-import { formatChange, formatMessage, formatSummary, shortSource } from '../../src/baseline/message.js';
-import type { Comparison } from '../../src/types.js';
-import { compareMetrics, metricsOf } from '../../src/baseline/compare.js';
+import {
+  formatChange,
+  formatMessage,
+  formatSummary,
+  shortSource,
+} from '../../packages/smoothness-core/src/baseline/message.js';
+import type { Comparison } from '../../packages/smoothness-core/src/types.js';
+import { compareMetrics, metricsOf } from '../../packages/smoothness-core/src/baseline/compare.js';
 import { makeResult } from './result-factory.js';
 
 const baseline = {

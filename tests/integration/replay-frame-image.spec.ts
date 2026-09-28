@@ -1,7 +1,7 @@
 // Records the replay that docs/replay-frame.png is taken from: a costly list flung so its rows
 // go blank. demos/make-images.mjs runs it and takes the still.
 // Opt-in: REPLAY_FRAME_IMAGE=1 npx playwright test --project=integration replay-frame-image
-import { test } from '../../src/index.js';
+import { test } from '../../packages/playwright-smoothness/src/index.js';
 
 test.use({ viewport: { width: 600, height: 600 }, smoothnessOptions: { replay: 'on', runs: 1 } });
 

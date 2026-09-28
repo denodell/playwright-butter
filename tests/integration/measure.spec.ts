@@ -1,4 +1,4 @@
-import { test, expect } from '../../src/index.js';
+import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
 import { attach } from '../detection/helpers.js';
 
 test.use({ smoothnessOptions: { runs: 3 } });
