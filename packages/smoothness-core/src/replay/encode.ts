@@ -66,7 +66,7 @@ async function renderInPage(
   const pad = 24;
   const even = (v: number) => Math.ceil(v) + (Math.ceil(v) % 2);
   const width = even(imgW + pad * 2);
-  const height = even(pad + imgH + 48 + 28 + 60 + 22 + 20);
+  const height = even(pad + imgH + 30 + 60 + 56 + 22);
   const sx = imgW / args.viewport.width;
   const sy = imgH / args.viewport.height;
   const sans = 'Archivo, sans-serif';
@@ -239,32 +239,14 @@ async function renderInPage(
 
     const left = pad;
     const right = width - pad;
-    let y = pad + imgH + 34;
-    g.font = `500 13px ${sans}`;
-    // The video's own speed, as a play icon and a multiplier: the recording is slowed down so
-    // dropped and blank frames can be seen.
-    const speed = `${1 / args.slowdown}×`;
-    g.font = `400 12px ${sans}`;
-    const speedW = g.measureText(speed).width + 13;
-    g.font = `500 13px ${sans}`;
-    text(fit(args.title, right - left - speedW - 24), left, y, { size: 13, weight: 500, fill: c.ink });
-    text(speed, right, y, { fill: c.faint, align: 'right' });
-    const px = right - speedW;
-    g.fillStyle = c.faint;
-    g.beginPath();
-    g.moveTo(px, y - 9);
-    g.lineTo(px + 8, y - 4.5);
-    g.lineTo(px, y);
-    g.closePath();
-    g.fill();
-    y += 14;
-    hline(left, right, y);
+    // The frame rate and its chart sit right under the recording.
+    const y = pad + imgH;
 
     const fps = fpsAt(now);
     const droppingNow = droppedBetween(now - FPS_WINDOW_MS, now) > 0;
 
     // Frame rate, large, beside the chart that plots it.
-    const chartTop = y + 28;
+    const chartTop = y + 30;
     const chartH = 60;
     const chartBottom = chartTop + chartH;
     // The frame rate block spans the chart's axis labels: the label's capitals start level with the
@@ -360,6 +342,25 @@ async function renderInPage(
       size: 11,
       fill: c.muted,
     });
+
+    // Underneath: what was measured, and the video's own speed as a play icon and a multiplier (the
+    // recording is slowed down so dropped and blank frames can be seen).
+    const footY = chartBottom + 56;
+    hline(left, right, footY - 22);
+    const speed = `${1 / args.slowdown}×`;
+    g.font = `400 12px ${sans}`;
+    const speedW = g.measureText(speed).width + 13;
+    g.font = `500 13px ${sans}`;
+    text(fit(args.title, right - left - speedW - 24), left, footY, { size: 13, weight: 500, fill: c.ink });
+    text(speed, right, footY, { fill: c.faint, align: 'right' });
+    const px = right - speedW;
+    g.fillStyle = c.faint;
+    g.beginPath();
+    g.moveTo(px, footY - 9);
+    g.lineTo(px + 8, footY - 4.5);
+    g.lineTo(px, footY);
+    g.closePath();
+    g.fill();
 
     const frame = new VideoFrame(canvas, { timestamp: Math.round(args.timesMs[i]! * args.slowdown * 1000) });
     encoder.encode(frame, { keyFrame: i % args.keyEvery === 0 });
