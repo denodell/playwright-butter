@@ -45,7 +45,8 @@ export async function measureScroll(
         done.push(await performScroll(page, cdp, target, s));
       },
     );
-    describeScroll(result, done.slice(1), s, ctx); // the first scroll is the warm-up
+    // The first scroll is the warm-up, and one after the measured runs is recorded for a replay.
+    describeScroll(result, done.slice(1, 1 + ctx.options.runs), s, ctx);
     return result;
   } finally {
     await cdp.detach().catch(() => undefined);

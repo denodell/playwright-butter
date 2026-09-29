@@ -55,8 +55,12 @@ async function renderInPage(
   }
   const decode = (b64: string) => createImageBitmap(new Blob([bytes(b64)], { type: 'image/jpeg' }));
   const first = await decode(args.jpegs[0]!);
-  const imgW = first.width;
-  const imgH = first.height;
+  // The panel is laid out for a recording this wide, and a wider recording scales it up with it,
+  // so it keeps its proportions. Everything below is in these layout units.
+  const PANEL_WIDTH = 500;
+  const scale = Math.max(1, first.width / PANEL_WIDTH);
+  const imgW = first.width / scale;
+  const imgH = first.height / scale;
   first.close();
   const n = args.jpegs.length;
   const total = args.timesMs[n - 1] ?? 0;
@@ -83,7 +87,7 @@ async function renderInPage(
     bad: '#b4413a',
   };
 
-  const canvas = new OffscreenCanvas(width, height);
+  const canvas = new OffscreenCanvas(even(width * scale), even(height * scale));
   const g = canvas.getContext('2d')!;
   const text = (
     s: string,
@@ -210,13 +214,20 @@ async function renderInPage(
       failure = String(e);
     },
   });
-  encoder.configure({ codec: 'vp8', width, height, bitrate: args.bitrate, framerate: 60 / args.slowdown });
+  encoder.configure({
+    codec: 'vp8',
+    width: canvas.width,
+    height: canvas.height,
+    bitrate: args.bitrate,
+    framerate: 60 / args.slowdown,
+  });
 
   for (let i = 0; i < n; i++) {
     const img = await decode(args.jpegs[i]!);
     const now = args.timesMs[i]!;
     const drawn = args.drawn[i]!;
     const blank = rowsMatter && drawn < args.blankShare;
+    g.setTransform(scale, 0, 0, scale, 0, 0);
     g.fillStyle = c.paper;
     g.fillRect(0, 0, width, height);
 
@@ -225,7 +236,7 @@ async function renderInPage(
     g.beginPath();
     g.roundRect(pad, shotTop, imgW, imgH, 8);
     g.clip();
-    g.drawImage(img, pad, shotTop);
+    g.drawImage(img, pad, shotTop, imgW, imgH);
     markList(pad, shotTop, blank);
     g.restore();
     img.close();
@@ -369,7 +380,7 @@ async function renderInPage(
   hold.close();
   await encoder.flush();
   encoder.close();
-  return { width, height, chunks, failure };
+  return { width: canvas.width, height: canvas.height, chunks, failure };
 }
 
 /**
