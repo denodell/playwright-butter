@@ -14,7 +14,8 @@ import type {
   TestInfo,
   TestType,
 } from '@playwright/test';
-import { dirname, relative, resolve as resolvePath } from 'node:path';
+import { existsSync, statSync } from 'node:fs';
+import { dirname, join, relative, resolve as resolvePath } from 'node:path';
 import {
   CALIBRATE_ENV,
   COLLECTOR_CONFIG,
@@ -74,8 +75,8 @@ export interface AutoOptions extends SmoothnessOptions {
   record?: boolean;
   /**
    * Where histories are kept. Default: `baselineDir` if set, else
-   * `node_modules/.cache/playwright-smoothness/history` in the config's folder, where dev servers
-   * don't watch for changes (see DEFAULT_HISTORY_DIR).
+   * `.cache/playwright-smoothness/history` in the project's node_modules, where dev servers don't
+   * watch for changes (see defaultHistoryDir).
    */
   historyDir?: string;
 }
@@ -86,7 +87,45 @@ export interface AutoOptions extends SmoothnessOptions {
  * other workers mid-run. Dev servers leave node_modules alone, and tools keep caches in
  * node_modules/.cache.
  */
-const DEFAULT_HISTORY_DIR = 'node_modules/.cache/playwright-smoothness/history';
+const CACHE_SUBDIR = '.cache/playwright-smoothness/history';
+
+/** Where histories go when the project has no node_modules (Yarn Plug'n'Play). */
+const FALLBACK_HISTORY_DIR = 'smoothness-history';
+
+/** A project root has one of these; the search for node_modules stops there. */
+const PROJECT_ROOT_MARKERS = [
+  '.git',
+  'package-lock.json',
+  'pnpm-lock.yaml',
+  'yarn.lock',
+  'bun.lock',
+  'bun.lockb',
+];
+
+const historyDirs = new Map<string, { dir: string; watched: boolean }>();
+
+/**
+ * The nearest node_modules from the config's folder up to the project root, so a workspace
+ * package whose dependencies are hoisted to the root uses the root's. Without one, the history
+ * goes next to the config, where a watching dev server needs to be told to ignore it.
+ */
+export function defaultHistoryDir(configDir: string): { dir: string; watched: boolean } {
+  let found = historyDirs.get(configDir);
+  if (found) return found;
+  for (let d = configDir; ; d = dirname(d)) {
+    const modules = join(d, 'node_modules');
+    if (existsSync(modules) && statSync(modules).isDirectory()) {
+      found = { dir: join(modules, CACHE_SUBDIR), watched: false };
+      break;
+    }
+    if (PROJECT_ROOT_MARKERS.some((m) => existsSync(join(d, m))) || dirname(d) === d) {
+      found = { dir: join(configDir, FALLBACK_HISTORY_DIR), watched: true };
+      break;
+    }
+  }
+  historyDirs.set(configDir, found);
+  return found;
+}
 
 /** Binding the in-page collector streams records to, so they survive navigation. */
 const STREAM_BINDING = '__playwrightSmoothnessStream';
@@ -305,6 +344,8 @@ interface TestHistory {
   entries: HistoryEntry[];
   /** Notes on reading the history, for the comparison. */
   notes: string[];
+  /** True when the history is in the project folder by default, where a dev server may watch it. */
+  watched: boolean;
 }
 
 /** Reads the test's history, starting it again if the spec file has changed since it was recorded. */
@@ -316,7 +357,8 @@ function readTestHistory(
 ): TestHistory {
   // Relative paths are relative to the config file's folder, whatever directory the run started in.
   const configDir = testInfo.config.configFile ? dirname(testInfo.config.configFile) : process.cwd();
-  const dir = resolvePath(configDir, historyDir ?? DEFAULT_HISTORY_DIR);
+  const fallback = historyDir === undefined ? defaultHistoryDir(configDir) : null;
+  const dir = fallback ? fallback.dir : resolvePath(configDir, historyDir!);
   const project = testInfo.project.name;
   const path = historyPath(dir, relative(testInfo.config.rootDir, testInfo.file), label, project, result);
   const hash = specHash(testInfo.file);
@@ -330,7 +372,7 @@ function readTestHistory(
     notes.push("The spec file changed since this test's history was recorded, so its history starts again.");
     annotate(testInfo, 'smoothness-baseline-reset', `${label}: spec file changed; history restarts`);
   }
-  return { path, project, specHash: hash, entries, notes };
+  return { path, project, specHash: hash, entries, notes, watched: fallback?.watched ?? false };
 }
 
 /**
@@ -401,6 +443,11 @@ function addToHistory(
     history,
   );
   comparison.notes.push(`This run was added to the history (${h.path}).`);
+  if (h.watched) {
+    comparison.notes.push(
+      'The project has no node_modules folder, so the history is kept next to the Playwright config. A dev server that watches the project reloads its pages when these files change, so add the folder to its ignored files (docs/automatic-mode.md).',
+    );
+  }
 }
 
 /** Writes and attaches the result, then fails, warns, or annotates according to the comparison. */

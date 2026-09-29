@@ -66,6 +66,8 @@ test.setTimeout(180_000);
 test.beforeAll(() => {
   rmSync(project, { recursive: true, force: true });
   mkdirSync(project, { recursive: true });
+  // The project's own node_modules, where the history goes by default.
+  mkdirSync(join(project, 'node_modules'));
   cpSync(resolve('tests/e2e/auto-project'), project, { recursive: true });
   writeFileSync(join(project, 'fixtures.ts'), PLAIN);
 });

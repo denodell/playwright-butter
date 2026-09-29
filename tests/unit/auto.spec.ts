@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -9,7 +9,11 @@ import {
   readHistory,
   specHash,
 } from '../../packages/smoothness-core/src/auto/history.js';
-import { analyzeDocs, type DocData } from '../../packages/playwright-smoothness/src/withSmoothness.js';
+import {
+  analyzeDocs,
+  defaultHistoryDir,
+  type DocData,
+} from '../../packages/playwright-smoothness/src/withSmoothness.js';
 import { onMainBranch } from '../../packages/smoothness-core/src/ci.js';
 import { makeResult } from './result-factory.js';
 
@@ -24,6 +28,35 @@ test('medianMetrics skips unmeasured runs', () => {
     'longFrames.count': 2,
   });
   expect(medianMetrics([e(null, 0)])).toEqual({ 'input.p95ToPaintMs': null, 'longFrames.count': 0 });
+});
+
+test("the default history folder: the project's nearest node_modules, else next to the config", () => {
+  const root = mkdtempSync(join(tmpdir(), 'smoothness-project-'));
+  const at = (...p: string[]) => join(root, ...p);
+  const make = (...p: string[]) => mkdirSync(at(...p), { recursive: true });
+  try {
+    // A project with its own node_modules.
+    make('app', 'node_modules');
+    writeFileSync(at('app', 'package-lock.json'), '{}');
+    expect(defaultHistoryDir(at('app'))).toEqual({
+      dir: at('app', 'node_modules', '.cache', 'playwright-smoothness', 'history'),
+      watched: false,
+    });
+    // A workspace package whose dependencies are hoisted to the root.
+    make('mono', 'node_modules');
+    make('mono', 'packages', 'web');
+    writeFileSync(at('mono', 'package-lock.json'), '{}');
+    expect(defaultHistoryDir(at('mono', 'packages', 'web')).dir).toBe(
+      at('mono', 'node_modules', '.cache', 'playwright-smoothness', 'history'),
+    );
+    // Yarn Plug'n'Play: no node_modules in the project, and the one above it isn't the project's.
+    make('node_modules');
+    make('pnp');
+    writeFileSync(at('pnp', 'yarn.lock'), '');
+    expect(defaultHistoryDir(at('pnp'))).toEqual({ dir: at('pnp', 'smoothness-history'), watched: true });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('history files', () => {
