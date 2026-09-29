@@ -6,6 +6,7 @@ import {
   appendHistory,
   historyPath,
   medianMetrics,
+  outsideRecentRange,
   readHistory,
   specHash,
 } from '../../packages/smoothness-core/src/auto/history.js';
@@ -24,6 +25,43 @@ test('medianMetrics skips unmeasured runs', () => {
     'longFrames.count': 2,
   });
   expect(medianMetrics([e(null, 0)])).toEqual({ 'input.p95ToPaintMs': null, 'longFrames.count': 0 });
+});
+
+test("outsideRecentRange: worse than the median only counts outside the test's own recent runs", () => {
+  const e = (p95: number, count: number) => ({
+    recordedAt: '',
+    browserVersion: '',
+    metrics: { 'input.p95ToPaintMs': p95, 'longFrames.count': count },
+  });
+  // The median is 56ms and 1 long frame; the recent runs reached 80ms and 3.
+  const recent = [e(56, 1), e(48, 1), e(80, 3), e(56, 1), e(64, 2)];
+  const check = (metric: string, current: number, baseline: number) =>
+    ({
+      metric,
+      name: metric,
+      unit: metric === 'longFrames.count' ? 'count' : 'ms',
+      current,
+      baseline,
+      change: current - baseline,
+      changePercent: null,
+      allowed: 16,
+      status: 'worse',
+    }) as const;
+  const [inRange, justOutside, clearlyOutside] = outsideRecentRange(
+    [
+      check('input.p95ToPaintMs', 96, 56),
+      check('input.p95ToPaintMs', 97, 56),
+      check('longFrames.count', 13, 1),
+    ],
+    recent,
+  );
+  expect(inRange!.status).toBe('pass'); // 96 is within the floor (16ms) of the worst recent run
+  expect(inRange!.reason).toBe("within this test's recent runs on main (worst: 80ms)");
+  expect(justOutside!.status).toBe('worse');
+  expect(clearlyOutside!.status).toBe('worse');
+  // Passing checks are left alone.
+  const pass = { ...check('input.p95ToPaintMs', 50, 56), status: 'pass' as const };
+  expect(outsideRecentRange([pass], recent)[0]).toBe(pass);
 });
 
 test('history files', () => {

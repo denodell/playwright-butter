@@ -31,6 +31,7 @@ import {
   installCollector,
   machine,
   medianMetrics,
+  outsideRecentRange,
   onMainBranch,
   readHistory,
   resolveOptions,
@@ -344,7 +345,10 @@ function compareWithHistory(
   }
   if (entries.length >= minHistory) {
     const recent = entries.slice(-history);
-    const checks = compareMetrics(result, medianMetrics(recent), resolved.maxIncrease);
+    const checks = outsideRecentRange(
+      compareMetrics(result, medianMetrics(recent), resolved.maxIncrease),
+      recent,
+    );
     const worse = checks.some((c) => c.status === 'worse');
     return {
       status: worse ? (resolved.enforce === 'fail' ? 'fail' : 'warn') : 'pass',

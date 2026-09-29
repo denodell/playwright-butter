@@ -49,6 +49,7 @@ export {
   appendHistory,
   historyPath,
   medianMetrics,
+  outsideRecentRange,
   readHistory,
   specHash,
   type HistoryEntry,
