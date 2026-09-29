@@ -1,5 +1,5 @@
 // The Playwright adapter: a PageDriver for a Playwright Page and an ElementTarget for a Locator.
-import type { Browser, Locator, Page } from '@playwright/test';
+import type { Browser, BrowserContext, Locator, Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import {
@@ -10,6 +10,7 @@ import {
   type Evaluate,
   type PageDriver,
   type ScratchPage,
+  type FetchText,
 } from 'smoothness-core';
 
 /** How long one script or source map fetch may take. */
@@ -57,6 +58,21 @@ const evaluateOn =
   (fn, arg) =>
     page.evaluate(fn as never, arg as never);
 
+/**
+ * Fetches scripts and source maps the way the page would: through the browser context's request
+ * API, so cookies and HTTP credentials apply. `file:` URLs are read from disk.
+ */
+export function contextFetcher(context: BrowserContext): FetchText {
+  return async (url) => {
+    if (url.startsWith('file:')) return { text: await readFile(fileURLToPath(url), 'utf8') };
+    const response = await context.request.get(url, { timeout: FETCH_TIMEOUT_MS });
+    if (!response.ok()) throw new Error(`HTTP ${response.status()} for ${url}`);
+    const headers = response.headers();
+    const header = headers['sourcemap'] ?? headers['x-sourcemap'];
+    return { text: await response.text(), ...(header ? { sourceMapHeader: header } : {}) };
+  };
+}
+
 export function playwrightDriver(page: Page): PageDriver {
   const browser = () => page.context().browser();
   return {
@@ -82,14 +98,7 @@ export function playwrightDriver(page: Page): PageDriver {
     },
     // Through the browser context's request API, so cookies and HTTP credentials apply. `file:`
     // URLs are read from disk.
-    fetchText: async (url) => {
-      if (url.startsWith('file:')) return { text: await readFile(fileURLToPath(url), 'utf8') };
-      const response = await page.context().request.get(url, { timeout: FETCH_TIMEOUT_MS });
-      if (!response.ok()) throw new Error(`HTTP ${response.status()} for ${url}`);
-      const headers = response.headers();
-      const header = headers['sourcemap'] ?? headers['x-sourcemap'];
-      return { text: await response.text(), ...(header ? { sourceMapHeader: header } : {}) };
-    },
+    fetchText: contextFetcher(page.context()),
     // A persistent context has no Browser, and Browser.startTracing is Playwright's only tracer.
     tracer: () => {
       const b = browser();

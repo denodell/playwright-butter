@@ -61,7 +61,9 @@ export function scriptBlocking(frames: AttributedFrame[]): Map<string, TopScript
       // Its share of the frame is dropped rather than handed to the other scripts.
       if (ranBeforeInput(s, f.firstUIEventTimestamp) || isPeriodic(s)) continue;
       const share = total > 0 ? (f.blockingDuration * s.duration) / total : 0;
-      const key = [s.sourceURL, s.sourceFunctionName, s.invoker, s.invokerType].join('\u0000');
+      const key = [s.sourceURL, s.sourceFunctionName, s.sourceCharPosition, s.invoker, s.invokerType].join(
+        '\u0000',
+      );
       const cur = out.get(key);
       if (cur) {
         cur.blockingMs += share;
@@ -71,6 +73,7 @@ export function scriptBlocking(frames: AttributedFrame[]): Map<string, TopScript
         out.set(key, {
           source: s.sourceURL,
           fn: s.sourceFunctionName,
+          charPosition: s.sourceCharPosition,
           invoker: s.invoker,
           invokerType: s.invokerType,
           blockingMs: share,

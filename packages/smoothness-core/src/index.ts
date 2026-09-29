@@ -55,6 +55,7 @@ export {
 } from './auto/history.js';
 export { buildMarkdown, type ReportEntry } from './reporter/markdown.js';
 export { calibrate, formatCalibration } from './calibrate/analyze.js';
+export { NameResolver, resolveScripts, type FetchText } from './sourcemap/resolve.js';
 
 // Replays.
 export { encodeReplay } from './replay/encode.js';

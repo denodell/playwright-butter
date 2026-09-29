@@ -37,7 +37,7 @@ import {
   namedFrames,
   type ProfileRun,
 } from './analysis/profile.js';
-import { NameResolver, type ResolvedFrame } from './sourcemap/resolve.js';
+import { NameResolver, resolveScripts, type ResolvedFrame } from './sourcemap/resolve.js';
 import type { ParsedTrace } from './trace/parse.js';
 import type { BrowserEnvironment } from './environment.js';
 import { SCHEMA_VERSION } from './constants.js';
@@ -134,20 +134,22 @@ function collector(page: PageDriver) {
  * that's referenced but can't be used gets a note.
  */
 async function resolveNames(
-  page: PageDriver,
+  resolver: NameResolver,
   profiles: ProfileRun[],
-  notes: string[],
 ): Promise<Map<string, ResolvedFrame>> {
-  const resolver = new NameResolver(page.fetchText);
   const resolved = new Map<string, ResolvedFrame>();
   for (const frame of namedFrames(profiles)) {
     const r = await resolver.resolve(frame).catch(() => null);
     if (r) resolved.set(frameKey(frame), r);
   }
+  return resolved;
+}
+
+/** Notes which source maps couldn't be used. Scripts without a map are left as they are. */
+async function noteMapFailures(resolver: NameResolver, notes: string[]): Promise<void> {
   const failures = (await resolver.failures()).filter((f) => !f.endsWith('it has no sourceMappingURL'));
   if (failures.length)
     notes.push(`Source maps couldn't be used, so some names may be minified: ${failures.join('; ')}.`);
-  return resolved;
 }
 
 /** Describes this machine. The browser runs locally, so it's the browser's machine too. */
@@ -210,6 +212,8 @@ interface Measurement {
   categories: string[];
   notes: string[];
   unavailable: Unavailable[];
+  /** Names scripts and profiled functions through the page's source maps; fetches each map once. */
+  resolver: NameResolver;
 }
 
 /** What happened across the runs, reported once they're all done. */
@@ -335,7 +339,15 @@ async function prepare(ctx: MeasureContext): Promise<Measurement> {
   if (options.mode === 'quick' && options.refreshRate === 120) {
     notes.push('refreshRate 120 adds a prediction in full mode only; this was quick mode.');
   }
-  return { ctx, collector: c, tracer, categories, notes, unavailable };
+  return {
+    ctx,
+    collector: c,
+    tracer,
+    categories,
+    notes,
+    unavailable,
+    resolver: new NameResolver(page.fetchText),
+  };
 }
 
 /**
@@ -585,7 +597,10 @@ async function combineRuns(
     if (nums.length) spreads[name] = spread(nums);
   };
   const { input, longFrames } = combineCollected(m, runs, supported, addSpread);
+  // Scripts named through the page's source maps, in any mode: LoAF gives each one's position.
+  if (longFrames) longFrames.topScripts = await resolveScripts(longFrames.topScripts, m.resolver);
   const traced: TraceResults = options.mode === 'full' ? await combineTraces(m, runs, addSpread) : {};
+  await noteMapFailures(m.resolver, notes);
   const { frames, budget120, profile, list } = traced;
 
   const classCount = (k: FrameClass) =>
@@ -741,7 +756,7 @@ async function combineProfile(
   runs: RunData[],
   reasons: Reasons,
 ): Promise<ProfileResult | null> {
-  const { ctx, tracer, notes, unavailable } = m;
+  const { tracer, notes, unavailable } = m;
   const profiles = runs.map((r) => r.profile).filter((p): p is ProfileRun => p !== null);
   if (profiles.length === 0) {
     if (tracer) for (const reason of reasons('profile')) unavailable.push({ measurement: 'profile', reason });
@@ -750,7 +765,7 @@ async function combineProfile(
   if (profiles.length < runs.length) {
     notes.push(`The CPU profile was missing from ${runs.length - profiles.length} of ${runs.length} runs.`);
   }
-  return combineProfiles(profiles, await resolveNames(ctx.page, profiles, notes));
+  return combineProfiles(profiles, await resolveNames(m.resolver, profiles));
 }
 
 /** The median of each run's blank-row result. */
