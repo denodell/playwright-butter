@@ -93,6 +93,8 @@ export function playwrightDriver(page: Page): PageDriver {
       const session = await page.context().newCDPSession(page);
       return {
         send: (method, params) => session.send(method as never, params as never),
+        on: (event, handler) => session.on(event as never, handler),
+        off: (event, handler) => session.off(event as never, handler),
         detach: () => session.detach(),
       };
     },

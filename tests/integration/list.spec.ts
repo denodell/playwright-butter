@@ -273,7 +273,7 @@ test.describe('replays', () => {
     expect(webm.endsWith(json.replay)).toBe(true);
     expect(statSync(webm).size).toBeGreaterThan(50_000);
     const info = await playable(page, webm);
-    expect(info.width).toBe(548); // the 500px screenshot, with a 24px margin on each side
+    expect(info.width).toBe(658); // the 600px viewport, with the 500px panel's 24px margins scaled to match
     expect(info.duration).toBeGreaterThan(12); // a 3.3s fling at 1/4 speed, plus a 1s hold
     expect(info.seekedTo).toBeGreaterThan(info.duration / 4); // seeking works
   });
@@ -306,7 +306,7 @@ test.describe('replays', () => {
     const webm = files.find((f) => f.endsWith('.replay.webm'))!;
     expect(webm).toBeTruthy();
     const info = await playable(page, webm);
-    expect(info.width).toBe(548);
+    expect(info.width).toBe(658); // the 600px viewport, with the 500px panel's 24px margins scaled to match
     expect(info.duration).toBeGreaterThan(1);
   });
 

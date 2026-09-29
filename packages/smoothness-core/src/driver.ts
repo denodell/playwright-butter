@@ -9,6 +9,10 @@ import type { FetchText } from './sourcemap/resolve.js';
 export interface CdpSession {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- CDP results are method-specific
   send(method: string, params?: Record<string, unknown>): Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- CDP event params are event-specific
+  on(event: string, handler: (params: any) => void): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- as for on()
+  off(event: string, handler: (params: any) => void): void;
   detach(): Promise<void>;
 }
 

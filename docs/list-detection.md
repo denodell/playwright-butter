@@ -42,15 +42,15 @@ The line-counting function (`packages/smoothness-core/src/list/coverage.ts`) is 
 
 ## Replays
 
-A replay turns one measured run's screenshots into a WebM video, attached to the test as `smoothness replay: <label>`. For `scroll()`, the run chosen is the one whose blank-frame share is closest to the reported median. The [README](../README.md#replays) covers when a replay is attached.
+A replay is a WebM video of one extra run, made after the measured runs, and attached to the test as `smoothness replay: <label>`. The [README](../README.md#replays) covers when a replay is attached.
 
 ![A replay frame: the empty list is outlined in black and tagged "Blank: rows not rendered yet". Below it, large type reads 60 frames per second beside a chart of the frame rate.](replay-frame.png)
 
 Each frame of the video shows the list with an outline. On a blank frame, the outline turns black and a tag reads **Blank: rows not rendered yet**, with the empty list still visible inside it. Below the list, the frame rate over the last 250ms appears in large type, in red when frames are being dropped. It's the share of frames presented, out of those that had something to show, expressed at 60Hz. Beside it, a chart of the frame rate across the run draws in as the video plays, black at 60 frames per second and red below that, with the elapsed time under the playhead. The video plays at a quarter of real speed (`REPLAY_SLOWDOWN`), because at 60 frames a second a blank frame lasts only 16ms. The panel is set in Archivo, which the package includes, so a replay looks the same on every machine.
 
-The replay is made after the test body, from frames the measurement already recorded, so it doesn't change the numbers. When no replay is wanted, nothing is encoded.
+Recording frames takes compositor time, so the replay's run is kept apart from the measured runs and never counted. Its frames come from Chrome's screencast (`Page.startScreencast`) at the page's own size, up to 1280px on the longer side. A trace's screenshots would be too small for a desktop-sized page: Chrome fits them in 250px or 500px, depending on its version. The panel is laid out for a 500px recording and scales up with a wider one. With `replay: 'off'` there's no extra run, and when no replay is wanted, nothing is encoded.
 
-Encoding uses WebCodecs (`VideoEncoder`, VP8) in a throwaway page of the same Chromium. That page is served from `http://localhost`, because WebCodecs needs a secure context. The library writes the WebM container itself (`packages/smoothness-core/src/replay/webm.ts`), including cues so the report's player can seek, and has no dependencies for it. A 3.3-second fling becomes a 15-second replay of about 550KB, encoded in under a second locally.
+Encoding uses WebCodecs (`VideoEncoder`, VP8) in a throwaway page of the same Chromium. That page is served from `http://localhost`, because WebCodecs needs a secure context. The library writes the WebM container itself (`packages/smoothness-core/src/replay/webm.ts`), including cues so the report's player can seek, and has no dependencies for it. A 3.3-second fling becomes a 15-second replay of about 500KB, encoded in under a second locally.
 
 ## Results
 
@@ -73,6 +73,7 @@ On GitHub Actions (AMD EPYC 9V74, 4 vCPU, PR #5), the cheap list was 0% blank an
 - The list must be visible, and the reference must have some content. A list drawn entirely in its own background color can't be judged, and is reported as unavailable.
 - Screenshots only cover the viewport, so any part of the list outside it isn't measured.
 - If no run scrolled the list, `list` is null and listed in `unavailable`, since 0% blank would describe a list that stood still.
+- The list has to scroll natively, so that its `scrollTop` or `scrollLeft` changes. Some components scroll themselves instead: they read wheel events and move their content with transforms, as code editors like Monaco do. `scroll()` sees no movement there and reports that nothing scrolled.
 - Touch scrolling sends real touch events (`Input.dispatchTouchEvent`), and `scroll()` throws if `navigator.maxTouchPoints` is 0. `Input.synthesizeScrollGesture` with a touch source isn't used, because on Linux it scrolls nothing and reports no error ([measurements](measurements.md)).
 - `distance: 'end'` is capped at 20,000px (`END_CAP_PX`). The test list's end is 399,400px away, which would take over a minute per run at 6,000px/s, produce a trace of hundreds of MB with screenshots, and change whenever the data does.
 - `input: 'keys'` makes at most 100 presses per run. Event Timing doesn't report presses handled in under 16ms (its minimum threshold), so `input.interactions` only counts the slower ones, and `scroll.keyPresses` gives the total.
