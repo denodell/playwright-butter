@@ -15,7 +15,7 @@ const repo = join(import.meta.dirname, '..');
 const docs = join(repo, 'docs');
 const playwright = join(repo, 'node_modules/.bin/playwright');
 // The panel's own colours, kept in every GIF palette so its hairlines and text survive.
-const PANEL_COLORS = ['#ffffff', '#0a0a0a', '#666666', '#a1a1a1', '#eaeaea', '#f5f5f5', '#e5484d'];
+const PANEL_COLORS = ['#ffffff', '#0a0a0a', '#666666', '#a1a1a1', '#eaeaea', '#f5f5f5', '#b4413a'];
 
 function run(cmd, args, env = {}) {
   execFileSync(cmd, args, { cwd: repo, stdio: 'inherit', env: { ...process.env, ...env } });

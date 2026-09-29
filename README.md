@@ -104,7 +104,7 @@ If the list never moves, for example because the locator isn't the element that 
 
 ### Replays
 
-When a full-mode `measure()` or `scroll()` check gets worse, a video of one run is attached to the test in the Playwright report, played at a quarter of real speed. It shows the frame rate at each moment, a chart of the frame rate across the run with dropped frames in red, and blank frames (for `scroll()`) or inputs and long frames (for `measure()`). `replay: 'on'` attaches one every time, and `'off'` never does. `measure()` makes one extra run for its replay, because screenshots take compositor time, and that run is never counted.
+When a full-mode `measure()` or `scroll()` check gets worse, a video of one run is attached to the test in the Playwright report, played at a quarter of real speed. Under the recording it shows the frame rate at each moment, in red while frames are being dropped, beside a chart of the frame rate across the run with the elapsed time under the playhead. For `scroll()`, a frame where the list is blank is outlined and tagged. `replay: 'on'` attaches one every time, and `'off'` never does. `measure()` makes one extra run for its replay, because screenshots take compositor time, and that run is never counted.
 
 ## Baselines
 

@@ -3,6 +3,7 @@
 import type { PageDriver, ScratchPage } from '../driver.js';
 import { FORMAT_NAME } from '../constants.js';
 import { muxWebM, type EncodedFrame } from './webm.js';
+import { ARCHIVO } from './font.js';
 
 /** Replays play this many times slower than real time: at 60fps, blank frames flash past unseen. */
 const REPLAY_SLOWDOWN = 4;
@@ -38,8 +39,20 @@ interface Chunk {
 }
 
 /** Renders and encodes in the page. Self-contained: it's serialized into the browser. */
-async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: number; bitrate: number }) {
+async function renderInPage(
+  args: ReplayInput & {
+    slowdown: number;
+    keyEvery: number;
+    bitrate: number;
+    fonts: { weight: number; woff2: string }[];
+  },
+) {
   const bytes = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  // The panel's font, loaded from the package, so it looks the same on every machine.
+  for (const f of args.fonts) {
+    const face = new FontFace('Archivo', bytes(f.woff2), { weight: String(f.weight) });
+    document.fonts.add(await face.load());
+  }
   const decode = (b64: string) => createImageBitmap(new Blob([bytes(b64)], { type: 'image/jpeg' }));
   const first = await decode(args.jpegs[0]!);
   const imgW = first.width;
@@ -49,21 +62,14 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const total = args.timesMs[n - 1] ?? 0;
   // Frames count as blank (rows not drawn) only on a virtualized list.
   const rowsMatter = args.rect !== null && args.virtualized;
-  const blankCount = rowsMatter ? args.drawn.filter((d) => d < args.blankShare).length : 0;
 
-  // What the strip under the graph shows: rows not drawn (virtualized lists), long frames
-  // (measure()), or nothing (other scrolls).
-  const strip: 'rows' | 'long' | null = args.rect === null ? 'long' : rowsMatter ? 'rows' : null;
   const pad = 24;
   const even = (v: number) => Math.ceil(v) + (Math.ceil(v) % 2);
   const width = even(imgW + pad * 2);
-  // Room above the chart for a key, when there's something to key, and under it for the strip.
-  const keyRoom = strip || args.markers.inputs.length ? 18 : 0;
-  const height = even(pad + imgH + 48 + 28 + keyRoom + 60 + (strip ? 54 : 50) + 18);
+  const height = even(pad + imgH + 48 + 28 + 60 + 22 + 20);
   const sx = imgW / args.viewport.width;
   const sy = imgH / args.viewport.height;
-  const sans =
-    'Inter, Geist, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+  const sans = 'Archivo, sans-serif';
   const c = {
     paper: '#ffffff',
     ink: '#0a0a0a',
@@ -71,7 +77,8 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     faint: '#a1a1a1',
     hair: '#eaeaea',
     wash: '#f5f5f5',
-    bad: '#e5484d',
+    // The one colour: the frame rate below 60.
+    bad: '#b4413a',
   };
 
   const canvas = new OffscreenCanvas(width, height);
@@ -94,7 +101,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const isDigit = (ch: string) => (ch >= '0' && ch <= '9') || ch === '\u2007';
   // Numbers are set a little tighter than the font's default spacing, more so at display sizes,
   // where the default gaps between digits look loose.
-  const tracking = (size: number) => size * (size >= 20 ? -0.06 : -0.02);
+  const tracking = (size: number) => size * (size >= 40 ? -0.04 : size >= 20 ? -0.03 : 0);
   const numWidth = (s: string, size: number, weight: number) => {
     g.font = `${weight} ${size}px ${sans}`;
     const cell = g.measureText('0').width + tracking(size);
@@ -135,7 +142,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
   const secs = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
 
   // The list on the screenshot: a hairline when drawn; when its rows aren't drawn (a blank frame),
-  // a red outline and a tag that says so. The empty list itself is the evidence, so it isn't
+  // a black outline and a tag that says so. The empty list itself is the evidence, so it isn't
   // covered.
   const markList = (ox: number, oy: number, blank: boolean) => {
     if (!args.rect) return;
@@ -149,15 +156,15 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
       return;
     }
-    g.strokeStyle = c.bad;
+    g.strokeStyle = c.ink;
     g.lineWidth = 2;
     g.beginPath();
     g.roundRect(x + 1, y + 1, w - 2, h - 2, 4);
     g.stroke();
     g.font = `500 11px ${sans}`;
-    const tag = 'Rows not drawn yet';
+    const tag = 'Blank: rows not rendered yet';
     const tagW = g.measureText(tag).width + 16;
-    g.fillStyle = c.bad;
+    g.fillStyle = c.ink;
     g.beginPath();
     g.roundRect(x + 8, y + 8, tagW, 20, 4);
     g.fill();
@@ -180,10 +187,6 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     return shown + missed === 0 ? null : Math.round((60 * shown) / (shown + missed));
   };
   const fpsAt = (t: number) => fpsBetween(t - FPS_WINDOW_MS, t);
-  // One mark per interaction: its entries (pointerdown, click) arrive within a few ms.
-  const inputs = [...args.markers.inputs]
-    .sort((a, b) => a - b)
-    .filter((t, k, all) => k === 0 || t - all[k - 1]! > 30);
   const GRAPH_COLS = 60;
   const colOf = (ms: number) => Math.min(GRAPH_COLS - 1, Math.floor((ms / (total || 1)) * GRAPH_COLS));
   const slices = Array.from({ length: GRAPH_COLS }, (_, cI) => {
@@ -192,8 +195,6 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     const mid = (from + to) / 2;
     return {
       fps: fpsBetween(Math.max(0, mid - FPS_WINDOW_MS / 2), Math.min(total, mid + FPS_WINDOW_MS / 2)),
-      blank: args.drawn.some((d, j) => d < args.blankShare && colOf(args.timesMs[j]!) === cI),
-      long: args.markers.longFrames.some((f) => f.tMs < to && f.tMs + f.durMs > from),
     };
   });
 
@@ -240,7 +241,8 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
     const right = width - pad;
     let y = pad + imgH + 34;
     g.font = `500 13px ${sans}`;
-    const speed = `Replay at 1/${args.slowdown} speed`;
+    // The video's own speed: the recording is slowed down so dropped and blank frames can be seen.
+    const speed = `Playback speed: ${1 / args.slowdown}×`;
     g.font = `400 12px ${sans}`;
     const speedW = g.measureText(speed).width;
     g.font = `500 13px ${sans}`;
@@ -251,50 +253,41 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
 
     const fps = fpsAt(now);
     const droppingNow = droppedBetween(now - FPS_WINDOW_MS, now) > 0;
-    const droppedSoFar = droppedBetween(-1, now);
-
-    // Above the chart, right-aligned: what the red in the strip means, and the input marks.
-    const keyY = y + 24;
-    let kx = right;
-    const key = (label: string, detail: string, swatch: (x: number) => void) => {
-      g.font = `400 12px ${sans}`;
-      const w = g.measureText(label).width + (detail ? g.measureText(detail).width + 6 : 0);
-      kx -= w;
-      const tx = kx + text(label, kx, keyY, { fill: c.muted }) + 6;
-      if (detail) text(detail, tx, keyY, { fill: c.faint });
-      swatch(kx - 14);
-      kx -= 30;
-    };
-    if (inputs.length)
-      key('Input', '', (x) => {
-        g.fillStyle = c.muted;
-        g.beginPath();
-        g.moveTo(x, keyY - 8);
-        g.lineTo(x + 8, keyY - 8);
-        g.lineTo(x + 4, keyY - 1);
-        g.closePath();
-        g.fill();
-      });
-    const square = (x: number) => {
-      g.fillStyle = c.bad;
-      g.beginPath();
-      g.roundRect(x, keyY - 8, 8, 8, 2);
-      g.fill();
-    };
-    if (strip === 'rows') key('Rows not drawn', `${blankCount} of ${n} frames`, square);
-    if (strip === 'long') key('Long frames', String(args.markers.longFrames.length), square);
 
     // Frame rate, large, beside the chart that plots it.
-    const chartTop = y + 28 + keyRoom;
+    const chartTop = y + 28;
     const chartH = 60;
     const chartBottom = chartTop + chartH;
-    text('Frame rate', left, chartTop + 2, { fill: c.muted });
-    num(fps === null ? '–' : String(fps), left - 2, chartTop + 44, {
-      size: 44,
+    // The frame rate block spans the chart's axis labels: the label's capitals start level with the
+    // top of the '60', and the number and 'fps' share the '0' label's baseline. The number is sized
+    // to fill the height between, 9px below the label's baseline.
+    const ascent = (font: string, ch: string) => {
+      g.font = font;
+      return g.measureText(ch).actualBoundingBoxAscent;
+    };
+    const axisTop = chartTop + 4 - ascent(`400 10px ${sans}`, '6');
+    const labelBaseline = axisTop + ascent(`400 12px ${sans}`, 'F');
+    const fpsBaseline = chartBottom + 4;
+    const fpsSize = ((fpsBaseline - labelBaseline - 9) / ascent(`600 100px ${sans}`, '0')) * 100;
+    // The label is spaced out to the ink width of two digits, and the digits' ink starts at the
+    // label's left edge, so the two read as one block.
+    g.font = `600 ${fpsSize}px ${sans}`;
+    const zero = g.measureText('0');
+    const bearing = (zero.width - zero.actualBoundingBoxLeft - zero.actualBoundingBoxRight) / 2;
+    const digitsInk = numWidth('00', fpsSize, 600) - 2 * bearing;
+    g.font = `400 12px ${sans}`;
+    const label = 'Frame rate';
+    const labelInk = g.measureText(label).actualBoundingBoxRight + g.measureText(label).actualBoundingBoxLeft;
+    g.letterSpacing = `${Math.max(0, (digitsInk - labelInk) / (label.length - 1))}px`;
+    text(label, left, labelBaseline, { fill: c.muted });
+    g.letterSpacing = '0px';
+    const fpsX = left - bearing;
+    const fpsWidth = num(fps === null ? '–' : String(fps), fpsX, fpsBaseline, {
+      size: fpsSize,
       weight: 600,
       fill: droppingNow ? c.bad : c.ink,
     });
-    text('fps', left, chartTop + 62, { size: 13, fill: c.faint });
+    text('fps', fpsX + fpsWidth + 4, fpsBaseline, { size: 11, fill: c.faint });
 
     // The frame rate across the run, drawn in as the replay plays: black at 60fps, red below
     // it, where frames were dropped. A gridline at 60 and 30.
@@ -315,7 +308,7 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       g.moveTo(gl, Math.round(yAt(v)) + 0.5);
       g.lineTo(right, Math.round(yAt(v)) + 0.5);
       g.stroke();
-      text(String(v), axis, yAt(v) + 4, { size: 10, fill: c.faint });
+      text(String(v), gl - 6, yAt(v) + 4, { size: 10, fill: c.faint, align: 'right' });
     }
     g.setLineDash([]);
     const playCol = colOf(now);
@@ -335,18 +328,6 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       g.lineTo(pts[k]!.x, pts[k]!.y);
       g.stroke();
     }
-    // measure(): a small mark above the chart where each input arrived.
-    for (const t of inputs) {
-      if (t > now) continue;
-      const ix = Math.round(xAt(Math.max(0, t))) + 0.5; // an input just before the first frame sits at the start
-      g.fillStyle = c.muted;
-      g.beginPath();
-      g.moveTo(ix - 3.5, chartTop - 11);
-      g.lineTo(ix + 3.5, chartTop - 11);
-      g.lineTo(ix, chartTop - 5);
-      g.closePath();
-      g.fill();
-    }
     // Playhead, with a dot at the current frame rate.
     const hx = Math.round(xAt(now)) + 0.5;
     g.fillStyle = 'rgba(10, 10, 10, 0.25)';
@@ -362,75 +343,13 @@ async function renderInPage(args: ReplayInput & { slowdown: number; keyEvery: nu
       g.stroke();
     }
 
-    // A strip under the chart marks slices with rows not drawn (virtualized lists) or long
-    // frames (measure()).
-    y = chartBottom;
-    if (strip) {
-      y += 10;
-      g.fillStyle = c.wash;
-      g.beginPath();
-      g.roundRect(gl, y, right - gl, 6, 3);
-      g.fill();
-      g.fillStyle = c.bad;
-      // Runs of marked slices, each drawn as one bar so there are no seams between them.
-      const marked = (cI: number) =>
-        cI <= playCol && (strip === 'rows' ? slices[cI]!.blank : slices[cI]!.long);
-      for (let cI = 0; cI <= playCol; cI++) {
-        if (!marked(cI)) continue;
-        let end = cI;
-        while (marked(end + 1)) end++;
-        g.beginPath();
-        g.roundRect(gl + cI * sliceW, y, (end - cI + 1) * sliceW, 6, 3);
-        g.fill();
-        cI = end;
-      }
-      y += 6;
-    }
-
-    // Under the chart, right-aligned: how much of the list was drawn (when it went blank),
-    // dropped frames and elapsed time, each with its label over two lines to its left. The
-    // frame number is on the left of the same line.
-    const statY = strip ? y + 38 : y + 50;
-    // Each value sits in a slot as wide as its largest value in the run, so labels stay put.
-    const stats: { words: [string, string]; value: string; widest: string; bad?: boolean }[] = [];
-    if (blankCount > 0)
-      stats.push({
-        words: ['List', 'drawn'],
-        value: `${Math.round(drawn * 100)}%`,
-        widest: '100%',
-        bad: blank,
-      });
-    stats.push({
-      words: ['Dropped', 'frames'],
-      value: String(droppedSoFar),
-      widest: String(droppedBetween(-1, total)),
-      bad: droppedSoFar > 0,
-    });
-    stats.push({ words: ['Elapsed', 'time'], value: secs(now), widest: secs(total) });
-    // Each number is as tall as its two-line label: the tops of its digits line up with the tops of
-    // the first line's capitals, and it shares the second line's baseline.
+    // The chart's time axis: the elapsed time, in real time, under the playhead.
+    const elapsed = secs(now);
     g.font = `400 11px ${sans}`;
-    const labelHeight = 12 + g.measureText('D').actualBoundingBoxAscent;
-    g.font = `600 100px ${sans}`;
-    const statSize = (labelHeight / g.measureText('0').actualBoundingBoxAscent) * 100;
-    let sx2 = right;
-    for (const st of [...stats].reverse()) {
-      num(st.value, sx2, statY, {
-        size: statSize,
-        weight: 600,
-        fill: st.bad ? c.bad : c.ink,
-        align: 'right',
-      });
-      const lx = sx2 - numWidth(st.widest, statSize, 600) - 5;
-      text(st.words[0], lx, statY - 12, { size: 11, fill: c.muted, align: 'right' });
-      text(st.words[1], lx, statY, { size: 11, fill: c.muted, align: 'right' });
-      g.font = `400 11px ${sans}`;
-      sx2 = lx - Math.max(...st.words.map((word) => g.measureText(word).width)) - 24;
-    }
-    text('Frame', left, statY - 12, { size: 11, fill: c.muted });
-    num(`${String(i + 1).padStart(String(n).length, '\u2007')} of ${n}`, left, statY, {
+    const half = numWidth(elapsed, 11, 400) / 2;
+    num(elapsed, Math.min(right - half, Math.max(gl + half, hx)) - half, chartBottom + 18, {
       size: 11,
-      fill: c.faint,
+      fill: c.muted,
     });
 
     const frame = new VideoFrame(canvas, { timestamp: Math.round(args.timesMs[i]! * args.slowdown * 1000) });
@@ -469,6 +388,7 @@ export async function encodeReplay(
       slowdown: REPLAY_SLOWDOWN,
       keyEvery: KEY_FRAME_EVERY,
       bitrate: REPLAY_BITRATE,
+      fonts: ARCHIVO,
     });
     if (out.failure) return { unavailable: `the replay couldn't be encoded: ${out.failure}` };
     const frames: EncodedFrame[] = out.chunks
