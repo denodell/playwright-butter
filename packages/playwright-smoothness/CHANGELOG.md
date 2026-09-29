@@ -19,5 +19,5 @@ The first release. The public API and the JSON result format (`schemaVersion: 1`
 ### Reporting and tuning
 
 - `playwright-smoothness/reporter` writes a Markdown summary for pull requests, and adds it to the GitHub Actions job summary.
-- When a full-mode `measure()` or `scroll()` check gets worse, a WebM replay of one run is attached to the test (`replay: 'on-regression' | 'on' | 'off'`). It plays at a quarter of real speed and shows the frame rate, dropped frames, and blank frames for lists or inputs and long frames for `measure()`.
+- When a full-mode `measure()` or `scroll()` check gets worse, a WebM replay of one run is attached to the test (`replay: 'on-regression' | 'on' | 'off'`). It plays at a quarter of real speed, and shows the frame rate at each moment beside a chart of it across the run. On lists, frames where the list is blank are outlined and tagged.
 - `npx playwright-smoothness calibrate` runs the suite several times on unchanged code and suggests a `maxIncrease` for each check.

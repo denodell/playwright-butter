@@ -23,4 +23,4 @@ The engine needs Chromium, because it relies on the Chrome DevTools Protocol and
 
 ## Licence
 
-MIT
+MIT. The replay panel's font, Archivo, is included under the SIL Open Font License 1.1 (`ARCHIVO-OFL.txt`).
