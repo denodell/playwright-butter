@@ -66,7 +66,9 @@ async function renderInPage(
   const pad = 24;
   const even = (v: number) => Math.ceil(v) + (Math.ceil(v) % 2);
   const width = even(imgW + pad * 2);
-  const height = even(pad + imgH + 30 + 60 + 56 + 22);
+  // A title row above the recording, and the frame rate and its chart below it.
+  const shotTop = pad + 34;
+  const height = even(shotTop + imgH + 30 + 60 + 44);
   const sx = imgW / args.viewport.width;
   const sy = imgH / args.viewport.height;
   const sans = 'Archivo, sans-serif';
@@ -134,10 +136,6 @@ async function renderInPage(
     if (g.measureText(s).width <= max) return s;
     while (s.length > 1 && g.measureText(s + '…').width > max) s = s.slice(0, -1);
     return s + '…';
-  };
-  const hline = (x0: number, x1: number, y: number, stroke = c.hair) => {
-    g.fillStyle = stroke;
-    g.fillRect(x0, Math.round(y), x1 - x0, 1);
   };
   const secs = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
 
@@ -225,22 +223,22 @@ async function renderInPage(
     // The screenshot, in a rounded frame.
     g.save();
     g.beginPath();
-    g.roundRect(pad, pad, imgW, imgH, 8);
+    g.roundRect(pad, shotTop, imgW, imgH, 8);
     g.clip();
-    g.drawImage(img, pad, pad);
-    markList(pad, pad, blank);
+    g.drawImage(img, pad, shotTop);
+    markList(pad, shotTop, blank);
     g.restore();
     img.close();
     g.strokeStyle = c.hair;
     g.lineWidth = 1;
     g.beginPath();
-    g.roundRect(pad - 0.5, pad - 0.5, imgW + 1, imgH + 1, 8.5);
+    g.roundRect(pad - 0.5, shotTop - 0.5, imgW + 1, imgH + 1, 8.5);
     g.stroke();
 
     const left = pad;
     const right = width - pad;
     // The frame rate and its chart sit right under the recording.
-    const y = pad + imgH;
+    const y = shotTop + imgH;
 
     const fps = fpsAt(now);
     const droppingNow = droppedBetween(now - FPS_WINDOW_MS, now) > 0;
@@ -343,22 +341,21 @@ async function renderInPage(
       fill: c.muted,
     });
 
-    // Underneath: what was measured, and the video's own speed as a play icon and a multiplier (the
-    // recording is slowed down so dropped and blank frames can be seen).
-    const footY = chartBottom + 56;
-    hline(left, right, footY - 22);
+    // Above the recording: what was measured, and the video's own speed as a play icon and a
+    // multiplier (the recording is slowed down so dropped and blank frames can be seen).
+    const titleY = pad + 13;
     const speed = `${1 / args.slowdown}×`;
     g.font = `400 12px ${sans}`;
     const speedW = g.measureText(speed).width + 13;
     g.font = `500 13px ${sans}`;
-    text(fit(args.title, right - left - speedW - 24), left, footY, { size: 13, weight: 500, fill: c.ink });
-    text(speed, right, footY, { fill: c.faint, align: 'right' });
+    text(fit(args.title, right - left - speedW - 24), left, titleY, { size: 13, weight: 500, fill: c.ink });
+    text(speed, right, titleY, { fill: c.faint, align: 'right' });
     const px = right - speedW;
     g.fillStyle = c.faint;
     g.beginPath();
-    g.moveTo(px, footY - 9);
-    g.lineTo(px + 8, footY - 4.5);
-    g.lineTo(px, footY);
+    g.moveTo(px, titleY - 9);
+    g.lineTo(px + 8, titleY - 4.5);
+    g.lineTo(px, titleY);
     g.closePath();
     g.fill();
 
