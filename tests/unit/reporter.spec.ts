@@ -179,3 +179,48 @@ test('reporter: outputFile, title, and githubSummary: false', () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('summary: automatic mode at suite scale', () => {
+  const cwd = '/work/app';
+  const building = (title: string): ReportEntry =>
+    entry(title, {
+      ...makeResult({ label: title }),
+      comparison: {
+        status: 'not-compared',
+        checks: [],
+        baseline: null,
+        notes: [
+          `Building history: 1 of 3 main-branch runs recorded. This run was added to the history (${cwd}/smoothness-history/app.spec.ts/x.json).`,
+        ],
+      },
+    });
+  const passing = entry('search › types a query', {
+    ...compared(
+      makeResult({ label: 'search › types a query', input: { p95ToPaintMs: 110 } }),
+      before,
+      'pass',
+    ),
+  });
+  const missing = entry('menu › opens', {
+    ...makeResult({ label: 'menu › opens' }),
+    comparison: {
+      status: 'not-compared',
+      checks: [],
+      baseline: null,
+      notes: [`No baseline exists at ${cwd}/tests/x.json.`],
+    },
+  });
+  const md = buildMarkdown([building('a › one'), building('b › two'), passing, missing], 'Smoothness', cwd);
+  // The label is the test's own title, so it's named once.
+  expect(md).toContain('| OK | search › types a query |');
+  expect(md).not.toContain('"search › types a query"');
+  // Passing checks are folded away, and history-building tests are one line.
+  expect(md).toContain('<summary>2 checks within baseline</summary>');
+  expect(md).toContain(
+    "- 2 tests are building history in automatic mode: each needs 3 main-branch runs before it's compared.",
+  );
+  expect(md).not.toContain('a › one');
+  // Paths in notes are relative to the project.
+  expect(md).toContain('No baseline exists at tests/x.json.');
+  expect(md).not.toContain(cwd);
+});

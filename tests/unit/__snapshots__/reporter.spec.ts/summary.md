@@ -1,15 +1,23 @@
 ## Smoothness
 
-**2 got worse** · 1 within baseline · 1 new baseline · 2 not compared
+**2 got worse**, 1 within baseline, 1 new baseline, 2 not compared
 
 | | Measurement | Check | Now | Baseline | Allowed |
 |---|---|---|---|---|---|
 | **Worse** | filters › open › "open filters" [chromium] | input-to-paint (p95) | 176ms (+67ms, +61.5%) | 109ms | +16.3ms |
 | **Failed** | checkout › "pay" [chromium] | long frames | 3 (+2, +200%) | 1 | +1 |
+
+<details>
+<summary>4 checks within baseline</summary>
+
+| | Measurement | Check | Now | Baseline | Allowed |
+|---|---|---|---|---|---|
 | OK | filters › open › "open filters" [chromium] | long frames | 1 (no change) | 1 | +1 |
 | OK | checkout › "pay" [chromium] | input-to-paint (p95) | 112ms (+3ms, +2.8%) | 109ms | +16.3ms |
 | OK | search › "type" [chromium] | input-to-paint (p95) | 104ms (−5ms, −4.6%) | 109ms | +16.3ms |
 | OK | search › "type" [chromium] | long frames | 1 (no change) | 1 | +1 |
+
+</details>
 
 ### What got worse
 
@@ -37,4 +45,4 @@ Scripts blocking the interaction:
 - catalogue › "fling" [firefox]: not compared: Nothing was measured: Chromium only.
 - menu › "open menu" [chromium]: not compared, because `toBeSmooth()` wasn't called
 
-<sub>chromium 153.0.8010.12 (new-headless), firefox 145.0 (new-headless) · AMD EPYC 7763 64-Core Processor (4 CPUs)</sub>
+<sub>chromium 153.0.8010.12 (new-headless), firefox 145.0 (new-headless), on AMD EPYC 7763 64-Core Processor (4 CPUs)</sub>
