@@ -35,21 +35,18 @@ test("the default history folder: the project's nearest node_modules, else next 
   const at = (...p: string[]) => join(root, ...p);
   const make = (...p: string[]) => mkdirSync(at(...p), { recursive: true });
   try {
-    // A project with its own node_modules.
     make('app', 'node_modules');
     writeFileSync(at('app', 'package-lock.json'), '{}');
     expect(defaultHistoryDir(at('app'))).toEqual({
       dir: at('app', 'node_modules', '.cache', 'playwright-smoothness', 'history'),
       watched: false,
     });
-    // A workspace package whose dependencies are hoisted to the root.
     make('mono', 'node_modules');
     make('mono', 'packages', 'web');
     writeFileSync(at('mono', 'package-lock.json'), '{}');
     expect(defaultHistoryDir(at('mono', 'packages', 'web')).dir).toBe(
       at('mono', 'node_modules', '.cache', 'playwright-smoothness', 'history'),
     );
-    // Yarn Plug'n'Play: no node_modules in the project, and the one above it isn't the project's.
     make('node_modules');
     make('pnp');
     writeFileSync(at('pnp', 'yarn.lock'), '');

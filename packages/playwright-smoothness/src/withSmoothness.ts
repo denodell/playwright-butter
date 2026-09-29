@@ -73,26 +73,15 @@ export interface AutoOptions extends SmoothnessOptions {
    * (see onMainBranch), or when SMOOTHNESS_RECORD=1. Pull requests only compare.
    */
   record?: boolean;
-  /**
-   * Where histories are kept. Default: `baselineDir` if set, else
-   * `.cache/playwright-smoothness/history` in the project's node_modules, where dev servers don't
-   * watch for changes (see defaultHistoryDir).
-   */
+  /** Where histories are kept. Default: `baselineDir` if set, else `.cache/playwright-smoothness/history` in the project's node_modules. */
   historyDir?: string;
 }
 
-/**
- * Histories are rewritten while other tests are still running. A dev server that watches the
- * project (Vite's does) reloads its pages when a file it watches changes, which broke tests in
- * other workers mid-run. Dev servers leave node_modules alone, and tools keep caches in
- * node_modules/.cache.
- */
+/** Dev servers don't watch node_modules, so rewriting a history there doesn't reload pages mid-run. */
 const CACHE_SUBDIR = '.cache/playwright-smoothness/history';
 
-/** Where histories go when the project has no node_modules (Yarn Plug'n'Play). */
 const FALLBACK_HISTORY_DIR = 'smoothness-history';
 
-/** A project root has one of these; the search for node_modules stops there. */
 const PROJECT_ROOT_MARKERS = [
   '.git',
   'package-lock.json',
@@ -104,11 +93,7 @@ const PROJECT_ROOT_MARKERS = [
 
 const historyDirs = new Map<string, { dir: string; watched: boolean }>();
 
-/**
- * The nearest node_modules from the config's folder up to the project root, so a workspace
- * package whose dependencies are hoisted to the root uses the root's. Without one, the history
- * goes next to the config, where a watching dev server needs to be told to ignore it.
- */
+/** The nearest node_modules up to the project root, else `smoothness-history` next to the config. */
 export function defaultHistoryDir(configDir: string): { dir: string; watched: boolean } {
   let found = historyDirs.get(configDir);
   if (found) return found;
@@ -344,7 +329,6 @@ interface TestHistory {
   entries: HistoryEntry[];
   /** Notes on reading the history, for the comparison. */
   notes: string[];
-  /** True when the history is in the project folder by default, where a dev server may watch it. */
   watched: boolean;
 }
 
