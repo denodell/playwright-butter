@@ -2,6 +2,7 @@
 // using the page's source maps. A profile gives each function's position in the bundle (V8
 // points at the "(" of its parameter list), so the minified name is the identifier just before
 // it, and the source map says what that identifier was called originally.
+import type { TopScript } from '../types.js';
 import { SourceMap } from './sourcemap.js';
 
 /** A function as the profile saw it. Line and column are 1-based. */
@@ -86,6 +87,26 @@ function decodeDataUrl(url: string): string | null {
   }
 }
 
+/**
+ * The top scripts with original names and files where the page's source maps have them. A
+ * resolved script keeps its minified name and bundle in `generated`.
+ */
+export async function resolveScripts(scripts: TopScript[], resolver: NameResolver): Promise<TopScript[]> {
+  return Promise.all(
+    scripts.map(async (s) => {
+      const r = await resolver.resolveAt(s.source, s.charPosition ?? -1).catch(() => null);
+      if (!r) return s;
+      return {
+        ...s,
+        fn: r.name ?? s.fn,
+        source: r.source,
+        line: r.line,
+        generated: { fn: s.fn, source: s.source },
+      };
+    }),
+  );
+}
+
 export class NameResolver {
   private readonly scripts = new Map<string, Promise<Script | string>>();
 
@@ -130,6 +151,23 @@ export class NameResolver {
     const map = SourceMap.parse(json, mapUrl ?? url);
     if (typeof map === 'string') return map;
     return { lines: script.text.split('\n'), map };
+  }
+
+  /**
+   * Resolves a function given as a character offset into its script (as Long Animation Frames
+   * reports it) to its original name and position, or null if it can't be.
+   */
+  async resolveAt(url: string, charPosition: number): Promise<ResolvedFrame | null> {
+    if (charPosition < 0 || !/^(https?|file|data):/.test(url)) return null;
+    const script = await this.load(url);
+    if (typeof script === 'string') return null;
+    let offset = charPosition;
+    for (let i = 0; i < script.lines.length; i++) {
+      const length = script.lines[i]!.length + 1; // the newline that split() removed
+      if (offset < length) return this.resolve({ url, fn: '', line: i + 1, column: offset + 1 });
+      offset -= length;
+    }
+    return null;
   }
 
   /** Resolves a profiled function to its original name and position, or null if it can't be. */

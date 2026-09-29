@@ -63,7 +63,9 @@ export function describeHotFunction(f: HotFunction): string {
 export function describeScript(s: TopScript): string {
   const fn = s.fn || '(anonymous)';
   const during = s.during.length ? `, during ${s.during.join(', ')}` : '';
-  return `${fn} in ${shortSource(s.source)} (${s.invoker || s.invokerType}): ran ${round1(s.durationMs)}ms, ${round1(s.blockingMs)}ms of it blocking${during}`;
+  // Through a source map, the original file and line; otherwise the script as the page loaded it.
+  const where = s.line ? `${shortSource(s.source)}:${s.line}` : shortSource(s.source);
+  return `${fn} in ${where} (${s.invoker || s.invokerType}): ran ${round1(s.durationMs)}ms, ${round1(s.blockingMs)}ms of it blocking${during}`;
 }
 
 /** Left-aligned columns, indented two spaces. */

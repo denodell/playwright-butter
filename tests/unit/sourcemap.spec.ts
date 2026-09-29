@@ -5,6 +5,7 @@ import { SourceMap } from '../../packages/smoothness-core/src/sourcemap/sourcema
 import {
   NameResolver,
   generatedName,
+  resolveScripts,
   type FetchText,
 } from '../../packages/smoothness-core/src/sourcemap/resolve.js';
 
@@ -168,4 +169,46 @@ test('resolver: missing, broken or unfetchable maps', async () => {
 
   // Native and eval'd code has no URL; nothing is fetched.
   expect(await offline.resolve({ fn: 'now', url: '', line: 0, column: 0 })).toBeNull();
+});
+
+test('resolver: a Long Animation Frames script, by character offset', async () => {
+  const { js, map } = await minified();
+  const fetchText: FetchText = async (url) => ({ text: url.endsWith('.map') ? map : js });
+  const resolver = new NameResolver(fetchText);
+  // LoAF gives a character offset into the script rather than a line and column.
+  const busy = frameFor(js, /function ([\w$]+)(?=\()/);
+  const offset =
+    js
+      .split('\n')
+      .slice(0, busy.line - 1)
+      .reduce((n, l) => n + l.length + 1, 0) +
+    busy.column -
+    1;
+  expect(await resolver.resolveAt('http://x/dist/cart.js', offset)).toMatchObject({
+    name: 'busyWait',
+    line: 1,
+  });
+  expect(await resolver.resolveAt('http://x/dist/cart.js', -1)).toBeNull();
+
+  const minifiedName = /function ([\w$]+)(?=\()/.exec(js)![1]!;
+  const script = {
+    source: 'http://x/dist/cart.js',
+    fn: minifiedName,
+    charPosition: offset,
+    invoker: 'BUTTON#buy.onclick',
+    invokerType: 'event-listener',
+    blockingMs: 40,
+    durationMs: 90,
+    during: [],
+  };
+  const [resolved] = await resolveScripts([script], resolver);
+  expect(resolved).toMatchObject({
+    fn: 'busyWait',
+    source: 'http://x/dist/src/cart.js',
+    line: 1,
+    generated: { fn: minifiedName, source: 'http://x/dist/cart.js' },
+  });
+  // A script with no position, or no map, stays as it was.
+  const [unchanged] = await resolveScripts([{ ...script, charPosition: -1 }], resolver);
+  expect(unchanged).toEqual({ ...script, charPosition: -1 });
 });

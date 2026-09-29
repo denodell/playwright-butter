@@ -138,6 +138,15 @@ export interface TopScript {
    * framework; this names what the user actually interacted with (see docs/frameworks.md).
    */
   during: string[];
+  /** Character offset of the function in the script, as LoAF reports it; -1 when unknown. */
+  charPosition?: number;
+  /** 1-based line of the function in the original source, when a source map resolved it. */
+  line?: number;
+  /**
+   * Set when a source map resolved this script: its minified name, and the bundle it's in.
+   * `fn` and `source` are then the original ones.
+   */
+  generated?: { fn: string; source: string };
 }
 
 export interface LongFramesResult {

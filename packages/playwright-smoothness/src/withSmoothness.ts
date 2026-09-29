@@ -53,9 +53,11 @@ import {
   type ScrollRecord,
   type SmoothnessResult,
   type StreamBatch,
+  NameResolver,
+  resolveScripts,
 } from 'smoothness-core';
 import { resultDir } from './testinfo.js';
-import { browserEnvironment } from './driver.js';
+import { browserEnvironment, contextFetcher } from './driver.js';
 import { smoothnessFixtures, type SmoothnessFixtures, type SmoothnessOptions } from './fixture.js';
 
 export interface AutoOptions extends SmoothnessOptions {
@@ -465,6 +467,18 @@ export function withSmoothness<T extends object, W extends object>(
         if (docs.size === 0) return; // the test never loaded a page: nothing to measure
 
         const result = autoResult(docs, label, environment, resolved);
+        // Scripts named through the page's source maps, from each script's position in its bundle.
+        if (result.longFrames) {
+          const resolver = new NameResolver(contextFetcher(context));
+          result.longFrames.topScripts = await resolveScripts(result.longFrames.topScripts, resolver);
+          const failures = (await resolver.failures()).filter(
+            (f) => !f.endsWith('it has no sourceMappingURL'),
+          );
+          if (failures.length)
+            result.notes.push(
+              `Source maps couldn't be used, so some names may be minified: ${failures.join('; ')}.`,
+            );
+        }
 
         // Compare with, and maybe add to, the history.
         const testHistory = readTestHistory(testInfo, label, result, historyDir ?? resolved.baselineDir);

@@ -39,7 +39,7 @@ Event Timing names the real element every time, including behind React's delegat
 
 ## Source maps and LoAF
 
-LoAF's `scripts[]` only records the entry point of each script execution, which is the function the browser called. The browser calls the framework's dispatcher, and the dispatcher calls your handler, so `sourceURL` and `sourceCharPosition` point at the dispatcher. A source map would turn `QS` back into `dispatchDiscreteEvent` in `react-dom`, but it can't name `onCheckout`, because that function is never an entry point. The library only uses source maps for the CPU profile, whose stacks do include the handler.
+LoAF's `scripts[]` only records the entry point of each script execution, which is the function the browser called. The browser calls the framework's dispatcher, and the dispatcher calls your handler, so `sourceURL` and `sourceCharPosition` point at the dispatcher. The library looks each script up in the page's source maps, in every mode, so `QS` becomes `dispatchDiscreteEvent` in `react-dom-client.production.js`, with the minified name kept in the script's `generated` field. A source map can't name `onCheckout`, though, because that function is never an entry point. The CPU profile in full mode can, because its stacks include the handler. In an app without a framework dispatcher, the entry point is your own handler, and the source map names it in quick and automatic mode too.
 
 ## Linking scripts to interactions
 
