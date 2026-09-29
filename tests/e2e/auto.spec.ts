@@ -51,7 +51,7 @@ function run(env: Record<string, string> = {}) {
   const results = files(join(project, 'test-results', 'smoothness'), 'auto.json').map(
     (f) => JSON.parse(readFileSync(f, 'utf8')) as SmoothnessResult,
   );
-  const histories = files(join(project, 'smoothness-history'), '.json').map(
+  const histories = files(join(project, 'node_modules/.cache/playwright-smoothness/history'), '.json').map(
     (f) => JSON.parse(readFileSync(f, 'utf8')) as HistoryFile,
   );
   return { code: child.status, output, results, histories };
@@ -66,6 +66,7 @@ test.setTimeout(180_000);
 test.beforeAll(() => {
   rmSync(project, { recursive: true, force: true });
   mkdirSync(project, { recursive: true });
+  mkdirSync(join(project, 'node_modules'));
   cpSync(resolve('tests/e2e/auto-project'), project, { recursive: true });
   writeFileSync(join(project, 'fixtures.ts'), PLAIN);
 });
