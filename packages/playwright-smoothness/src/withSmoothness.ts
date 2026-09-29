@@ -72,9 +72,21 @@ export interface AutoOptions extends SmoothnessOptions {
    * (see onMainBranch), or when SMOOTHNESS_RECORD=1. Pull requests only compare.
    */
   record?: boolean;
-  /** Where histories are kept. Default: `baselineDir` if set, else `smoothness-history` in the config's folder. */
+  /**
+   * Where histories are kept. Default: `baselineDir` if set, else
+   * `node_modules/.cache/playwright-smoothness/history` in the config's folder, where dev servers
+   * don't watch for changes (see DEFAULT_HISTORY_DIR).
+   */
   historyDir?: string;
 }
+
+/**
+ * Histories are rewritten while other tests are still running. A dev server that watches the
+ * project (Vite's does) reloads its pages when a file it watches changes, which broke tests in
+ * other workers mid-run. Dev servers leave node_modules alone, and tools keep caches in
+ * node_modules/.cache.
+ */
+const DEFAULT_HISTORY_DIR = 'node_modules/.cache/playwright-smoothness/history';
 
 /** Binding the in-page collector streams records to, so they survive navigation. */
 const STREAM_BINDING = '__playwrightSmoothnessStream';
@@ -304,7 +316,7 @@ function readTestHistory(
 ): TestHistory {
   // Relative paths are relative to the config file's folder, whatever directory the run started in.
   const configDir = testInfo.config.configFile ? dirname(testInfo.config.configFile) : process.cwd();
-  const dir = resolvePath(configDir, historyDir ?? 'smoothness-history');
+  const dir = resolvePath(configDir, historyDir ?? DEFAULT_HISTORY_DIR);
   const project = testInfo.project.name;
   const path = historyPath(dir, relative(testInfo.config.rootDir, testInfo.file), label, project, result);
   const hash = specHash(testInfo.file);

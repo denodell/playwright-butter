@@ -32,7 +32,7 @@ Each test's baseline is the median of its last 10 passing runs on the main branc
 - Runs are recorded on push builds of the main (or master) branch in CI. GitHub Actions, GitLab CI, Azure Pipelines and CircleCI are detected. `record: true` or `SMOOTHNESS_RECORD=1` forces recording, and `record: false` turns it off. Pull requests only compare, so they never change main's history.
 - Only runs where the test itself passed are recorded.
 - Histories are keyed by test, project, platform, CPU model and CPU throttling, like `measure()` baselines, because hosted runners differ in speed ([measurements.md](measurements.md)).
-- Files live in `historyDir`. By default that's `baselineDir` if you set one, and otherwise `smoothness-history` next to your Playwright config.
+- Files live in `historyDir`. By default that's `baselineDir` if you set one, and otherwise `node_modules/.cache/playwright-smoothness/history` next to your Playwright config. Histories are rewritten while other tests are running, and a dev server that watches your project reloads its pages when a file it watches changes. Dev servers don't watch `node_modules`, so the default stays out of their way. A `historyDir` or `baselineDir` elsewhere in the project needs adding to the dev server's ignored files, such as Vite's `server.watch.ignored`.
 
 ### Changed spec files
 
@@ -40,7 +40,7 @@ When a spec file changes, the histories of the tests in it start again instead o
 
 ## Keep the history in CI
 
-The history has to outlive each CI run, so `historyDir` is kept as an artifact. The pattern is the same as for [baselines in CI](ci.md), and simpler, because history files are used where they're downloaded:
+The history has to outlive each CI run, so `historyDir` is kept as an artifact. It's downloaded after `npm ci`, which empties `node_modules`. The pattern is the same as for [baselines in CI](ci.md), and simpler, because history files are used where they're downloaded:
 
 ```yaml
 - uses: dawidd6/action-download-artifact@v6
@@ -49,7 +49,7 @@ The history has to outlive each CI run, so `historyDir` is kept as an artifact. 
     workflow: smoothness.yml
     branch: main
     name: smoothness-history
-    path: smoothness-history
+    path: node_modules/.cache/playwright-smoothness/history
 
 - run: npx playwright test # records on main, compares on pull requests
 
@@ -58,7 +58,7 @@ The history has to outlive each CI run, so `historyDir` is kept as an artifact. 
   uses: actions/upload-artifact@v4
   with:
     name: smoothness-history
-    path: smoothness-history
+    path: node_modules/.cache/playwright-smoothness/history
     retention-days: 90
 ```
 
