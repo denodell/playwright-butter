@@ -1,5 +1,6 @@
 // The pull-request summary: every check's change against its baseline, the scripts behind
 // anything that got worse, and everything that couldn't be measured or compared.
+import { sep } from 'node:path';
 import type { Check, SmoothnessResult } from '../types.js';
 import { FORMAT_NAME } from '../constants.js';
 import { describeHotFunction, describeScript, formatChange, formatValue } from '../baseline/message.js';
@@ -33,11 +34,18 @@ function statusOf(r: SmoothnessResult): Status {
   return 'not compared';
 }
 
-export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness'): string {
-  // With several projects (browsers, devices), the same test appears once per project.
+/** Notes from automatic mode while a test has too few main-branch runs to compare against. */
+const BUILDING_HISTORY = /^Building history: (\d+) of (\d+)/;
+
+export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness', cwd = process.cwd()): string {
+  // With several projects (browsers, devices), the same test appears once per project. In
+  // automatic mode the label is the test's own title, so it's named once.
   const projects = new Set(entries.map((e) => e.project));
   const name = (e: ReportEntry) =>
-    `${e.test} › "${e.result.label}"${projects.size > 1 && e.project ? ` [${e.project}]` : ''}`;
+    `${e.result.label === e.test ? e.test : `${e.test} › "${e.result.label}"`}${projects.size > 1 && e.project ? ` [${e.project}]` : ''}`;
+  // Paths in notes, relative to the project, as a reader would look for them.
+  const roots = [...new Set([cwd + sep, cwd.replace(/\\/g, '/') + '/'])];
+  const relative = (s: string) => roots.reduce((out, root) => out.split(root).join(''), s);
   const lines: string[] = [`## ${title}`, ''];
   if (entries.length === 0) {
     lines.push('No smoothness measurements ran.');
@@ -51,36 +59,46 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness'): str
     by('new').length ? `${by('new').length} new baseline${by('new').length === 1 ? '' : 's'}` : '',
     by('not compared').length ? `${by('not compared').length} not compared` : '',
   ].filter(Boolean);
-  lines.push(counts.join(' · '), '');
+  lines.push(counts.join(', '), '');
 
-  // Every compared check, worst first.
+  // The checks that got worse or couldn't be compared, worst first. Passing checks are folded
+  // away underneath, so a large suite's summary leads with what needs attention.
   const rows = entries.flatMap((e) => (e.result.comparison?.checks ?? []).map((c) => ({ e, c })));
-  if (rows.length) {
-    const rank = (c: Check) => (c.status === 'worse' ? 0 : c.status === 'pass' ? 2 : 1);
-    rows.sort((a, b) => rank(a.c) - rank(b.c));
-    lines.push('| | Measurement | Check | Now | Baseline | Allowed |', '|---|---|---|---|---|---|');
-    for (const { e, c } of rows) {
-      const mark =
-        c.status === 'worse'
-          ? e.result.comparison?.status === 'fail'
-            ? '**Failed**'
-            : '**Worse**'
-          : c.status === 'pass'
-            ? 'OK'
-            : c.status === 'unavailable'
-              ? 'Unavailable'
-              : 'Not compared';
-      const allowed =
-        c.allowed === null
-          ? ''
-          : c.unit === '%'
-            ? `+${c.allowed} points`
-            : `+${formatValue(c.allowed, c.unit)}`;
-      lines.push(
-        `| ${mark} | ${cell(name(e))} | ${c.name} | ${cell(changeCell(c))} | ${formatValue(c.baseline, c.unit)} | ${allowed} |`,
-      );
-    }
-    lines.push('');
+  const header = ['| | Measurement | Check | Now | Baseline | Allowed |', '|---|---|---|---|---|---|'];
+  const row = ({ e, c }: { e: ReportEntry; c: Check }) => {
+    const mark =
+      c.status === 'worse'
+        ? e.result.comparison?.status === 'fail'
+          ? '**Failed**'
+          : '**Worse**'
+        : c.status === 'pass'
+          ? 'OK'
+          : c.status === 'unavailable'
+            ? 'Unavailable'
+            : 'Not compared';
+    const allowed =
+      c.allowed === null
+        ? ''
+        : c.unit === '%'
+          ? `+${c.allowed} points`
+          : `+${formatValue(c.allowed, c.unit)}`;
+    return `| ${mark} | ${cell(name(e))} | ${c.name} | ${cell(changeCell(c))} | ${formatValue(c.baseline, c.unit)} | ${allowed} |`;
+  };
+  const attention = rows.filter((r) => r.c.status !== 'pass');
+  attention.sort((a, b) => (a.c.status === 'worse' ? 0 : 1) - (b.c.status === 'worse' ? 0 : 1));
+  if (attention.length) lines.push(...header, ...attention.map(row), '');
+  const passing = rows.filter((r) => r.c.status === 'pass');
+  if (passing.length) {
+    lines.push(
+      '<details>',
+      `<summary>${passing.length} check${passing.length === 1 ? '' : 's'} within baseline</summary>`,
+      '',
+      ...header,
+      ...passing.map(row),
+      '',
+      '</details>',
+      '',
+    );
   }
 
   if (worse.length) {
@@ -124,18 +142,33 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness'): str
 
   // Everything that couldn't be measured or compared, so nothing passes silently.
   const gaps: string[] = [];
+  let building = 0;
+  let needed = 0;
   for (const e of entries) {
     const r = e.result;
     for (const u of r.unavailable)
-      gaps.push(`- ${cell(name(e))}: ${u.measurement} unavailable: ${cell(u.reason)}`);
+      gaps.push(`- ${cell(name(e))}: ${u.measurement} unavailable: ${cell(relative(u.reason))}`);
     if (!r.comparison) gaps.push(`- ${cell(name(e))}: not compared, because \`toBeSmooth()\` wasn't called`);
     else if (r.comparison.status === 'not-compared') {
-      gaps.push(`- ${cell(name(e))}: not compared: ${cell(r.comparison.notes.join(' ') || 'no baseline')}`);
+      const history = r.comparison.notes.map((n) => BUILDING_HISTORY.exec(n)).find(Boolean);
+      if (history) {
+        building++;
+        needed = Number(history[2]);
+        continue;
+      }
+      gaps.push(
+        `- ${cell(name(e))}: not compared: ${cell(relative(r.comparison.notes.join(' ')) || 'no baseline')}`,
+      );
     } else if (r.comparison.status === 'baseline-created') {
       gaps.push(
         `- ${cell(name(e))}: new baseline recorded (${e.project || 'default project'}, ${r.mode} mode, ${r.machine.cpuModel})`,
       );
     }
+  }
+  if (building) {
+    gaps.unshift(
+      `- ${building} test${building === 1 ? ' is' : 's are'} building history in automatic mode: each needs ${needed} main-branch runs before it's compared.`,
+    );
   }
   if (gaps.length) lines.push('### Not measured, not compared, or new', '', ...gaps, '');
 
@@ -147,6 +180,6 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness'): str
       entries.map((e) => `${e.result.browserName} ${e.result.browserVersion} (${e.result.headlessMode})`),
     ),
   ];
-  lines.push(`<sub>${browsers.join(', ')} · ${machines.join(', ')}</sub>`);
+  lines.push(`<sub>${browsers.join(', ')}, on ${machines.join(', ')}</sub>`);
   return lines.join('\n') + '\n';
 }
