@@ -111,13 +111,7 @@ export function appendHistory(
   return file;
 }
 
-/**
- * A check that's worse than the history's median only counts as worse when the result is also
- * outside what the recent runs measured, by more than the metric's floor. A single run of one
- * test varies on its own: on the Mermaid live editor, 20 runs of unchanged code warned in 5.3% of
- * comparisons against the median alone, and in 1.2% with this rule (docs/automatic-mode.md). The
- * cost is that a change smaller than a test's own variation isn't reported.
- */
+/** A worse check only counts when it's also beyond every recent run by more than the floor (docs/automatic-mode.md). */
 export function outsideRecentRange(checks: Check[], entries: HistoryEntry[]): Check[] {
   return checks.map((c) => {
     if (c.status !== 'worse' || c.current === null) return c;

@@ -59,7 +59,6 @@ test("outsideRecentRange: worse than the median only counts outside the test's o
   expect(inRange!.reason).toBe("within this test's recent runs on main (worst: 80ms)");
   expect(justOutside!.status).toBe('worse');
   expect(clearlyOutside!.status).toBe('worse');
-  // Passing checks are left alone.
   const pass = { ...check('input.p95ToPaintMs', 50, 56), status: 'pass' as const };
   expect(outsideRecentRange([pass], recent)[0]).toBe(pass);
 });
