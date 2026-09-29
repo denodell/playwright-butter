@@ -34,6 +34,19 @@ Each test's baseline is the median of its last 10 passing runs on the main branc
 - Histories are keyed by test, project, platform, CPU model and CPU throttling, like `measure()` baselines, because hosted runners differ in speed ([measurements.md](measurements.md)).
 - Files live in `historyDir`. By default that's `baselineDir` if you set one, and otherwise `.cache/playwright-smoothness/history` in your project's `node_modules`: the nearest one from your Playwright config up to the project root, so a workspace package whose dependencies are hoisted uses the root's. Histories are rewritten while other tests are running, and a dev server that watches your project reloads its pages when a file it watches changes. Dev servers don't watch `node_modules`, so the default stays out of their way. A project with no `node_modules`, as with Yarn Plug'n'Play, keeps them in `smoothness-history` next to the config instead, and the result notes it. That folder, or a `historyDir` or `baselineDir` elsewhere in the project, needs adding to the dev server's ignored files, such as Vite's `server.watch.ignored`.
 
+### When a run warns
+
+A check warns when the run is worse than the history's median by more than `maxIncrease` and the metric's floor, and also worse than every one of those recent runs by more than the floor. One run of one test varies a lot on its own, and the second condition uses each test's own variation instead of one allowance for every test. A check inside its recent range passes, with the reason "within this test's recent runs on main".
+
+On the [Mermaid live editor](https://github.com/mermaid-js/mermaid-live-editor)'s 43 measured tests, run 20 times on unchanged code on a developer Mac:
+
+| Rule                        | Warnings on unchanged code   | A planted 60ms delay on each edit, caught |
+| --------------------------- | ---------------------------- | ----------------------------------------- |
+| The median alone            | 39 of 731 comparisons (5.3%) | 7 of the 7 tests it affects               |
+| The median and recent range | 9 of 731 (1.2%)              | 6 of 7                                    |
+
+The test it missed runs the delay twice, and its input-to-paint and long frames stayed within what that test does on its own. A change smaller than a test's own variation isn't reported. Runs made hours after the history, when the whole machine was slower, still warned on 2 or 3 tests that hadn't changed, against 5 with the median alone. Treat a single warning as a reason to look, and [`calibrate`](../README.md#choose-maxincrease) shows which tests vary most on your machine.
+
 ### Changed spec files
 
 When a spec file changes, the histories of the tests in it start again instead of failing, since the tests may now do different things. The whole spec file is hashed, so editing one test resets its neighbors too, which is conservative but simple. The result notes the reset, and the test gets a `smoothness-baseline-reset` annotation.

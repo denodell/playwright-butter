@@ -3,8 +3,8 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { SmoothnessResult } from '../types.js';
-import { metricsOf, type BaselineMetrics } from '../baseline/compare.js';
+import type { Check, SmoothnessResult } from '../types.js';
+import { METRICS, metricsOf, type BaselineMetrics } from '../baseline/compare.js';
 import { median } from '../analysis/stats.js';
 import { writeJsonAtomic } from '../output.js';
 import { machineSlug, slug } from '../baseline/key.js';
@@ -109,4 +109,23 @@ export function appendHistory(
   };
   writeJsonAtomic(path, file);
   return file;
+}
+
+/** A worse check only counts when it's also beyond every recent run by more than the floor (docs/automatic-mode.md). */
+export function outsideRecentRange(checks: Check[], entries: HistoryEntry[]): Check[] {
+  return checks.map((c) => {
+    if (c.status !== 'worse' || c.current === null) return c;
+    const def = METRICS.find((m) => m.metric === c.metric);
+    const values = entries.map((e) => e.metrics[c.metric]).filter((v): v is number => typeof v === 'number');
+    if (!def || values.length === 0) return c;
+    const bad = (v: number) => (def.complement ? 100 - v : v);
+    const worstBad = Math.max(...values.map(bad));
+    if (bad(c.current) - worstBad > def.floor) return c;
+    const worst = def.complement ? 100 - worstBad : worstBad;
+    return {
+      ...c,
+      status: 'pass',
+      reason: `within this test's recent runs on main (worst: ${worst}${c.unit === 'count' ? '' : c.unit})`,
+    };
+  });
 }
