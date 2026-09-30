@@ -337,7 +337,7 @@ async function renderInPage(
     text(label, left, labelBaseline, { fill: c.muted });
     g.letterSpacing = '0px';
     const fpsX = left - bearing;
-    const fpsWidth = num(fps === null ? '–' : String(fps), fpsX, fpsBaseline, {
+    const fpsWidth = num(fps === null ? '–' : String(fps).padStart(2, '0'), fpsX, fpsBaseline, {
       size: fpsSize,
       weight: 600,
       fill: droppingNow ? c.bad : c.ink,
@@ -366,7 +366,7 @@ async function renderInPage(
       text(String(v), gl - 6, yAt(v) + 4, { size: 10, fill: c.faint, align: 'right' });
     }
     g.setLineDash([]);
-    g.fillStyle = 'rgba(180, 65, 58, 0.14)';
+    g.fillStyle = 'rgba(180, 65, 58, 0.07)';
     for (const h of args.hitches) {
       if (h.startMs > now) continue;
       const x0 = xAt(h.startMs);
