@@ -211,9 +211,9 @@ async function renderInPage(
     text(tag, x + 16, y + 22, { size: 11, weight: 500, fill: c.paper });
   };
 
-  const markStuck = (ox: number, oy: number, ms: number) => {
+  const markFrozen = (ox: number, oy: number, ms: number) => {
     g.font = `500 11px ${sans}`;
-    const tag = `Stuck ${Math.round(ms)}ms`;
+    const tag = `Frozen ${Math.round(ms)}ms`;
     const tagW = numWidth(tag, 11, 500) + 16;
     const x = ox + imgW - 8 - tagW;
     g.fillStyle = c.bad;
@@ -278,7 +278,7 @@ async function renderInPage(
     const next = args.timesMs[i + 1] ?? now + 1000 / 60;
     const drawn = args.drawn[i]!;
     const blank = rowsMatter && drawn < args.blankShare;
-    const stuck = args.hitches.find(
+    const frozen = args.hitches.find(
       (h) => h.endMs - h.startMs >= args.labelHitchMs && h.startMs < next && h.endMs > now,
     );
     g.setTransform(scale, 0, 0, scale, 0, 0);
@@ -292,7 +292,7 @@ async function renderInPage(
     g.clip();
     g.drawImage(img, pad, shotTop, imgW, imgH);
     markList(pad, shotTop, blank);
-    if (stuck) markStuck(pad, shotTop, stuck.endMs - stuck.startMs);
+    if (frozen) markFrozen(pad, shotTop, frozen.endMs - frozen.startMs);
     g.restore();
     img.close();
     g.strokeStyle = c.hair;
