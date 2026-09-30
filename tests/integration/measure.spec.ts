@@ -173,3 +173,10 @@ test("a hostile element doesn't break the collector", async ({ page, smoothness 
     }),
   ]);
 });
+
+test('a control whose only id is generated is named by its text', async ({ page, smoothness }) => {
+  await page.goto('/click.html?ms=80');
+  const result = await smoothness.measure('filter click', () => page.click('text=Filter'), { runs: 2 });
+  expect(result.input!.byTarget[0]!.target).toBe('button:has-text("Filter")');
+  expect(result.longFrames!.topScripts[0]!.invoker).toBe('BUTTON.onclick');
+});

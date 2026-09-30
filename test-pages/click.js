@@ -41,3 +41,9 @@ if (param('hostile', 0)) {
     },
   });
 }
+
+// An id generated the way React Aria does, different on every load in a real app.
+document.getElementById('react-aria6615417466-_r_r_').addEventListener('click', function onFilterClick() {
+  busyWait(clickMs);
+  status.textContent = 'filter clicked';
+});

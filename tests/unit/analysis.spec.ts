@@ -8,7 +8,9 @@ import type {
 import {
   elementFromInvoker,
   groupInteractions,
+  stableInvoker,
 } from '../../packages/smoothness-core/src/analysis/interactions.js';
+import { GENERATED_ID } from '../../packages/smoothness-core/src/collector/collector.js';
 import {
   classifyFrame,
   classifyFrames,
@@ -74,6 +76,28 @@ test('elementFromInvoker', () => {
   expect(elementFromInvoker('DOMWindow.onscroll')).toBeNull();
   expect(elementFromInvoker('TimerHandler:setTimeout')).toBeNull();
   expect(elementFromInvoker('https://x/app.js')).toBeNull();
+  // Ids a framework generates change on every load, so they're left out.
+  expect(elementFromInvoker('BUTTON#react-aria6615417466-_r_r_.onclick')).toBe('button');
+  expect(elementFromInvoker('DIV#radix-_r_3_.menu.onkeydown')).toBe('div.menu');
+});
+
+test('generated ids: framework ids are recognized, hand-written ones kept', () => {
+  for (const id of [
+    'react-aria6615417466-_r_r_',
+    ':r0:',
+    '«r1»',
+    '_r_1_',
+    'radix-_r_3_',
+    'headlessui-menu-button-3',
+    'mui-12345',
+    'ember123',
+    'row-48213',
+  ])
+    expect(GENERATED_ID.test(id), id).toBe(true);
+  for (const id of ['checkout', 'heavy', 'filters', 'main-menu', 'root', 'document', 'step-2', 'h1-title'])
+    expect(GENERATED_ID.test(id), id).toBe(false);
+  expect(stableInvoker('BUTTON#react-aria6615417466-_r_r_.onclick')).toBe('BUTTON.onclick');
+  expect(stableInvoker('#document.onpointerdown')).toBe('#document.onpointerdown');
 });
 
 // One per interaction id, with its longest duration, named after what the user did (click, not

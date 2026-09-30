@@ -20,12 +20,22 @@ export interface CollectorConfig {
   maxRecords: number;
   /** Selector for the nearest interactive ancestor, used to name event targets. */
   interactiveSelector: string;
+  /** GENERATED_ID's source: ids that change on every load, so they don't name an element. */
+  generatedId: string;
   /**
    * Automatic mode: the name of a binding (context.exposeBinding) to stream every record to as
    * it arrives, so data survives navigation. Unset for measure() and scroll().
    */
   stream?: string;
 }
+
+/**
+ * Ids a framework generates, which change on every load: React's useId (`:r0:`, `«r0»`,
+ * `_r_1_`), React Aria (`react-aria6615417466-_r_r_`), Radix, Headless UI, MUI and similar, and
+ * anything with a long run of digits.
+ */
+export const GENERATED_ID =
+  /\d{4,}|^[:«_]|[:»_]$|^(?:react-aria|radix-|headlessui-|mui-|downshift-|rc[-_]|ember\d)/i;
 
 /** One streamed batch: records from one document, identified by its timeOrigin. */
 export interface StreamBatch {
@@ -148,16 +158,22 @@ export function installCollector(config: CollectorConfig): void {
     }
   };
 
+  const generatedId = new RegExp(config.generatedId, 'i');
+  const TEXT_NAMED =
+    'button, a, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [role="option"]';
   const describe = (node: unknown): string | null => {
     try {
       const el = node as Element | null;
       if (!el || typeof el.tagName !== 'string') return null;
       let s = el.tagName.toLowerCase();
-      if (el.id) return s + '#' + el.id;
+      if (el.id && !generatedId.test(el.id)) return s + '#' + el.id;
       const cls = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean) : [];
       if (cls.length) s += '.' + cls.slice(0, 2).join('.');
       const label = el.getAttribute && el.getAttribute('aria-label');
-      if (label) s += '[aria-label="' + label.slice(0, 40).replace(/"/g, "'") + '"]';
+      if (label) return s + '[aria-label="' + label.slice(0, 40).replace(/"/g, "'") + '"]';
+      // A control without a stable id or a label is named by its text, as a person would.
+      const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (text && el.matches(TEXT_NAMED)) s += ':has-text("' + text.slice(0, 30).replace(/"/g, "'") + '")';
       return s;
     } catch (err) {
       fail('describe', err);
