@@ -15,7 +15,7 @@ Tests that import `test` from this file get `smoothness` and `smoothnessOptions`
 
 ## What's measured
 
-Each test that opens a page is measured once, for its whole run, with no warm-up and no reloads. The in-page collector streams what it sees to Playwright as it happens, so nothing is lost when the test navigates.
+Each test that opens a page is measured once, for its whole run, with no warm-up and no reloads. The in-page collector streams what it sees to Playwright as it happens, so nothing is lost when the test navigates. That includes pages a test opens itself with `browser.newPage()` or `browser.newContext()`, and a page the test closes itself, whose last input is collected before it closes.
 
 - `auto.interactions` lists each click, tap or key press with its element and input-to-paint time (`click on button#checkout: 180ms`), in order, across every page and navigation. `input.byTarget` summarizes them per element.
 - Long frames caused by those interactions are listed with the scripts responsible, as in `measure()`. Frames from page loads and background timers are left out.

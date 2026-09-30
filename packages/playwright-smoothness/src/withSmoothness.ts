@@ -156,9 +156,10 @@ async function throttle(page: Page, rate: number): Promise<void> {
   });
 }
 
-async function drain(context: BrowserContext): Promise<void> {
+/** Waits until the pages' collectors have streamed everything they've seen. */
+async function drain(pages: Page[]): Promise<void> {
   await Promise.all(
-    context.pages().map((p) =>
+    pages.map((p) =>
       p
         .evaluate(async (key) => {
           const api = (window as unknown as Record<string, { flush(): Promise<void> } | undefined>)[key];
@@ -168,6 +169,30 @@ async function drain(context: BrowserContext): Promise<void> {
     ),
   );
   await new Promise((r) => setTimeout(r, STREAM_DRAIN_MS));
+}
+
+/**
+ * The browser reports an input once the next frame paints, so a test that closes a page right
+ * after its last click (in afterEach, say) would lose that click. Closing a page, or a context
+ * the test created, drains its collectors first.
+ */
+function drainBeforeClose(context: BrowserContext, ownContext: boolean): void {
+  const wrap = (p: Page) => {
+    const close = p.close.bind(p);
+    p.close = async (...args: Parameters<Page['close']>) => {
+      await drain([p]);
+      return close(...args);
+    };
+  };
+  context.pages().forEach(wrap);
+  context.on('page', wrap);
+  if (ownContext) {
+    const close = context.close.bind(context);
+    context.close = async (...args: Parameters<BrowserContext['close']>) => {
+      await drain(context.pages());
+      return close(...args);
+    };
+  }
 }
 
 /** Analyses streamed documents: interactions, classified frames, and inputs never measured. */
@@ -212,16 +237,16 @@ export function analyzeDocs(docs: Map<number, DocData>) {
 }
 
 /**
- * Streams every document's records from the in-page collector into the returned map, and
- * throttles the context's pages if asked. Returns null, with an annotation, if it can't start.
+ * Streams every document's records from the in-page collector into `docs`, and throttles the
+ * context's pages if asked. Returns null, with an annotation, if it can't start.
  */
 async function startStreaming(
   context: BrowserContext,
   resolved: ResolvedOptions,
   testInfo: TestInfo,
+  docs = new Map<number, DocData>(),
+  pageIds = new Map<Page, number>(),
 ): Promise<Map<number, DocData> | null> {
-  const docs = new Map<number, DocData>();
-  const pageIds = new Map<Page, number>();
   try {
     await context.exposeBinding(STREAM_BINDING, (source, batch: StreamBatch) => {
       // A page's initial about:blank can run the collector too; there's nothing on it to measure.
@@ -486,9 +511,8 @@ export function withSmoothness<T extends object, W extends object>(
   const extended = b.extend<SmoothnessFixtures & { _smoothnessAuto: void }>({
     ...smoothnessFixtures,
     _smoothnessAuto: [
-      async ({ context, smoothnessOptions }, use, testInfo) => {
-        const browser = context.browser();
-        const environment = await browserEnvironment(browser);
+      async ({ context, browser, smoothnessOptions }, use, testInfo) => {
+        const environment = await browserEnvironment(context.browser());
         const resolved = resolveOptions([
           { cpuThrottling: AUTO_CPU_THROTTLING },
           defaults,
@@ -505,12 +529,31 @@ export function withSmoothness<T extends object, W extends object>(
           return;
         }
 
-        const docs = await startStreaming(context, resolved, testInfo);
-
-        await use();
+        const pageIds = new Map<Page, number>();
+        const docs = await startStreaming(context, resolved, testInfo, new Map(), pageIds);
+        if (docs) drainBeforeClose(context, false);
+        const contexts = [context];
+        // A test that opens its own pages (browser.newPage(), browser.newContext()) gets them in
+        // contexts of its own. newPage() goes through newContext(), so wrapping that for the
+        // test's duration streams those too, set up before the test can navigate.
+        const newContext = browser.newContext;
+        if (docs) {
+          browser.newContext = async (...args: Parameters<typeof newContext>) => {
+            const created = await newContext.apply(browser, args);
+            await startStreaming(created, resolved, testInfo, docs, pageIds);
+            drainBeforeClose(created, true);
+            contexts.push(created);
+            return created;
+          };
+        }
+        try {
+          await use();
+        } finally {
+          browser.newContext = newContext;
+        }
 
         if (!docs) return;
-        await drain(context);
+        await drain(contexts.flatMap((c) => c.pages()));
         if (docs.size === 0) return; // the test never loaded a page: nothing to measure
 
         const result = autoResult(docs, label, environment, resolved);

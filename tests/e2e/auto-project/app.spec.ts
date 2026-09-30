@@ -19,6 +19,15 @@ test('leave from a button that navigates', async ({ page }) => {
   await expect(page).toHaveURL(/search\.html/);
 });
 
+// Some suites open their own page instead of using the page fixture, and close it themselves.
+test('a page the test opens itself', async ({ browser }) => {
+  const page = await browser.newPage();
+  await page.goto('/click.html?ms=80');
+  await page.click('#heavy');
+  await expect(page.locator('#status')).toHaveText('heavy clicked');
+  await page.close();
+});
+
 test('no page at all', async () => {
   expect(1 + 1).toBe(2);
 });

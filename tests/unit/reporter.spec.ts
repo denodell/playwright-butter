@@ -120,7 +120,9 @@ test('summary: re-recorded baselines are counted as such, not as within baseline
 });
 
 test('summary: nothing ran', () => {
-  expect(buildMarkdown([])).toBe('## Smoothness\n\nNo smoothness measurements ran.\n');
+  expect(buildMarkdown([])).toBe(
+    '## Smoothness\n\nNo smoothness measurements ran. Results come from `smoothness.measure()` and `smoothness.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withSmoothness()`.\n',
+  );
 });
 
 test('summary: pipes in labels do not break the table', () => {

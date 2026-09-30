@@ -82,7 +82,7 @@ test('switching the fixtures file to withSmoothness', () => {
   writeFileSync(join(project, 'fixtures.ts'), withSmoothness());
   const r = run({ SMOOTHNESS_RECORD: '1' });
   expect(r.code, r.output).toBe(0);
-  expect(r.results).toHaveLength(2); // 'no page at all' opens no page, so it isn't measured
+  expect(r.results).toHaveLength(3); // 'no page at all' opens no page, so it isn't measured
   const result = buy(r);
   expect(result.runs).toBe(1);
   // Across a navigation: clicks on the first page, typing on the second.
@@ -115,8 +115,12 @@ test('switching the fixtures file to withSmoothness', () => {
   expect(result.longFrames!.count).toBe(result.frameClasses.interaction);
   expect(result.comparison!.status).toBe('not-compared');
   expect(result.comparison!.notes.join(' ')).toMatch(/Building history: 0 of 2/);
-  expect(r.histories).toHaveLength(2);
-  expect(r.histories.map((h) => h.entries.length)).toEqual([1, 1]);
+  expect(r.histories).toHaveLength(3);
+  expect(r.histories.map((h) => h.entries.length)).toEqual([1, 1, 1]);
+  // A page from browser.newPage() is in a context of its own, and measured all the same.
+  const own = r.results.find((x) => x.label === 'a page the test opens itself')!;
+  expect(own.auto!.interactions.map((i) => `${i.event} on ${i.target}`)).toEqual(['click on button#heavy']);
+  expect(own.longFrames!.topScripts.map((s) => s.fn)).toContain('onHeavyClick');
 });
 
 // Two recorded runs make the history long enough; later runs are compared with its median.
@@ -157,6 +161,6 @@ test('historyDir and record options', () => {
   const r = run({ HISTORY_DIR: 'custom-history', RECORD: 'yes' });
   expect(r.code, r.output).toBe(0);
   const written = files(custom, '.json');
-  expect(written.length).toBe(2);
+  expect(written.length).toBe(3);
   expect(written.every((f) => f.startsWith(custom))).toBe(true);
 });
