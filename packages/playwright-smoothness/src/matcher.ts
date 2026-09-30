@@ -5,6 +5,7 @@ import {
   evaluate,
   formatMessage,
   formatSummary,
+  missedBudget,
   resultPath,
   warnInGitHubActions,
   writeResult,
@@ -53,11 +54,13 @@ export const expect = baseExpect.extend({
     const message = formatMessage(received, comparison);
     const summary = formatSummary(received, comparison);
     const annotate = (type: string, description: string) => testInfo.annotations.push({ type, description });
+    const budgetMissed = missedBudget(comparison).length > 0;
 
     switch (comparison.status) {
       case 'fail':
         return { pass: false, name: 'toBeSmooth', message: () => message };
       case 'warn':
+        if (budgetMissed) break;
         annotate('smoothness-warning', summary);
         console.warn(message);
         warnInGitHubActions(summary, testInfo);
@@ -81,6 +84,7 @@ export const expect = baseExpect.extend({
       case 'pass':
         break;
     }
+    if (budgetMissed) return { pass: false, name: 'toBeSmooth', message: () => message };
     return { pass: true, name: 'toBeSmooth', message: () => message };
   },
 });

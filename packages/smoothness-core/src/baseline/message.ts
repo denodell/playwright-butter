@@ -1,5 +1,5 @@
 import { isAbsolute, relative } from 'node:path';
-import type { Check, Comparison, HotFunction, SmoothnessResult, TopScript } from '../types.js';
+import type { BudgetCheck, Check, Comparison, HotFunction, SmoothnessResult, TopScript } from '../types.js';
 import { FORMAT_NAME } from '../constants.js';
 import { round1 } from '../analysis/stats.js';
 import { forwardSlashes } from '../output.js';
@@ -88,7 +88,20 @@ export function table(rows: string[][]): string[] {
 export function formatMessage(result: SmoothnessResult, comparison: Comparison, cwd = process.cwd()): string {
   const lines: string[] = [];
   const worse = comparison.checks.filter((c) => c.status === 'worse');
+  const missed = missedBudget(comparison);
   const topTarget = result.input?.byTarget[0];
+
+  if (missed.length) {
+    lines.push(`"${result.label}" missed its budget:`);
+    for (const b of missed) {
+      const where =
+        b.metric.startsWith('input.') && topTarget && b.status === 'over'
+          ? `, slowest: ${topTarget.event} on ${topTarget.target}`
+          : '';
+      lines.push(`  ${describeBudget(b)}${where}`);
+    }
+    lines.push('');
+  }
 
   if (comparison.status === 'baseline-created') {
     lines.push(`"${result.label}": baseline recorded. Nothing to compare yet.`);
@@ -107,14 +120,15 @@ export function formatMessage(result: SmoothnessResult, comparison: Comparison, 
     lines.push(`"${result.label}" is within ${round1(result.settings.maxIncrease * 100)}% of its baseline.`);
   }
 
+  const blame = worse.length > 0 || missed.some((b) => b.status === 'over');
   const scripts = result.longFrames?.topScripts.slice(0, MESSAGE_SCRIPTS) ?? [];
-  if (worse.length && scripts.length) {
+  if (blame && scripts.length) {
     lines.push('', 'Scripts blocking the interaction:');
     scripts.forEach((s, i) => lines.push(`  ${i + 1}. ${describeScript(s)}`));
   }
 
   const hot = result.profile?.hotFunctions.slice(0, MESSAGE_SCRIPTS) ?? [];
-  if (worse.length && hot.length) {
+  if (blame && hot.length) {
     lines.push('', 'Where the time went (CPU profile):');
     hot.forEach((f, i) => lines.push(`  ${i + 1}. ${describeHotFunction(f)}`));
   }
@@ -144,6 +158,17 @@ export function formatMessage(result: SmoothnessResult, comparison: Comparison, 
         allowed ? `+${allowed}` : '',
         status,
       ]);
+    }
+    lines.push(...table(rows));
+  }
+
+  if (comparison.budget?.length) {
+    lines.push('', 'Budget:');
+    const rows = [['check', 'now', 'budget', 'result']];
+    for (const b of comparison.budget) {
+      const status =
+        b.status === 'over' ? 'MISSED' : b.status === 'pass' ? 'ok' : `unavailable: ${b.reason ?? ''}`;
+      rows.push([b.name, formatValue(b.current, b.unit), limitText(b), status]);
     }
     lines.push(...table(rows));
   }
@@ -179,7 +204,7 @@ export function formatMessage(result: SmoothnessResult, comparison: Comparison, 
       `Baseline: ${displayPath(b.path, cwd)} (${b.source}, recorded ${b.recordedAt.slice(0, 10)}, ${result.browserName} ${b.browserVersion}, ${b.machine.cpuModel})`,
     );
   }
-  if (comparison.status === 'warn') {
+  if (comparison.status === 'warn' && !missed.length) {
     lines.push(
       `This is a warning (enforce: 'warn'). Set enforce: 'fail' to fail the test once you trust this check.`,
     );
@@ -190,8 +215,26 @@ export function formatMessage(result: SmoothnessResult, comparison: Comparison, 
 /** One line for annotations and GitHub warnings. */
 export function formatSummary(result: SmoothnessResult, comparison: Comparison): string {
   const worse = comparison.checks.filter((c) => c.status === 'worse');
-  if (!worse.length) return `"${result.label}": ${comparison.status}`;
+  const missed = missedBudget(comparison);
+  if (!worse.length && !missed.length) return `"${result.label}": ${comparison.status}`;
   const top = result.longFrames?.topScripts[0];
   const blame = top ? `; top script ${top.fn || '(anonymous)'} in ${shortSource(top.source)}` : '';
-  return `"${result.label}" got worse: ${worse.map((c) => `${c.name} ${formatChange(c)}`).join(', ')}${blame}`;
+  const parts = [
+    missed.length ? `missed its budget: ${missed.map(describeBudget).join(', ')}` : '',
+    worse.length ? `got worse: ${worse.map((c) => `${c.name} ${formatChange(c)}`).join(', ')}` : '',
+  ].filter(Boolean);
+  return `"${result.label}" ${parts.join('; ')}${blame}`;
+}
+
+export function missedBudget(comparison: Comparison): BudgetCheck[] {
+  return comparison.budget?.filter((b) => b.status !== 'pass') ?? [];
+}
+
+export function limitText(b: BudgetCheck): string {
+  return `${b.kind === 'max' ? 'at most' : 'at least'} ${formatValue(b.limit, b.unit)}`;
+}
+
+export function describeBudget(b: BudgetCheck): string {
+  if (b.status === 'unavailable') return `${b.name}: couldn't be checked (${b.reason ?? 'not measured'})`;
+  return `${b.name} ${formatValue(b.current, b.unit)} (budget: ${limitText(b)})`;
 }

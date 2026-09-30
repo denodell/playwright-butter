@@ -1,6 +1,7 @@
-import type { Comparison, Enforce, SmoothnessResult } from '../types.js';
+import type { Budget, Comparison, Enforce, SmoothnessResult } from '../types.js';
 import { baselineKey } from './key.js';
 import { compareMetrics } from './compare.js';
+import { checkBudget, validateBudget } from './budget.js';
 import { loadBaseline, locateBaseline, writeBaseline, type BaselineTarget } from './store.js';
 
 export interface MatcherOptions {
@@ -10,6 +11,7 @@ export interface MatcherOptions {
   enforce?: Enforce;
   /** Overrides whether total blocking time is gated. */
   gateTotalBlocking?: boolean;
+  budget?: Budget;
 }
 
 /** Loads the baseline, compares, and creates or updates it as the target's update mode says. */
@@ -17,6 +19,19 @@ export function evaluate(
   result: SmoothnessResult,
   target: BaselineTarget,
   overrides: MatcherOptions = {},
+): Comparison {
+  const { budget, ...rest } = overrides;
+  if (budget) validateBudget(budget);
+  const comparison = compareWithBaseline(result, target, rest);
+  if (!budget || result.runs === 0) return comparison;
+  comparison.budget = checkBudget(result, budget);
+  return comparison;
+}
+
+function compareWithBaseline(
+  result: SmoothnessResult,
+  target: BaselineTarget,
+  overrides: Omit<MatcherOptions, 'budget'>,
 ): Comparison {
   const settings = { ...result.settings, ...definedOnly(overrides) };
   const effective: SmoothnessResult = { ...result, settings };

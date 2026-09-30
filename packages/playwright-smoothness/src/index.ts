@@ -12,7 +12,10 @@ export { SCHEMA_VERSION } from 'smoothness-core';
 // Playwright forms, which pass a Playwright Page to a reset function.
 export type {
   BaselineInfo,
+  Budget,
   Budget120Result,
+  BudgetCheck,
+  BudgetStatus,
   Check,
   CheckStatus,
   Comparison,

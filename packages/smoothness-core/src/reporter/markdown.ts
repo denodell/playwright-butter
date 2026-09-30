@@ -1,9 +1,17 @@
 // The pull-request summary: every check's change against its baseline, the scripts behind
 // anything that got worse, and everything that couldn't be measured or compared.
 import { sep } from 'node:path';
-import type { Check, SmoothnessResult } from '../types.js';
+import type { BudgetCheck, Check, SmoothnessResult } from '../types.js';
 import { FORMAT_NAME } from '../constants.js';
-import { describeHotFunction, describeScript, formatChange, formatValue } from '../baseline/message.js';
+import {
+  describeBudget,
+  describeHotFunction,
+  describeScript,
+  formatChange,
+  formatValue,
+  limitText,
+  missedBudget,
+} from '../baseline/message.js';
 
 export interface ReportEntry {
   /** Test title path without the file, such as `filters › opens quickly`. */
@@ -28,7 +36,7 @@ type Status = 'worse' | 'ok' | 'new' | 'updated' | 'not compared';
 
 function statusOf(r: SmoothnessResult): Status {
   const s = r.comparison?.status;
-  if (s === 'fail' || s === 'warn') return 'worse';
+  if (s === 'fail' || s === 'warn' || (r.comparison && missedBudget(r.comparison).length)) return 'worse';
   if (s === 'pass') return 'ok';
   if (s === 'baseline-created') return 'new';
   if (s === 'baseline-updated') return 'updated';
@@ -94,16 +102,30 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness', cwd 
           : `+${formatValue(c.allowed, c.unit)}`;
     return `| ${mark} | ${cell(name(e))} | ${c.name} | ${cell(changeCell(c))} | ${formatValue(c.baseline, c.unit)} | ${allowed} |`;
   };
+  const budgets = entries.flatMap((e) => (e.result.comparison?.budget ?? []).map((b) => ({ e, b })));
+  const budgetRow = ({ e, b }: { e: ReportEntry; b: BudgetCheck }) => {
+    const mark =
+      b.status === 'over' ? '**Over budget**' : b.status === 'pass' ? 'OK' : '**Unchecked budget**';
+    const now =
+      b.status === 'unavailable' ? cell(b.reason ?? 'not measured') : formatValue(b.current, b.unit);
+    return `| ${mark} | ${cell(name(e))} | ${b.name} | ${now} | budget: ${limitText(b)} | |`;
+  };
   const attention = rows.filter((r) => r.c.status !== 'pass');
   attention.sort((a, b) => (a.c.status === 'worse' ? 0 : 1) - (b.c.status === 'worse' ? 0 : 1));
-  if (attention.length) lines.push(...header, ...attention.map(row), '');
+  const budgetAttention = budgets.filter((x) => x.b.status !== 'pass');
+  if (attention.length || budgetAttention.length) {
+    lines.push(...header, ...budgetAttention.map(budgetRow), ...attention.map(row), '');
+  }
   const passing = rows.filter((r) => r.c.status === 'pass');
-  if (passing.length) {
+  const budgetPassing = budgets.filter((x) => x.b.status === 'pass');
+  const passCount = passing.length + budgetPassing.length;
+  if (passCount) {
     lines.push(
       '<details>',
-      `<summary>${passing.length} check${passing.length === 1 ? '' : 's'} within baseline</summary>`,
+      `<summary>${passCount} check${passCount === 1 ? '' : 's'} within baseline${budgetPassing.length ? ' or budget' : ''}</summary>`,
       '',
       ...header,
+      ...budgetPassing.map(budgetRow),
       ...passing.map(row),
       '',
       '</details>',
@@ -115,7 +137,10 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness', cwd 
     lines.push('### What got worse', '');
     for (const e of worse) {
       const r = e.result;
-      lines.push(`#### ${cell(name(e))}${r.comparison?.status === 'warn' ? ' (warning)' : ''}`, '');
+      const missed = missedBudget(r.comparison!);
+      const warning = r.comparison?.status === 'warn' && !missed.length;
+      lines.push(`#### ${cell(name(e))}${warning ? ' (warning)' : ''}`, '');
+      for (const b of missed) lines.push(`- ${cell(describeBudget(b))}`);
       for (const c of r.comparison!.checks.filter((x) => x.status === 'worse')) {
         const slowest =
           c.metric.startsWith('input.') && r.input?.byTarget[0]

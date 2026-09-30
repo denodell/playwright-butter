@@ -44,7 +44,8 @@ export { evaluate, type MatcherOptions } from './baseline/evaluate.js';
 export { compareMetrics } from './baseline/compare.js';
 export type { BaselineTarget, UpdateMode } from './baseline/store.js';
 export { slug } from './baseline/key.js';
-export { formatMessage, formatSummary } from './baseline/message.js';
+export { formatMessage, formatSummary, missedBudget } from './baseline/message.js';
+export { checkBudget, validateBudget } from './baseline/budget.js';
 export {
   appendHistory,
   historyPath,

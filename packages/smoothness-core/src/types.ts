@@ -355,9 +355,30 @@ export interface BaselineInfo {
   machine: SmoothnessResult['machine'];
 }
 
+export interface Budget {
+  maxInputToPaintMs?: number;
+  maxLongFrames?: number;
+  minOnTimePercent?: number;
+  maxBlankFramePercent?: number;
+}
+
+export type BudgetStatus = 'pass' | 'over' | 'unavailable';
+
+export interface BudgetCheck {
+  metric: string;
+  name: string;
+  unit: 'ms' | 'count' | '%';
+  kind: 'max' | 'min';
+  limit: number;
+  current: number | null;
+  status: BudgetStatus;
+  reason?: string;
+}
+
 export interface Comparison {
   status: ComparisonStatus;
   checks: Check[];
   baseline: BaselineInfo | null;
   notes: string[];
+  budget?: BudgetCheck[];
 }
