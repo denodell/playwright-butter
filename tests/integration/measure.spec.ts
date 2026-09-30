@@ -180,3 +180,26 @@ test('a control whose only id is generated is named by its text', async ({ page,
   expect(result.input!.byTarget[0]!.target).toBe('button:has-text("Filter")');
   expect(result.longFrames!.topScripts[0]!.invoker).toBe('BUTTON.onclick');
 });
+
+// Some suites open their own pages (browser.newPage()) instead of using the page fixture.
+test('a page the test opened itself: measure() with page, and scroll() on its locator', async ({
+  browser,
+  smoothness,
+}) => {
+  const own = await browser.newPage();
+  try {
+    await own.goto('/click.html?ms=80');
+    const clicked = await smoothness.measure('own page click', () => own.click('#heavy'), {
+      page: own,
+      runs: 2,
+    });
+    expect(clicked.input!.byTarget[0]!.target).toBe('button#heavy');
+    expect(clicked.longFrames!.topScripts[0]!.fn).toBe('onHeavyClick');
+
+    await own.goto('/list.html?cost=0');
+    const scrolled = await smoothness.scroll(own.locator('#list'), { mode: 'quick', runs: 1 });
+    expect(scrolled.scroll!.scrolledPx).toBeGreaterThan(0);
+  } finally {
+    await own.close();
+  }
+});

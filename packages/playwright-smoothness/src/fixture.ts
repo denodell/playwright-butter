@@ -38,13 +38,18 @@ export interface Smoothness {
   /**
    * Measures an interaction. `action` runs once as a warm-up and then `runs` more times,
    * with the page reset (reloaded, by default) and settled before each run. The label names
-   * the baseline, so it must be unique within a test.
+   * the baseline, so it must be unique within a test. `page` measures a page the test opened
+   * itself, such as with `browser.newPage()`, instead of the `page` fixture.
    */
-  measure(label: string, action: () => Promise<void>, options?: SmoothnessOptions): Promise<SmoothnessResult>;
+  measure(
+    label: string,
+    action: () => Promise<void>,
+    options?: SmoothnessOptions & { page?: Page },
+  ): Promise<SmoothnessResult>;
   /**
    * Scrolls a list (or the page) and measures it: long frames and input in quick mode, plus
    * dropped frames and blank rows from trace screenshots in full mode. Each run reloads the page,
-   * so the list starts from the top.
+   * so the list starts from the top. The page is the locator's own.
    */
   scroll(target: Locator, options?: ScrollOptions & SmoothnessOptions): Promise<SmoothnessResult>;
 }
@@ -87,8 +92,21 @@ async function createSmoothness(
       "Running in Chromium's headless shell. Measurements are closer to real Chrome in new headless: set channel: 'chromium'.",
     );
   }
+  const drivers = new Map<Page, PageDriver>([[page, driver]]);
+  // A page the test opened itself gets the collector now; it's injected late on its current
+  // document, which the measurement notes, and is there from the start after each reset.
+  const driverFor = async (p: Page): Promise<PageDriver> => {
+    let d = drivers.get(p);
+    if (!d) {
+      d = playwrightDriver(p);
+      if (environment.browserName === 'chromium') await preparePage(d);
+      drivers.set(p, d);
+    }
+    return d;
+  };
   const record = async (
     label: string,
+    target: Page,
     overrides: SmoothnessOptions | undefined,
     run: (ctx: MeasureContext) => Promise<SmoothnessResult>,
   ): Promise<SmoothnessResult> => {
@@ -104,7 +122,7 @@ async function createSmoothness(
       annotateOnce(testInfo, 'smoothness-skipped', `${label}: ${reason}`);
       result = emptyResult({ label, options, environment }, reason);
     } else {
-      result = await run({ page: driver, label, options, environment });
+      result = await run({ page: await driverFor(target), label, options, environment });
     }
     const path = resultPath(resultDir(testInfo), label);
     writeResult(result, path);
@@ -113,8 +131,9 @@ async function createSmoothness(
   };
 
   return {
-    measure(label, action, overrides) {
-      return record(label, overrides, (ctx) => measure(ctx, action));
+    measure(label, action, all = {}) {
+      const { page: target = page, ...overrides } = all;
+      return record(label, target, overrides, (ctx) => measure(ctx, action));
     },
 
     async scroll(locator, all = {}) {
@@ -122,8 +141,9 @@ async function createSmoothness(
       const s = resolveScroll({ distance, direction, input, speed });
       const target = locatorTarget(locator);
       const label = givenLabel ?? defaultScrollLabel(target, s);
-      return record(label, overrides, async (ctx) => {
-        if (s.input === 'touch' && (await page.evaluate(() => navigator.maxTouchPoints)) === 0) {
+      const listPage = locator.page();
+      return record(label, listPage, overrides, async (ctx) => {
+        if (s.input === 'touch' && (await listPage.evaluate(() => navigator.maxTouchPoints)) === 0) {
           // Touch events on a page that reports no touch support aren't what a phone does:
           // pages branch on touch support (pointer: coarse, touch handlers).
           throw new Error(

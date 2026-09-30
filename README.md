@@ -54,6 +54,8 @@ test('filters open smoothly', async ({ page, smoothness }) => {
 
 That takes several times as long as the interaction itself, so these tests usually need a longer `timeout` than Playwright's 30-second default.
 
+A test that opens its own page with `browser.newPage()` passes it as `page`: `smoothness.measure('open filters', action, { page })`. `scroll()` measures the page its locator is on.
+
 If a plain reload doesn't put the page back in the state your action needs, `reset` does it instead:
 
 ```ts
