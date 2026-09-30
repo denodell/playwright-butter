@@ -1,7 +1,7 @@
 import type { LoafRecord, ScrollRecord } from '../collector/collector.js';
 import { isPeriodic, ranBeforeInput, SCROLL_LEAD_MS } from './classify.js';
 import type { InputResult, LongFramesResult, TargetTiming, TopScript } from '../types.js';
-import type { Interaction } from './interactions.js';
+import { stableInvoker, type Interaction } from './interactions.js';
 import { median, medianOf, percentile, round1 } from './stats.js';
 
 /** How many scripts to name in results and failure messages. */
@@ -61,7 +61,8 @@ export function scriptBlocking(frames: AttributedFrame[]): Map<string, TopScript
       // Its share of the frame is dropped rather than handed to the other scripts.
       if (ranBeforeInput(s, f.firstUIEventTimestamp) || isPeriodic(s)) continue;
       const share = total > 0 ? (f.blockingDuration * s.duration) / total : 0;
-      const key = [s.sourceURL, s.sourceFunctionName, s.sourceCharPosition, s.invoker, s.invokerType].join(
+      const invoker = stableInvoker(s.invoker);
+      const key = [s.sourceURL, s.sourceFunctionName, s.sourceCharPosition, invoker, s.invokerType].join(
         '\u0000',
       );
       const cur = out.get(key);
@@ -74,7 +75,7 @@ export function scriptBlocking(frames: AttributedFrame[]): Map<string, TopScript
           source: s.sourceURL,
           fn: s.sourceFunctionName,
           charPosition: s.sourceCharPosition,
-          invoker: s.invoker,
+          invoker,
           invokerType: s.invokerType,
           blockingMs: share,
           durationMs: s.duration,

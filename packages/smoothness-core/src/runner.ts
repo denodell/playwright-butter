@@ -2,6 +2,7 @@ import type { PageDriver, Tracer } from './driver.js';
 import { cpus, platform } from 'node:os';
 import {
   COLLECTOR_KEY,
+  GENERATED_ID,
   installCollector,
   type CollectorApi,
   type CollectorConfig,
@@ -58,6 +59,7 @@ export const COLLECTOR_CONFIG: CollectorConfig = {
   eventThresholdMs: 16,
   maxRecords: 20_000,
   interactiveSelector: 'button, a, input, select, textarea, [role], [tabindex]',
+  generatedId: GENERATED_ID.source,
 };
 
 /**
