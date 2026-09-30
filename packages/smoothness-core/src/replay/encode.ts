@@ -38,9 +38,47 @@ interface Chunk {
   data: string;
 }
 
+const FRAME_MS = 1000 / 60;
+const LABEL_HITCH_MS = 50;
+
+export interface Hitch {
+  startMs: number;
+  endMs: number;
+}
+
+export function findHitches(frames: { tMs: number; dropped: boolean }[]): Hitch[] {
+  const sorted = [...frames].sort((a, b) => a.tMs - b.tMs);
+  const hitches: Hitch[] = [];
+  let lastShown: number | null = null;
+  let firstDropped: number | null = null;
+  let lastDropped = 0;
+  for (const f of sorted) {
+    if (f.dropped) {
+      firstDropped ??= f.tMs;
+      lastDropped = f.tMs;
+      continue;
+    }
+    if (firstDropped !== null) {
+      hitches.push({ startMs: startOf(lastShown, firstDropped), endMs: f.tMs });
+      firstDropped = null;
+    }
+    lastShown = f.tMs;
+  }
+  if (firstDropped !== null) {
+    hitches.push({ startMs: startOf(lastShown, firstDropped), endMs: lastDropped + FRAME_MS });
+  }
+  return hitches;
+}
+
+function startOf(lastShown: number | null, firstDropped: number): number {
+  return Math.max(lastShown ?? -Infinity, firstDropped - FRAME_MS);
+}
+
 /** Renders and encodes in the page. Self-contained: it's serialized into the browser. */
 async function renderInPage(
   args: ReplayInput & {
+    hitches: Hitch[];
+    labelHitchMs: number;
     slowdown: number;
     keyEvery: number;
     bitrate: number;
@@ -173,6 +211,18 @@ async function renderInPage(
     text(tag, x + 16, y + 22, { size: 11, weight: 500, fill: c.paper });
   };
 
+  const markStuck = (ox: number, oy: number, ms: number) => {
+    g.font = `500 11px ${sans}`;
+    const tag = `Stuck ${Math.round(ms)}ms`;
+    const tagW = numWidth(tag, 11, 500) + 16;
+    const x = ox + imgW - 8 - tagW;
+    g.fillStyle = c.bad;
+    g.beginPath();
+    g.roundRect(x, oy + 8, tagW, 20, 4);
+    g.fill();
+    num(tag, x + 8, oy + 22, { size: 11, weight: 500, fill: c.paper });
+  };
+
   // Frame rate over a short trailing window, from the compositor's presented frames.
   const FPS_WINDOW_MS = 250;
   const presented = args.frames.filter((f) => !f.dropped).map((f) => f.tMs);
@@ -225,8 +275,12 @@ async function renderInPage(
   for (let i = 0; i < n; i++) {
     const img = await decode(args.jpegs[i]!);
     const now = args.timesMs[i]!;
+    const next = args.timesMs[i + 1] ?? now + 1000 / 60;
     const drawn = args.drawn[i]!;
     const blank = rowsMatter && drawn < args.blankShare;
+    const stuck = args.hitches.find(
+      (h) => h.endMs - h.startMs >= args.labelHitchMs && h.startMs < next && h.endMs > now,
+    );
     g.setTransform(scale, 0, 0, scale, 0, 0);
     g.fillStyle = c.paper;
     g.fillRect(0, 0, width, height);
@@ -238,6 +292,7 @@ async function renderInPage(
     g.clip();
     g.drawImage(img, pad, shotTop, imgW, imgH);
     markList(pad, shotTop, blank);
+    if (stuck) markStuck(pad, shotTop, stuck.endMs - stuck.startMs);
     g.restore();
     img.close();
     g.strokeStyle = c.hair;
@@ -311,6 +366,13 @@ async function renderInPage(
       text(String(v), gl - 6, yAt(v) + 4, { size: 10, fill: c.faint, align: 'right' });
     }
     g.setLineDash([]);
+    g.fillStyle = 'rgba(180, 65, 58, 0.14)';
+    for (const h of args.hitches) {
+      if (h.startMs > now) continue;
+      const x0 = xAt(h.startMs);
+      const x1 = xAt(Math.min(h.endMs, now));
+      g.fillRect(x0, chartTop, Math.max(1.5, x1 - x0), chartH);
+    }
     const playCol = colOf(now);
     const pts: { x: number; y: number; ok: boolean }[] = [];
     for (let cI = 0; cI <= playCol; cI++) {
@@ -403,6 +465,8 @@ export async function encodeReplay(
     }
     const out = await scratch.evaluate(renderInPage, {
       ...input,
+      hitches: findHitches(input.frames),
+      labelHitchMs: LABEL_HITCH_MS,
       slowdown: REPLAY_SLOWDOWN,
       keyEvery: KEY_FRAME_EVERY,
       bitrate: REPLAY_BITRATE,
