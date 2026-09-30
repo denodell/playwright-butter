@@ -1,4 +1,4 @@
-import type { EventRecord, LoafRecord } from '../collector/collector.js';
+import { GENERATED_ID, type EventRecord, type LoafRecord } from '../collector/collector.js';
 
 /** One user interaction (a click, tap or key press), from Event Timing. */
 export interface Interaction {
@@ -23,13 +23,24 @@ function eventRank(name: string): number {
   return i < 0 ? EVENT_PRIORITY.length : i;
 }
 
-/** `BUTTON#vanish.onclick` → `button#vanish`. Returns null for invokers that aren't elements. */
+/** A LoAF invoker without ids a framework generated, which differ on every load. */
+export function stableInvoker(invoker: string): string {
+  return invoker.replace(/#([^.#\s]+)/g, (whole, id: string) => (GENERATED_ID.test(id) ? '' : whole));
+}
+
+/**
+ * `BUTTON#vanish.onclick` → `button#vanish`, leaving out an id a framework generated. Returns
+ * null for invokers that aren't elements.
+ */
 export function elementFromInvoker(invoker: string): string | null {
   const m = /^([A-Z][A-Z0-9-]*)((?:[#.][^.#\s]+)*)\.on[a-z]+$/.exec(invoker);
   if (!m) return null;
   const tag = m[1]!.toLowerCase();
   if (tag === 'window' || tag === 'document' || tag === 'domwindow') return null;
-  return tag + m[2]!;
+  const parts = m[2]!
+    .split(/(?=[#.])/)
+    .filter((p) => p && !(p.startsWith('#') && GENERATED_ID.test(p.slice(1))));
+  return tag + parts.join('');
 }
 
 /**
