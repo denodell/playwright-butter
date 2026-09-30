@@ -104,6 +104,21 @@ test('summary: a mix of results', () => {
   expect(buildMarkdown(entries)).toMatchSnapshot('summary.md');
 });
 
+test('summary: re-recorded baselines are counted as such, not as within baseline', () => {
+  const md = buildMarkdown([
+    entry(
+      'list',
+      compared(makeResult({ label: 'scroll', longFrames: { count: 4 } }), before, 'baseline-updated'),
+    ),
+    entry('search', compared(makeResult({ label: 'type', input: { p95ToPaintMs: 104 } }), before, 'pass')),
+  ]);
+  expect(md).toContain('1 within baseline, 1 baseline re-recorded');
+  expect(md).toContain(
+    '- list › "scroll": baseline re-recorded by `--update-snapshots`; compared with the one it replaced: long frames 4 (+3, +300%)',
+  );
+  expect(md).not.toContain('**Worse**');
+});
+
 test('summary: nothing ran', () => {
   expect(buildMarkdown([])).toBe('## Smoothness\n\nNo smoothness measurements ran.\n');
 });
