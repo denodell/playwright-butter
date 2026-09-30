@@ -24,13 +24,14 @@ export function changeCell(c: Check): string {
   return c.change === 0 ? `${formatValue(c.current, c.unit)} (no change)` : formatChange(c);
 }
 
-type Status = 'worse' | 'ok' | 'new' | 'not compared';
+type Status = 'worse' | 'ok' | 'new' | 'updated' | 'not compared';
 
 function statusOf(r: SmoothnessResult): Status {
   const s = r.comparison?.status;
   if (s === 'fail' || s === 'warn') return 'worse';
-  if (s === 'pass' || s === 'baseline-updated') return 'ok';
+  if (s === 'pass') return 'ok';
   if (s === 'baseline-created') return 'new';
+  if (s === 'baseline-updated') return 'updated';
   return 'not compared';
 }
 
@@ -57,13 +58,20 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness', cwd 
     worse.length ? `**${worse.length} got worse**` : '',
     by('ok').length ? `${by('ok').length} within baseline` : '',
     by('new').length ? `${by('new').length} new baseline${by('new').length === 1 ? '' : 's'}` : '',
+    by('updated').length
+      ? `${by('updated').length} baseline${by('updated').length === 1 ? '' : 's'} re-recorded`
+      : '',
     by('not compared').length ? `${by('not compared').length} not compared` : '',
   ].filter(Boolean);
   lines.push(counts.join(', '), '');
 
   // The checks that got worse or couldn't be compared, worst first. Passing checks are folded
   // away underneath, so a large suite's summary leads with what needs attention.
-  const rows = entries.flatMap((e) => (e.result.comparison?.checks ?? []).map((c) => ({ e, c })));
+  // A re-recorded baseline's checks compare with the baseline it replaced, so they're listed with
+  // it below instead.
+  const rows = entries
+    .filter((e) => statusOf(e.result) !== 'updated')
+    .flatMap((e) => (e.result.comparison?.checks ?? []).map((c) => ({ e, c })));
   const header = ['| | Measurement | Check | Now | Baseline | Allowed |', '|---|---|---|---|---|---|'];
   const row = ({ e, c }: { e: ReportEntry; c: Check }) => {
     const mark =
@@ -162,6 +170,14 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness', cwd 
     } else if (r.comparison.status === 'baseline-created') {
       gaps.push(
         `- ${cell(name(e))}: new baseline recorded (${e.project || 'default project'}, ${r.mode} mode, ${r.machine.cpuModel})`,
+      );
+    } else if (r.comparison.status === 'baseline-updated') {
+      const worse = r.comparison.checks.filter((c) => c.status === 'worse');
+      gaps.push(
+        `- ${cell(name(e))}: baseline re-recorded by \`--update-snapshots\`` +
+          (worse.length
+            ? `; compared with the one it replaced: ${worse.map((c) => `${c.name} ${cell(changeCell(c))}`).join(', ')}`
+            : ''),
       );
     }
   }
