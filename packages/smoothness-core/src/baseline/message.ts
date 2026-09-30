@@ -226,17 +226,14 @@ export function formatSummary(result: SmoothnessResult, comparison: Comparison):
   return `"${result.label}" ${parts.join('; ')}${blame}`;
 }
 
-/** Budget checks that failed: over the limit, or not measured. */
 export function missedBudget(comparison: Comparison): BudgetCheck[] {
   return comparison.budget?.filter((b) => b.status !== 'pass') ?? [];
 }
 
-/** `at most 100ms`, `at least 95%`. */
 export function limitText(b: BudgetCheck): string {
   return `${b.kind === 'max' ? 'at most' : 'at least'} ${formatValue(b.limit, b.unit)}`;
 }
 
-/** `frames on time 81% (budget: at least 95%)`, or why it couldn't be checked. */
 export function describeBudget(b: BudgetCheck): string {
   if (b.status === 'unavailable') return `${b.name}: couldn't be checked (${b.reason ?? 'not measured'})`;
   return `${b.name} ${formatValue(b.current, b.unit)} (budget: ${limitText(b)})`;

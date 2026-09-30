@@ -102,7 +102,6 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness', cwd 
           : `+${formatValue(c.allowed, c.unit)}`;
     return `| ${mark} | ${cell(name(e))} | ${c.name} | ${cell(changeCell(c))} | ${formatValue(c.baseline, c.unit)} | ${allowed} |`;
   };
-  // Budget checks share the table: the budget goes where the baseline would.
   const budgets = entries.flatMap((e) => (e.result.comparison?.budget ?? []).map((b) => ({ e, b })));
   const budgetRow = ({ e, b }: { e: ReportEntry; b: BudgetCheck }) => {
     const mark =

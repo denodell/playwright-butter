@@ -6,10 +6,8 @@ interface BudgetDef {
   name: string;
   unit: BudgetCheck['unit'];
   kind: BudgetCheck['kind'];
-  /** Which `unavailable` measurement explains a null. */
   source: string;
   read: (r: SmoothnessResult) => number | null | undefined;
-  /** Only measured in full mode, so quick mode says how to turn it on. */
   fullOnly?: boolean;
 }
 
@@ -56,7 +54,6 @@ const DEFS: BudgetDef[] = [
 
 const KEYS = new Set<string>(DEFS.map((d) => d.key));
 
-/** Throws on a budget that can't mean anything, so a typo doesn't pass silently. */
 export function validateBudget(budget: Budget): void {
   for (const [key, value] of Object.entries(budget)) {
     if (value === undefined) continue;
@@ -74,7 +71,6 @@ export function validateBudget(budget: Budget): void {
   }
 }
 
-/** Checks a result against fixed limits. Pure: no files, no test state. */
 export function checkBudget(result: SmoothnessResult, budget: Budget): BudgetCheck[] {
   validateBudget(budget);
   const checks: BudgetCheck[] = [];
@@ -94,8 +90,6 @@ export function checkBudget(result: SmoothnessResult, budget: Budget): BudgetChe
     if (current === null) {
       const why = result.unavailable.find((u) => u.measurement === d.source);
       if (d.key === 'maxInputToPaintMs' && result.input && !why) {
-        // Event Timing only reports interactions of 16ms or more, so no value means every
-        // interaction painted faster than that.
         if (limit >= 16) {
           check.reason = 'every interaction painted within 16ms';
         } else {
@@ -104,7 +98,6 @@ export function checkBudget(result: SmoothnessResult, budget: Budget): BudgetChe
             "the browser only reports interactions of 16ms or more, so a lower budget can't be checked";
         }
       } else if (d.key === 'minOnTimePercent' && result.frames && !why) {
-        // Chrome traced the run, but no frame had an update to show, so none could be late.
         check.reason = 'no frame had an update to show';
       } else {
         check.status = 'unavailable';

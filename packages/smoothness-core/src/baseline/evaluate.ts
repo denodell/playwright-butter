@@ -11,14 +11,10 @@ export interface MatcherOptions {
   enforce?: Enforce;
   /** Overrides whether total blocking time is gated. */
   gateTotalBlocking?: boolean;
-  /** Fixed limits, checked as well as the baseline. A missed budget always fails the test. */
   budget?: Budget;
 }
 
-/**
- * Compares with the baseline (creating or updating it as the target's update mode says), then
- * checks any budget. A budget is checked on every run, with or without a baseline.
- */
+/** Loads the baseline, compares, and creates or updates it as the target's update mode says. */
 export function evaluate(
   result: SmoothnessResult,
   target: BaselineTarget,
