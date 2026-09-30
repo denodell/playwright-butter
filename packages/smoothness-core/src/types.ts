@@ -355,9 +355,52 @@ export interface BaselineInfo {
   machine: SmoothnessResult['machine'];
 }
 
+/**
+ * Fixed limits for one assertion, checked alongside the baseline: `toBeSmooth({ budget })`.
+ * Unlike a baseline, a budget fails the test whenever it's missed, whatever `enforce` says.
+ */
+export interface Budget {
+  /** Most input-to-paint time allowed, 95th percentile, ms. */
+  maxInputToPaintMs?: number;
+  /** Most long animation frames (over 50ms) allowed. */
+  maxLongFrames?: number;
+  /** Fewest frames presented on time, percent. Full mode only. */
+  minOnTimePercent?: number;
+  /** Most blank list frames, percent. Full-mode `scroll()` only. */
+  maxBlankFramePercent?: number;
+}
+
+/**
+ * - `pass`: within the budget.
+ * - `over`: past the budget.
+ * - `unavailable`: the metric wasn't measured, so the budget couldn't be checked. This fails too,
+ *   so a budget is never passed silently.
+ */
+export type BudgetStatus = 'pass' | 'over' | 'unavailable';
+
+export interface BudgetCheck {
+  /** Result field, such as `frames.onTimePercent`. */
+  metric: string;
+  /** Plain name, such as `frames on time`. */
+  name: string;
+  unit: 'ms' | 'count' | '%';
+  /** `max`: the value may not go above `limit`. `min`: it may not go below it. */
+  kind: 'max' | 'min';
+  limit: number;
+  current: number | null;
+  status: BudgetStatus;
+  reason?: string;
+}
+
 export interface Comparison {
+  /** How the result compared with its baseline. A budget is separate: see `budget`. */
   status: ComparisonStatus;
   checks: Check[];
   baseline: BaselineInfo | null;
   notes: string[];
+  /**
+   * The budget checks, when `toBeSmooth()` was given a budget. Any check that isn't `pass` fails
+   * the test, whatever `status` and `enforce` say.
+   */
+  budget?: BudgetCheck[];
 }

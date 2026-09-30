@@ -154,6 +154,31 @@ Scripts blocking the interaction:
   1. onHeavyClick in click.js (BUTTON#heavy.onclick): ran 60ms, 12.6ms of it blocking, during click on button#heavy
 ```
 
+## Budgets
+
+A baseline catches a change that made things worse. A budget is a fixed limit you choose for one check, and it's checked on every run, including the first:
+
+```ts
+expect(result).toBeSmooth({ budget: { minOnTimePercent: 90, maxLongFrames: 0 } });
+```
+
+| Budget                 | Checks                            | Measured in          |
+| ---------------------- | --------------------------------- | -------------------- |
+| `maxInputToPaintMs`    | `input.p95ToPaintMs`, at most     | both modes           |
+| `maxLongFrames`        | `longFrames.count`, at most       | both modes           |
+| `minOnTimePercent`     | `frames.onTimePercent`, at least  | full mode            |
+| `maxBlankFramePercent` | `list.blankFramePercent`, at most | full-mode `scroll()` |
+
+Missing a budget fails the test whatever `enforce` says, because you set the number yourself. A budget that can't be checked fails too, with the reason, such as `minOnTimePercent` in quick mode, so a budget never passes silently. The failure message lists the budget first:
+
+```
+"scroll locator('html') 3000px" missed its budget:
+  long frames 14 (budget: at most 0)
+  frames on time 52.7% (budget: at least 90%)
+```
+
+The numbers depend on the machine and the CPU throttling, and runners vary (see [Baselines](#baselines)), so a budget works best as a generous limit on a machine you know. Each interaction needs its own number: a sort that redraws a board once and then sits still can have only 20% of its frames on time and still be fast.
+
 ## Options
 
 Options can be set for a whole project, for a file with `test.use({ smoothnessOptions: { ... } })`, or for one call as the last argument to `measure()` or `scroll()`:

@@ -5,6 +5,7 @@ import {
   evaluate,
   formatMessage,
   formatSummary,
+  missedBudget,
   resultPath,
   warnInGitHubActions,
   writeResult,
@@ -24,7 +25,8 @@ export const expect = baseExpect.extend({
   /**
    * Compares a result from `smoothness.measure()` or `smoothness.scroll()` with its stored baseline. With
    * `enforce: 'fail'` a regression fails the test; with `'warn'` (the default) it adds an
-   * annotation and, in GitHub Actions, a `::warning` on the pull request.
+   * annotation and, in GitHub Actions, a `::warning` on the pull request. A `budget` sets fixed
+   * limits as well, and missing one always fails the test.
    */
   toBeSmooth(received: SmoothnessResult, options?: MatcherOptions) {
     if (this.isNot) {
@@ -53,11 +55,14 @@ export const expect = baseExpect.extend({
     const message = formatMessage(received, comparison);
     const summary = formatSummary(received, comparison);
     const annotate = (type: string, description: string) => testInfo.annotations.push({ type, description });
+    // A budget is a fixed limit the test author chose, so missing it fails whatever `enforce` says.
+    const budgetMissed = missedBudget(comparison).length > 0;
 
     switch (comparison.status) {
       case 'fail':
         return { pass: false, name: 'toBeSmooth', message: () => message };
       case 'warn':
+        if (budgetMissed) break;
         annotate('smoothness-warning', summary);
         console.warn(message);
         warnInGitHubActions(summary, testInfo);
@@ -81,6 +86,7 @@ export const expect = baseExpect.extend({
       case 'pass':
         break;
     }
+    if (budgetMissed) return { pass: false, name: 'toBeSmooth', message: () => message };
     return { pass: true, name: 'toBeSmooth', message: () => message };
   },
 });
