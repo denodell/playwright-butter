@@ -9,7 +9,7 @@ A virtualized list that can't build its rows in time leaves the user scrolling t
 Each measured run goes through four steps:
 
 1. After the page settles, and before tracing starts, the library reads the list's client area (its box without borders or scrollbars, so a scrollbar can't count as content). It works out which colors count as blank and takes a screenshot of the list at rest to use as the reference.
-2. The scroll is traced with screenshots. Chrome records one JPEG for each frame the compositor produces, about 200 for a 3.3-second fling. The images are smaller than the page (500×500 for a 600×600 viewport), so the scale is worked out for each one.
+2. The scroll is traced with screenshots. Chrome records one JPEG for each frame the compositor produces, about 200 for a 3.3-second fast scroll. The images are smaller than the page (500×500 for a 600×600 viewport), so the scale is worked out for each one.
 3. After tracing, each screenshot is cropped to the list and measured, and so is the reference.
 4. A frame is blank when it's drawn to less than half of the reference (`BLANK_FRAME_SHARE`).
 
@@ -50,11 +50,11 @@ Each frame of the video shows the list with an outline. On a blank frame, the ou
 
 Recording frames takes compositor time, so the replay's run is kept apart from the measured runs and never counted. Its frames come from Chrome's screencast (`Page.startScreencast`) at the page's own size, up to 1280px on the longer side. A trace's screenshots would be too small for a desktop-sized page: Chrome fits them in 250px or 500px, depending on its version. The panel is laid out for a 500px recording and scales up with a wider one. With `replay: 'off'` there's no extra run, and when no replay is wanted, nothing is encoded.
 
-Encoding uses WebCodecs (`VideoEncoder`, VP8) in a throwaway page of the same Chromium. That page is served from `http://localhost`, because WebCodecs needs a secure context. The library writes the WebM container itself (`packages/smoothness-core/src/replay/webm.ts`), including cues so the report's player can seek, and has no dependencies for it. A 3.3-second fling becomes a 15-second replay of about 500KB, encoded in under a second locally.
+Encoding uses WebCodecs (`VideoEncoder`, VP8) in a throwaway page of the same Chromium. That page is served from `http://localhost`, because WebCodecs needs a secure context. The library writes the WebM container itself (`packages/smoothness-core/src/replay/webm.ts`), including cues so the report's player can seek, and has no dependencies for it. A 3.3-second fast scroll becomes a 15-second replay of about 500KB, encoded in under a second locally.
 
 ## Results
 
-These numbers come from the test list (`test-pages/list.html`), 600×600, flung 20,000px at 6,000px/s with the mouse wheel, with no CPU throttling. Each is the median of 3 runs, measured locally on Chrome 153:
+These numbers come from the test list (`test-pages/list.html`), 600×600, scrolled 20,000px at 6,000px/s with the mouse wheel, with no CPU throttling. Each is the median of 3 runs, measured locally on Chrome 153:
 
 | List                                                               | Frames on time | Dropped | **Blank frames** | Least drawn |
 | ------------------------------------------------------------------ | -------------- | ------- | ---------------- | ----------- |

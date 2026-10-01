@@ -30,7 +30,7 @@ The library's sets are defined in `packages/smoothness-core/src/trace/categories
 | Frame states (always in full mode)                            | `disabled-by-default-devtools.timeline.frame`, `blink.user_timing` | 240KB                                             |
 | Plus the 120Hz prediction (`refreshRate: 120`)                | + `devtools.timeline`                                              | 368KB                                             |
 | Plus the CPU profile (always in full mode)                    | + `disabled-by-default-v8.cpu_profiler`                            | a click: 147KB in total with the frame categories |
-| Plus screenshots (`scroll()`'s measured runs, for blank rows) | + `disabled-by-default-devtools.screenshot`                        | 12–22MB per 3.3s fling (measurements.md)          |
+| Plus screenshots (`scroll()`'s measured runs, for blank rows) | + `disabled-by-default-devtools.screenshot`                        | 12–22MB per 3.3s fast scroll (measurements.md)    |
 
 The frame-state set is about 9x smaller than the broad set, and records the same frame states.
 

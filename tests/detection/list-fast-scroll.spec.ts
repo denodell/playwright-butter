@@ -1,4 +1,4 @@
-// docs/measurements.md, Long-list fling: Input.synthesizeScrollGesture produces a compositor fling;
+// docs/measurements.md, Fast scroll through a long list: Input.synthesizeScrollGesture scrolls on the compositor;
 // dropped frames barely move for a list that is mostly blank; has_missing_content fires
 // even on a cheap list; trace screenshots are available for blank-frame analysis.
 import { test, expect } from '@playwright/test';
@@ -22,7 +22,7 @@ const SCENARIOS = [
 ];
 
 for (const s of SCENARIOS) {
-  test(`fast fling through a virtualized list, ${s.name} rows`, async ({ page, browser }) => {
+  test(`fast scroll through a virtualized list, ${s.name} rows`, async ({ page, browser }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width: 600, height: 600 });
     await page.goto(`/list.html?cost=${s.cost}&overscan=${s.overscan}`);
@@ -41,7 +41,7 @@ for (const s of SCENARIOS) {
           gestureSourceType: 'mouse',
           preventFling: false,
         });
-        // Let the fling settle before the trace closes.
+        // Let the scroll settle before the trace closes.
         await page.waitForTimeout(300);
       },
       { categories: CATEGORIES, screenshots: true },
@@ -64,7 +64,7 @@ for (const s of SCENARIOS) {
       screenshots,
       traceKB: Math.round(bytes / 1024),
     };
-    save(`list-fling-${s.name}`, out);
+    save(`list-fast-scroll-${s.name}`, out);
 
     expect(out.scrolledPx, 'the gesture scrolled the list').toBeGreaterThan(5000);
     expect(out.scrollStates, 'scrolling ran on the compositor').toContain('SCROLL_COMPOSITOR_THREAD');
@@ -79,7 +79,7 @@ for (const s of SCENARIOS) {
 test("has_missing_content can't tell a blank list from a drawn one", () => {
   // Chrome 141: fired on ~78% of frames for every list. Chrome 153: 0% for every list.
   // Either way it says nothing about blank rows, so the library must not use it.
-  test.skip(Object.keys(missingContentRate).length !== SCENARIOS.length, 'needs every fling from this file');
-  save('list-fling-missing-content', missingContentRate);
+  test.skip(Object.keys(missingContentRate).length !== SCENARIOS.length, 'needs every scroll from this file');
+  save('list-fast-scroll-missing-content', missingContentRate);
   expect(Math.abs(missingContentRate.cheap! - missingContentRate.costly!)).toBeLessThan(0.3);
 });

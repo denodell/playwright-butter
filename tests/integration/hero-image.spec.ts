@@ -1,4 +1,4 @@
-// Generates docs/hero.png for the README: a frame from a cheap list's fling next to the
+// Generates docs/hero.png for the README: a frame from a cheap list's fast scroll next to the
 // least-drawn frame from a costly list's, with the real numbers from the same runs.
 // Opt-in: HERO_IMAGE=1 npx playwright test --project=integration hero-image
 import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
@@ -18,7 +18,7 @@ test.use({
   smoothnessOptions: { mode: 'full', cpuThrottling: 1, runs: 3 },
 });
 
-async function flingFrames(page: Page, url: string) {
+async function fastScrollFrames(page: Page, url: string) {
   await page.goto(url);
   await page.waitForTimeout(500);
   const target = page.locator('#list');
@@ -74,9 +74,9 @@ test('hero image', async ({ page, smoothness }) => {
     distance: 20000,
     label: 'costly',
   });
-  // The pictures: a mid-fling frame from each.
-  const c = await flingFrames(page, '/list.html?cost=0&overscan=2');
-  const x = await flingFrames(page, '/list.html?cost=15&overscan=0');
+  // The pictures: a frame from the middle of each fast scroll.
+  const c = await fastScrollFrames(page, '/list.html?cost=0&overscan=2');
+  const x = await fastScrollFrames(page, '/list.html?cost=15&overscan=0');
   const mid = Math.floor(c.jpegs.length / 2);
   const worst = x.coverage.indexOf(Math.min(...x.coverage.slice(20, -20)), 20);
   const png = await page.evaluate(

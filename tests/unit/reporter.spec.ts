@@ -69,7 +69,7 @@ test('summary: a mix of results', () => {
     entry('search', compared(makeResult({ label: 'type', input: { p95ToPaintMs: 104 } }), before, 'pass')),
     entry('catalogue', {
       ...makeResult({
-        label: 'fling',
+        label: 'fast scroll',
         mode: 'full',
         list: { frames: 204, blankFrames: 188, blankFramePercent: 92.2, leastDrawnPercent: 0 },
       }),
@@ -79,7 +79,7 @@ test('summary: a mix of results', () => {
       'catalogue',
       {
         ...makeResult({
-          label: 'fling',
+          label: 'fast scroll',
           runs: 0,
           input: null,
           longFrames: null,

@@ -1,5 +1,5 @@
 // smoothness.scroll() on the virtualized test list. Full mode, unthrottled and fast, like the
-// fling in docs/measurements.md (Long-list fling: 20,000px at 6,000px/s).
+// scroll in docs/measurements.md (Fast scroll through a long list: 20,000px at 6,000px/s).
 import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
 import type { Page } from '@playwright/test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -21,12 +21,12 @@ test.use({
 });
 test.setTimeout(120_000);
 
-const FLING = { speed: 'fast', distance: 20_000 } as const;
+const FAST_SCROLL = { speed: 'fast', distance: 20_000 } as const;
 const list = (page: Page) => page.locator('#list');
 
 test('a cheap list stays drawn: close to 0% blank frames', async ({ page, smoothness }) => {
   await page.goto('/list.html?cost=0&overscan=2');
-  const r = await smoothness.scroll(list(page), FLING);
+  const r = await smoothness.scroll(list(page), FAST_SCROLL);
   save('list-cheap', r);
   expect(r.unavailable).toEqual([]);
   expect(r.list!.frames).toBeGreaterThanOrEqual(100);
@@ -43,7 +43,7 @@ test('a cheap list stays drawn: close to 0% blank frames', async ({ page, smooth
 
 test('a costly list is mostly blank', async ({ page, smoothness }) => {
   await page.goto('/list.html?cost=15&overscan=0');
-  const r = await smoothness.scroll(list(page), FLING);
+  const r = await smoothness.scroll(list(page), FAST_SCROLL);
   save('list-costly', r);
   expect(r.list!.blankFramePercent).toBeGreaterThan(50);
   expect(r.list!.leastDrawnPercent).toBeLessThan(20);
@@ -55,11 +55,11 @@ test('a costly list is mostly blank', async ({ page, smoothness }) => {
 
 test('the blank-row gate catches a regression', async ({ page, smoothness }) => {
   await page.goto('/list.html?cost=0&overscan=2');
-  const before = await smoothness.scroll(list(page), { ...FLING, label: 'catalogue' });
+  const before = await smoothness.scroll(list(page), { ...FAST_SCROLL, label: 'catalogue' });
   expect(before).toBeSmooth();
   await page.goto('/list.html?cost=15&overscan=0');
   // Same label in a second test would be separate; compare by hand against the first result.
-  const after = await smoothness.scroll(list(page), { ...FLING, label: 'catalogue costly' });
+  const after = await smoothness.scroll(list(page), { ...FAST_SCROLL, label: 'catalogue costly' });
   const check = compareMetrics(after, metricsOf(before), 0.15).find(
     (c) => c.metric === 'list.blankFramePercent',
   )!;
@@ -69,9 +69,9 @@ test('the blank-row gate catches a regression', async ({ page, smoothness }) => 
 test('placeholders: skeleton rows count as blank only when named', async ({ page, smoothness }) => {
   // Rows show a grey skeleton for 250ms before their content.
   await page.goto('/list.html?cost=0&overscan=0&skeleton=250');
-  const without = await smoothness.scroll(list(page), { ...FLING, label: 'skeleton, not named' });
+  const without = await smoothness.scroll(list(page), { ...FAST_SCROLL, label: 'skeleton, not named' });
   const named = await smoothness.scroll(list(page), {
-    ...FLING,
+    ...FAST_SCROLL,
     label: 'skeleton, named',
     list: { background: 'auto', placeholders: ['#dddddd'] },
   });
@@ -81,17 +81,21 @@ test('placeholders: skeleton rows count as blank only when named', async ({ page
 
 test("background 'auto' reads the list's own color (a dark list)", async ({ page, smoothness }) => {
   await page.goto('/list.html?cost=15&overscan=0&bg=%23202020');
-  const r = await smoothness.scroll(list(page), FLING);
+  const r = await smoothness.scroll(list(page), FAST_SCROLL);
   expect(r.list!.blankFramePercent).toBeGreaterThan(50);
   expect(notesApartFromThrottling(r.notes)).toEqual([]);
 });
 
 test('horizontal lists', async ({ page, smoothness }) => {
   await page.goto('/list.html?axis=x&cost=0&overscan=2');
-  const cheap = await smoothness.scroll(list(page), { ...FLING, direction: 'horizontal', label: 'h cheap' });
+  const cheap = await smoothness.scroll(list(page), {
+    ...FAST_SCROLL,
+    direction: 'horizontal',
+    label: 'h cheap',
+  });
   await page.goto('/list.html?axis=x&cost=15&overscan=0');
   const costly = await smoothness.scroll(list(page), {
-    ...FLING,
+    ...FAST_SCROLL,
     direction: 'horizontal',
     label: 'h costly',
   });
@@ -107,7 +111,7 @@ test('horizontal lists', async ({ page, smoothness }) => {
 
 test.describe('touch', () => {
   test.use({ hasTouch: true });
-  test('touch input flings, and distance end scrolls to the end', async ({ page, smoothness }) => {
+  test('touch input swipes, and distance end scrolls to the end', async ({ page, smoothness }) => {
     await page.goto('/list.html?rows=200&cost=0'); // about 16,000px: within the 'end' cap
     const r = await smoothness.scroll(list(page), { input: 'touch', speed: 'fast', runs: 2 });
     const max = await list(page).evaluate((el) => el.scrollHeight - el.clientHeight);
@@ -138,7 +142,7 @@ test('touch input without a touch context', async ({ page, smoothness }) => {
 test("a locator that doesn't scroll", async ({ page, smoothness }) => {
   await page.goto('/list.html?cost=15&overscan=0');
   // The spacer inside the list isn't the scroller; scrolling "it" moves nothing.
-  const r = await smoothness.scroll(page.locator('#spacer'), { ...FLING, distance: 2000, runs: 2 });
+  const r = await smoothness.scroll(page.locator('#spacer'), { ...FAST_SCROLL, distance: 2000, runs: 2 });
   expect(r.list).toBeNull();
   expect(r.unavailable).toContainEqual({
     measurement: 'list',
@@ -166,7 +170,7 @@ test('arrow keys', async ({ page, smoothness }) => {
 
 test('quick mode has no list data', async ({ page, smoothness }) => {
   await page.goto('/list.html?cost=0');
-  const r = await smoothness.scroll(list(page), { ...FLING, mode: 'quick', runs: 1 });
+  const r = await smoothness.scroll(list(page), { ...FAST_SCROLL, mode: 'quick', runs: 1 });
   expect('list' in r).toBe(false);
   expect(r.notes.join(' ')).toMatch(/Blank rows in lists are measured in full mode only/);
 });
@@ -199,7 +203,7 @@ test('200 frames are analyzed in under 2 seconds', async ({ page, browser }) => 
     },
     { browserVersion: browser.version(), budget120: false, profile: false, screenshots: true },
   );
-  // A slow runner can capture fewer than 200 frames in the fling (187 on a Windows runner), so
+  // A slow runner can capture fewer than 200 frames in the fast scroll (187 on a Windows runner), so
   // captured frames are reused to make 200. Each one costs the same to analyze.
   expect(trace.screenshots.length).toBeGreaterThanOrEqual(100);
   const jpegs = Array.from({ length: 200 }, (_, i) => trace.screenshots[i % trace.screenshots.length]!);
@@ -256,7 +260,7 @@ test.describe('replays', () => {
 
   test("'on': a replay even when nothing got worse", async ({ page, smoothness }) => {
     await page.goto('/list.html?cost=15&overscan=0');
-    const r = await smoothness.scroll(list(page), { ...FLING, replay: 'on', runs: 2 });
+    const r = await smoothness.scroll(list(page), { ...FAST_SCROLL, replay: 'on', runs: 2 });
     expect(r).toBeSmooth(); // the first run creates the baseline; 'on' attaches a replay anyway
   });
 
@@ -274,13 +278,13 @@ test.describe('replays', () => {
     expect(statSync(webm).size).toBeGreaterThan(50_000);
     const info = await playable(page, webm);
     expect(info.width).toBe(658); // the 600px viewport, with the 500px panel's 24px margins scaled to match
-    expect(info.duration).toBeGreaterThan(12); // a 3.3s fling at 1/4 speed, plus a 1s hold
+    expect(info.duration).toBeGreaterThan(12); // a 3.3s fast scroll at 1/4 speed, plus a 1s hold
     expect(info.seekedTo).toBeGreaterThan(info.duration / 4); // seeking works
   });
 
   test("'on-regression' (the default): no replay when nothing got worse", async ({ page, smoothness }) => {
     await page.goto('/list.html?cost=15&overscan=0');
-    const r = await smoothness.scroll(list(page), { ...FLING, runs: 2 });
+    const r = await smoothness.scroll(list(page), { ...FAST_SCROLL, runs: 2 });
     expect(r).toBeSmooth(); // the first run records the baseline
     expect(r.comparison!.status).toBe('baseline-created');
   });
@@ -312,7 +316,7 @@ test.describe('replays', () => {
 
   test('quick mode has no frames to replay', async ({ page, smoothness }) => {
     await page.goto('/list.html?cost=0');
-    const r = await smoothness.scroll(list(page), { ...FLING, mode: 'quick', replay: 'on', runs: 1 });
+    const r = await smoothness.scroll(list(page), { ...FAST_SCROLL, mode: 'quick', replay: 'on', runs: 1 });
     expect(r).toBeSmooth();
   });
 
