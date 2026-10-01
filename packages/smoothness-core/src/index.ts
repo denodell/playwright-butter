@@ -46,6 +46,7 @@ export type { BaselineTarget, UpdateMode } from './baseline/store.js';
 export { slug } from './baseline/key.js';
 export { formatMessage, formatSummary, missedBudget } from './baseline/message.js';
 export { checkBudget, validateBudget } from './baseline/budget.js';
+export { formatBrief, needsBrief, sourcePath, type BriefContext } from './baseline/brief.js';
 export {
   appendHistory,
   historyPath,

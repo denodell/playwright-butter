@@ -27,6 +27,7 @@ import {
   type SmoothnessResult,
 } from 'smoothness-core';
 import { resultDir, testOf } from './testinfo.js';
+import { writeBrief } from './brief.js';
 import { basename } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { locatorTarget, playwrightDriver } from './driver.js';
@@ -203,6 +204,7 @@ export const smoothnessFixtures: Fixtures<
     for (const [label, { path, result }] of outputs) {
       await attachReplay(driver, testInfo, label, path, result);
       await testInfo.attach(`smoothness: ${label}`, { path, contentType: 'application/json' });
+      await writeBrief(testInfo, label, path, result);
     }
   },
 };

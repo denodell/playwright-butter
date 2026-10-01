@@ -154,6 +154,16 @@ Scripts blocking the interaction:
   1. onHeavyClick in click.js (BUTTON#heavy.onclick): ran 60ms, 12.6ms of it blocking, during click on button#heavy
 ```
 
+## Fix briefs
+
+When a check gets worse or misses its budget, a fix brief is written next to its result as `<result>.fix.md` and attached to the test. It's a short Markdown file meant to be pasted into a coding agent such as Claude Code or Copilot: what got worse and by how much, the interactions, scripts and functions behind it with their files and line numbers, and how to check a fix. That last part matters because a baseline belongs to one machine: the brief gives the exact command to record a baseline on the unchanged code, make the change, and run the check again, so the agent compares its fix with its own machine rather than with CI's numbers.
+
+```bash
+npx playwright-smoothness brief --results test-results
+```
+
+collects every brief from a run into one file, printed or written with `--out`. The GitHub Action adds them to its pull request comment, folded away under "Fix briefs for a coding agent".
+
 ## Budgets
 
 A baseline catches a change that made things worse. A budget is a fixed limit you choose for one check, and it's checked on every run, including the first:

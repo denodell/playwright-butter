@@ -59,6 +59,7 @@ import {
   resolveScripts,
 } from 'smoothness-core';
 import { resultDir, testOf } from './testinfo.js';
+import { writeBrief } from './brief.js';
 import { browserEnvironment, contextFetcher } from './driver.js';
 import { smoothnessFixtures, type SmoothnessFixtures, type SmoothnessOptions } from './fixture.js';
 
@@ -474,6 +475,7 @@ async function reportResult(
   const out = resultPath(resultDir(testInfo), 'auto');
   writeResult(result, out);
   await testInfo.attach('smoothness: auto', { path: out, contentType: 'application/json' });
+  await writeBrief(testInfo, 'auto', out, result, comparison);
 
   if (comparison.status === 'warn' || comparison.status === 'fail') {
     const summary = formatSummary(result, comparison);

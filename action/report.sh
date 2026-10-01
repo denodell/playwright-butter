@@ -13,6 +13,26 @@ echo "summary=$summary" >> "$GITHUB_OUTPUT"
 
 marker='<!-- playwright-smoothness -->'
 body="$(printf '%s\n%s' "$marker" "$(cat "$summary")")"
+
+briefs="$(npx playwright-smoothness brief --results "$RESULTS_DIR" 2> /dev/null)"
+if [ -n "$briefs" ]; then
+  if [ "${#briefs}" -gt 50000 ]; then
+    briefs="${briefs:0:50000}
+…cut to fit in a comment. Run npx playwright-smoothness brief on the results artifact for all of it."
+  fi
+  body="$body
+
+<details>
+<summary>Fix briefs for a coding agent</summary>
+
+Paste this into your agent, or run \`npx playwright-smoothness brief\` locally after reproducing the run.
+
+\`\`\`\`markdown
+$briefs
+\`\`\`\`
+
+</details>"
+fi
 repo="${GITHUB_REPOSITORY:?}"
 existing=$(gh api "repos/$repo/issues/$PR_NUMBER/comments?per_page=100" --paginate \
   --jq ".[] | select(.body | startswith(\"$marker\")) | .id" 2>/dev/null | tail -1)
