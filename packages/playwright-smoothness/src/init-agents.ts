@@ -9,10 +9,10 @@ const START = `<!-- ${PACKAGE_NAME}:start -->`;
 const END = `<!-- ${PACKAGE_NAME}:end -->`;
 
 export function skillSource(): string {
-  return fileURLToPath(new URL('../skill', import.meta.url));
+  return fileURLToPath(new URL('../skills/playwright-smoothness', import.meta.url));
 }
 
-export interface InitAgentOptions {
+export interface InitAgentsOptions {
   cwd: string;
   dirs?: string[];
   agentsMd?: boolean;
@@ -38,7 +38,7 @@ export function updateAgentsMd(existing: string | null, skillPath: string): stri
   return existing.replace(/\s*$/, '') + '\n\n' + block + '\n';
 }
 
-export function initAgent(options: InitAgentOptions): string[] {
+export function initAgents(options: InitAgentsOptions): string[] {
   const { cwd, dirs = SKILL_DIRS, agentsMd = true, source = skillSource() } = options;
   const written: string[] = [];
   for (const dir of dirs) {

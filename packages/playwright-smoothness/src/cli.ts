@@ -1,7 +1,7 @@
 // npx playwright-smoothness calibrate [--runs 5] [--out smoothness-calibration.json] [-- <playwright test args>]
 // npx playwright-smoothness summary [--results test-results] [--out <file>] [--title <title>] [--github-summary]
 // npx playwright-smoothness brief [--results test-results] [--out <file>]
-// npx playwright-smoothness init-agent [--dir <folder>]... [--no-agents-md]
+// npx playwright-smoothness init-agents [--dir <folder>]... [--no-agents-md]
 import { parseArgs } from 'node:util';
 import { spawnSync } from 'node:child_process';
 import {
@@ -28,7 +28,7 @@ import {
   type SmoothnessResult,
 } from 'smoothness-core';
 import { PACKAGE_NAME } from './constants.js';
-import { SKILL_DIRS, initAgent } from './init-agent.js';
+import { SKILL_DIRS, initAgents } from './init-agents.js';
 
 const HELP = `Usage: npx ${PACKAGE_NAME} <command> [options]
 
@@ -36,7 +36,7 @@ Commands:
   calibrate   How much each check varies between runs, with a suggested maxIncrease
   summary     The Markdown summary of the last run, from its result files
   brief       Every fix brief from the last run, in one document for a coding agent
-  init-agent  Add the skill that teaches coding agents to fix what the checks find
+  init-agents  Add the skill that teaches coding agents to fix what the checks find
 
 Run a command with --help for its options.
 `;
@@ -186,7 +186,7 @@ function brief(args: string[]): number {
   return 0;
 }
 
-const INIT_AGENT_HELP = `Usage: npx ${PACKAGE_NAME} init-agent [options]
+const INIT_AGENTS_HELP = `Usage: npx ${PACKAGE_NAME} init-agents [options]
 
 Adds the ${PACKAGE_NAME} skill to this project, so coding agents know how to fix a
 check that got worse: read the fix brief, record a baseline, make the change, and prove it.
@@ -199,7 +199,7 @@ Options:
   --help            Show this help
 `;
 
-function initAgentCommand(args: string[]): number {
+function initAgentsCommand(args: string[]): number {
   const { values } = parseArgs({
     args,
     options: {
@@ -209,10 +209,10 @@ function initAgentCommand(args: string[]): number {
     },
   });
   if (values.help) {
-    console.log(INIT_AGENT_HELP);
+    console.log(INIT_AGENTS_HELP);
     return 0;
   }
-  const written = initAgent({
+  const written = initAgents({
     cwd: process.cwd(),
     dirs: values.dir ?? SKILL_DIRS,
     agentsMd: !values['no-agents-md'],
@@ -255,7 +255,7 @@ export function main(argv: string[]): number {
   }
   if (command === 'summary') return summary(rest);
   if (command === 'brief') return brief(rest);
-  if (command === 'init-agent') return initAgentCommand(rest);
+  if (command === 'init-agents') return initAgentsCommand(rest);
   if (command !== 'calibrate') {
     console.error(`Unknown command '${command}'.\n\n${HELP}`);
     return 1;

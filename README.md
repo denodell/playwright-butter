@@ -167,10 +167,14 @@ collects every brief from a run into one file, printed or written with `--out`. 
 ### The agent skill
 
 ```bash
-npx playwright-smoothness init-agent
+npx playwright-smoothness init-agents
 ```
 
-adds a skill that teaches coding agents what to do with a brief: which number to move, how to read the scripts and functions it names, the usual causes and their fixes (forced layout, work on every scroll event or animation frame, re-rendering every component, slow rows in a virtualized list, and more), and how to prove the fix on their own machine without loosening the check. It goes in `.claude/skills/` for Claude Code and `.agents/skills/` for Codex and other agents that read skills from there, and `AGENTS.md` gets a short section pointing to it for the rest. `--dir` puts it somewhere else. Run it again after upgrading to update the skill. It was checked by having an agent fix the slow version of each [demo app](demos/README.md#the-agent-skill-checked-against-them) from its brief alone: all seven came back at or near the fast version's numbers.
+adds a skill that teaches coding agents what to do with a brief: which number to move, how to read the scripts and functions it names, the usual causes and their fixes (forced layout, work on every scroll event or animation frame, re-rendering every component, slow rows in a virtualized list, and more), and how to prove the fix on their own machine without loosening the check. It goes in `.claude/skills/` for Claude Code and `.agents/skills/` for Codex and other agents that read skills from there, and `AGENTS.md` gets a short section pointing to it for the rest. `--dir` puts it somewhere else. Run it again after upgrading to update the skill, the way Playwright's own `init-agents` works.
+
+The skill also ships in the package at `skills/playwright-smoothness/`, where [TanStack Intent](https://tanstack.com/intent/latest) and [skills-npm](https://github.com/antfu/skills-npm) find it on their own. With either of those, the skill always matches the installed version and there's nothing to rerun.
+
+The skill was checked by having an agent fix the slow version of each [demo app](demos/README.md#the-agent-skill-checked-against-them) from its brief alone: all seven came back at or near the fast version's numbers.
 
 ## Budgets
 

@@ -3,10 +3,10 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  initAgent,
+  initAgents,
   skillSource,
   updateAgentsMd,
-} from '../../packages/playwright-smoothness/src/init-agent.js';
+} from '../../packages/playwright-smoothness/src/init-agents.js';
 
 const SKILL = '.agents/skills/playwright-smoothness/SKILL.md';
 
@@ -34,14 +34,14 @@ test('AGENTS.md: created, appended to, and replaced in place on a second run', (
   expect(again.endsWith('\n## Later\n')).toBe(true);
 });
 
-test('initAgent copies the skill to each folder and replaces an older copy', () => {
-  const cwd = mkdtempSync(join(tmpdir(), 'init-agent-'));
+test('initAgents copies the skill to each folder and replaces an older copy', () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'init-agents-'));
   try {
     writeFileSync(join(cwd, 'AGENTS.md'), '# Agents\n');
     const stale = join(cwd, '.claude/skills/playwright-smoothness/old.md');
-    initAgent({ cwd });
+    initAgents({ cwd });
     writeFileSync(stale, 'from an older version');
-    const written = initAgent({ cwd });
+    const written = initAgents({ cwd });
     expect(written).toEqual([
       '.claude/skills/playwright-smoothness/',
       '.agents/skills/playwright-smoothness/',
@@ -56,7 +56,7 @@ test('initAgent copies the skill to each folder and replaces an older copy', () 
     expect(agents.startsWith('# Agents\n')).toBe(true);
     expect(agents).toContain(SKILL);
 
-    expect(initAgent({ cwd, dirs: ['tools/skills'], agentsMd: false })).toEqual([
+    expect(initAgents({ cwd, dirs: ['tools/skills'], agentsMd: false })).toEqual([
       'tools/skills/playwright-smoothness/',
     ]);
   } finally {
