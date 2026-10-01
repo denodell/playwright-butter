@@ -32,7 +32,7 @@ jobs:
 
 Your config needs no changes: the reporter is optional, and `baselineDir` comes from the `SMOOTHNESS_BASELINE_DIR` variable the Action sets.
 
-- **Pull requests** fetch the newest baselines published from your default branch, run the suite against them, and post the summary as one comment that each push updates.
+- **Pull requests** fetch the newest baselines published from your default branch, run the suite against them, and post the summary as one comment that each push updates. When a check got worse, the comment also carries its [fix brief](../README.md#fix-briefs), folded away, for pasting into a coding agent.
 - **Pushes to the default branch** record this machine's baselines and publish them, keeping the ones recorded on other CPU models.
 - **Scheduled runs** use full mode, compare with the last scheduled run, then record.
 - **Every run** installs Chromium, adds the summary to the job summary, and uploads results and replays as an artifact. The job fails when the Playwright run fails.

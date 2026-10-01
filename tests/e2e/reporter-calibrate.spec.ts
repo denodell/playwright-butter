@@ -80,6 +80,31 @@ test('the summary command writes the same summary from the result files alone', 
   expect(child.stdout).toContain('Smoothness summary of 1 result(s)');
 });
 
+test('a check that got worse writes a fix brief, and the brief command collects it', () => {
+  test.skip(!built, 'run npm run build first');
+  const out = join(work, 'out-slow');
+  const run = spawnSync(process.execPath, [PLAYWRIGHT_CLI, 'test', '-c', CONFIG, '--reporter=line'], {
+    env: {
+      ...clean(),
+      CLICK_MS: '300',
+      SMOOTHNESS_E2E_OUT: out,
+      SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
+      GITHUB_ACTIONS: '',
+    },
+    encoding: 'utf8',
+  });
+  expect(run.status, run.stdout + run.stderr).toBe(0);
+  const child = spawnSync(
+    process.execPath,
+    ['packages/playwright-smoothness/dist/cli.js', 'brief', '--results', out],
+    { env: clean(), encoding: 'utf8' },
+  );
+  expect(child.status, child.stderr).toBe(0);
+  expect(child.stdout).toContain('# Fix brief: "checkout"');
+  expect(child.stdout).toContain('input-to-paint (p95)');
+  expect(child.stdout).toMatch(/npx playwright test \S+:\d+/);
+});
+
 test('calibrate is repeatable', () => {
   test.skip(!built, 'run npm run build first');
   const once = (n: number) => {

@@ -1,5 +1,6 @@
 // npx playwright-smoothness calibrate [--runs 5] [--out smoothness-calibration.json] [-- <playwright test args>]
 // npx playwright-smoothness summary [--results test-results] [--out <file>] [--title <title>] [--github-summary]
+// npx playwright-smoothness brief [--results test-results] [--out <file>]
 import { parseArgs } from 'node:util';
 import { spawnSync } from 'node:child_process';
 import {
@@ -32,6 +33,7 @@ const HELP = `Usage: npx ${PACKAGE_NAME} <command> [options]
 Commands:
   calibrate   How much each check varies between runs, with a suggested maxIncrease
   summary     The Markdown summary of the last run, from its result files
+  brief       Every fix brief from the last run, in one document for a coding agent
 
 Run a command with --help for its options.
 `;
@@ -50,12 +52,28 @@ Example:
   npx ${PACKAGE_NAME} calibrate --runs 5 -- --project=chromium tests/lists.spec.ts
 `;
 
-function jsonFiles(dir: string): string[] {
+function filesEndingIn(dir: string, ending: string): string[] {
   if (!existsSync(dir)) return [];
   return readdirSync(dir).flatMap((f) => {
     const p = join(dir, f);
-    return statSync(p).isDirectory() ? jsonFiles(p) : p.endsWith('.json') ? [p] : [];
+    return statSync(p).isDirectory() ? filesEndingIn(p, ending) : p.endsWith(ending) ? [p] : [];
   });
+}
+
+const jsonFiles = (dir: string) => filesEndingIn(dir, '.json');
+
+function latestAttempts(files: string[]): string[] {
+  const latest = new Map<string, { retry: number; files: string[] }>();
+  for (const file of files) {
+    const dir = dirname(file);
+    const m = /^(.*)-retry(\d+)$/.exec(basename(dir));
+    const key = m ? join(dirname(dir), m[1]!) : dir;
+    const retry = m ? Number(m[2]) : 0;
+    const seen = latest.get(key);
+    if (!seen || retry > seen.retry) latest.set(key, { retry, files: [file] });
+    else if (retry === seen.retry) seen.files.push(file);
+  }
+  return [...latest.values()].flatMap(({ files }) => files.sort());
 }
 
 function collect(outputDir: string): Map<string, SmoothnessResult> {
@@ -88,35 +106,81 @@ Options:
 `;
 
 export function readResults(results: string): ReportEntry[] {
-  const root = join(results, 'smoothness');
-  const latest = new Map<string, { retry: number; files: string[] }>();
-  for (const file of jsonFiles(root)) {
-    const dir = dirname(file);
-    const m = /^(.*)-retry(\d+)$/.exec(basename(dir));
-    const key = m ? join(dirname(dir), m[1]!) : dir;
-    const retry = m ? Number(m[2]) : 0;
-    const seen = latest.get(key);
-    if (!seen || retry > seen.retry) latest.set(key, { retry, files: [file] });
-    else if (retry === seen.retry) seen.files.push(file);
-  }
   const entries: ReportEntry[] = [];
-  for (const { files } of latest.values()) {
-    for (const file of files.sort()) {
-      try {
-        const r = JSON.parse(readFileSync(file, 'utf8')) as SmoothnessResult;
-        if (r.schemaVersion !== 1 || typeof r.label !== 'string') continue;
-        entries.push({
-          test: r.test?.title ?? basename(dirname(file)),
-          file: r.test?.file ?? '',
-          project: r.test?.project ?? '',
-          result: r,
-        });
-      } catch {
-        continue;
-      }
+  for (const file of latestAttempts(jsonFiles(join(results, 'smoothness')))) {
+    try {
+      const r = JSON.parse(readFileSync(file, 'utf8')) as SmoothnessResult;
+      if (r.schemaVersion !== 1 || typeof r.label !== 'string') continue;
+      entries.push({
+        test: r.test?.title ?? basename(dirname(file)),
+        file: r.test?.file ?? '',
+        project: r.test?.project ?? '',
+        result: r,
+      });
+    } catch {
+      continue;
     }
   }
   return entries;
+}
+
+const BRIEF_HELP = `Usage: npx ${PACKAGE_NAME} brief [options]
+
+Prints every fix brief from the last run as one document, for a coding agent. A brief is
+written next to each check that got worse or missed its budget.
+
+Options:
+  --results <dir>   Playwright's output directory (default test-results)
+  --out <file>      Write it to a file instead of printing it
+  --help            Show this help
+`;
+
+export function collectBriefs(results: string): string {
+  const briefs = latestAttempts(filesEndingIn(join(results, 'smoothness'), '.fix.md')).map((f) =>
+    readFileSync(f, 'utf8').trimEnd(),
+  );
+  if (!briefs.length) return '';
+  const head =
+    briefs.length === 1
+      ? ''
+      : `# ${briefs.length} smoothness checks to fix\n\nEach section is one check. Fix and re-run them one at a time.\n\n`;
+  return (
+    head +
+    briefs
+      .map((b) =>
+        briefs.length === 1 ? b : b.replace(/^# /gm, '## ').replace(/^## (?!Fix brief)/gm, '### '),
+      )
+      .join('\n\n') +
+    '\n'
+  );
+}
+
+function brief(args: string[]): number {
+  const { values } = parseArgs({
+    args,
+    options: {
+      results: { type: 'string', default: 'test-results' },
+      out: { type: 'string' },
+      help: { type: 'boolean' },
+    },
+  });
+  if (values.help) {
+    console.log(BRIEF_HELP);
+    return 0;
+  }
+  const md = collectBriefs(values.results!);
+  if (!md) {
+    console.error('No fix briefs: no smoothness check got worse or missed its budget in the last run.');
+    return 0;
+  }
+  if (values.out) {
+    mkdirSync(dirname(values.out), { recursive: true });
+    writeFileSync(values.out, md);
+    console.error(`Fix briefs written to ${values.out}`);
+  } else {
+    process.stdout.write(md);
+  }
+  return 0;
 }
 
 function summary(args: string[]): number {
@@ -152,6 +216,7 @@ export function main(argv: string[]): number {
     return command ? 0 : 1;
   }
   if (command === 'summary') return summary(rest);
+  if (command === 'brief') return brief(rest);
   if (command !== 'calibrate') {
     console.error(`Unknown command '${command}'.\n\n${HELP}`);
     return 1;
