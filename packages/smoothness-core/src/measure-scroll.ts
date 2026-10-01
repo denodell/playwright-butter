@@ -30,6 +30,17 @@ export async function measureScroll(
   const cdp = await page.cdp();
   try {
     let origin: number | null = null;
+    // Where a run started instead of origin, when the page didn't stay where it was put.
+    let strayed: number | null = null;
+    // Chrome restores a document's scroll position on reload. A page that moves itself (a
+    // smooth-scrolling script that sets the position every frame) takes that position as its own
+    // and puts the page back after it's moved. With restoration off, each reload starts at the
+    // top, before the page's scripts run. It's set on the current document too, because a reload
+    // follows the setting of the document it leaves.
+    if (ctx.options.reset !== 'none') {
+      await page.addInitScript(manualScrollRestoration, undefined);
+      await page.evaluate(manualScrollRestoration).catch(() => undefined);
+    }
     const result = await measure(
       {
         ...ctx,
@@ -38,7 +49,14 @@ export async function measureScroll(
         // would start where the last one stopped. With reset: 'none', runs carry on instead.
         beforeRun: async (run) => {
           if (run === 0) origin = await scrollPosition(target, s);
-          else if (ctx.options.reset !== 'none' && origin !== null) await restoreScroll(target, s, origin);
+          else if (ctx.options.reset !== 'none' && origin !== null) {
+            await restoreScroll(target, s, origin);
+            await page.evaluate(
+              () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+            );
+            const at = await scrollPosition(target, s);
+            if (strayed === null && Math.abs(at - origin) > 1) strayed = at;
+          }
         },
       },
       async () => {
@@ -47,6 +65,11 @@ export async function measureScroll(
     );
     // The first scroll is the warm-up, and one after the measured runs is recorded for a replay.
     describeScroll(result, done.slice(1, 1 + ctx.options.runs), s, ctx);
+    if (strayed !== null) {
+      result.notes.push(
+        `Runs didn't all start where the first did: one started at ${Math.round(strayed)}px instead of ${Math.round(origin ?? 0)}px, so they scrolled different parts of the list. Something on the page moved it after it was put back.`,
+      );
+    }
     return result;
   } finally {
     await cdp.detach().catch(() => undefined);
@@ -108,5 +131,13 @@ function describeScroll(
           : "list.virtualized is false, so blank frames aren't gated.",
       );
     }
+  }
+}
+
+function manualScrollRestoration(): void {
+  try {
+    history.scrollRestoration = 'manual';
+  } catch {
+    // a sandboxed or opaque document: nothing to change
   }
 }

@@ -69,9 +69,9 @@ await smoothness.measure('add to cart', action, {
 
 ### Scroll a list
 
-![A replay of a demo cycling club feed flung at 6,000px/s: the page keeps 60 frames per second, but the posts disappear and 114 of 122 frames are blank](docs/replay-blank-rows.gif)
+![A replay of a demo cycling club feed flung at 6,000px/s: the page stays at 60 frames per second for most of the fling, but the posts disappear and 115 of 124 frames are blank](docs/replay-blank-rows.gif)
 
-A list can go blank without dropping a frame. This demo feed builds its posts too slowly, so it keeps 60 frames per second while the list is empty in 114 of 122 frames. `scroll()` measures both.
+A list can go blank without dropping frames. This demo feed builds its posts too slowly, so it stays at 60 frames per second for most of the fling while the list is empty in 115 of 124 frames. `scroll()` measures both.
 
 ```ts
 test.use({ hasTouch: true }); // input: 'touch' needs a touch-enabled context

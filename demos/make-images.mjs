@@ -14,6 +14,8 @@ import { chromium } from '@playwright/test';
 const repo = join(import.meta.dirname, '..');
 const docs = join(repo, 'docs');
 const playwright = join(repo, 'node_modules/.bin/playwright');
+/** The README's GIFs are this wide: the width the replay panel is laid out at. */
+const GIF_WIDTH = 548;
 // The panel's own colours, kept in every GIF palette so its hairlines and text survive.
 const PANEL_COLORS = ['#ffffff', '#0a0a0a', '#666666', '#a1a1a1', '#eaeaea', '#f5f5f5', '#b4413a'];
 
@@ -76,7 +78,10 @@ async function extractFrames(video, outDir, { fps, fractions }) {
   }
 }
 
-/** A looping GIF at the video's own width, on one fixed palette so light greys don't vanish. */
+/**
+ * A looping GIF, scaled to GIF_WIDTH, on one fixed palette so light greys don't vanish. Replays
+ * are recorded at the page's own size, which for the demos is twice the panel's own 548px.
+ */
 function makeGif(frames, dir, out) {
   const mid = frames[Math.floor(frames.length / 2)];
   const last = frames[frames.length - 1];
@@ -91,6 +96,8 @@ function makeGif(frames, dir, out) {
     '-delay',
     '150',
     last,
+    '-resize',
+    `${GIF_WIDTH}x`,
     '-loop',
     '0',
     '-dither',

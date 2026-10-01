@@ -322,6 +322,15 @@ test.describe('replays', () => {
   });
 });
 
+test('a page that scrolls itself starts each run from the same place too', async ({ page, smoothness }) => {
+  // The page keeps its own position, starting from wherever it loaded. With Chrome's scroll
+  // restoration, that was where the last run stopped, and it put the page back there.
+  await page.goto('/scroll.html?smooth=1');
+  const r = await smoothness.scroll(page.locator('html'), { mode: 'quick', runs: 3, distance: 3000 });
+  expect(r.notes.join(' ')).not.toContain("didn't all start");
+  expect(r.scroll!.scrolledPx).toBeGreaterThanOrEqual(2900);
+});
+
 test('a scrolling document starts each run from the same place', async ({ page, smoothness }) => {
   // Chrome restores a document's scroll position on reload. Without putting it back, every run
   // after the warm-up would start at the end of the page and scroll nothing.
