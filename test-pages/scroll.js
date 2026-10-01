@@ -18,20 +18,23 @@ window.addEventListener('scroll', function onWindowScroll() {
 // the wheel, keeps its own position, and sets the page's on every frame, starting from wherever
 // the page was when it loaded.
 if (param('smooth', 0)) {
-  let target = scrollY;
-  let current = scrollY;
+  let target = window.scrollY;
+  let current = window.scrollY;
   addEventListener(
     'wheel',
     (e) => {
       e.preventDefault();
-      target = Math.max(0, Math.min(document.documentElement.scrollHeight - innerHeight, target + e.deltaY));
+      target = Math.max(
+        0,
+        Math.min(document.documentElement.scrollHeight - window.innerHeight, target + e.deltaY),
+      );
     },
     { passive: false },
   );
   requestAnimationFrame(function smoothScroll() {
     current += (target - current) * 0.3;
     if (Math.abs(target - current) < 0.5) current = target;
-    scrollTo(0, current);
+    window.scrollTo(0, current);
     requestAnimationFrame(smoothScroll);
   });
 }
