@@ -23,7 +23,8 @@
     "jank",
     "smoothness",
     "long-animation-frames",
-    "event-timing"
+    "event-timing",
+    "tanstack-intent"
   ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -56,6 +57,7 @@
   },
   "files": [
     "dist",
+    "skills",
     "README.md",
     "LICENSE"
   ],
