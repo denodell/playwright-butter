@@ -51,7 +51,7 @@ export interface SmoothnessOptions<P = any> {
   refreshRate?: 60 | 120;
   /** `'warn'` annotates the test and lets it pass; `'fail'` fails it. Default `'warn'`. */
   enforce?: Enforce;
-  /** Directory of baselines downloaded from the main branch, checked before the snapshot path. */
+  /** Directory of baselines downloaded from the main branch, checked before the snapshot path. Default: `SMOOTHNESS_BASELINE_DIR`. */
   baselineDir?: string;
   /** Options for `smoothness.scroll()` blank-row detection. */
   list?: ListOptions;
@@ -236,6 +236,7 @@ export interface Spread {
 export interface SmoothnessResult {
   schemaVersion: 1;
   label: string;
+  test?: { title: string; file: string; project: string };
   mode: SmoothnessMode;
   /** Measured runs (the warm-up isn't counted). */
   runs: number;

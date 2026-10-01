@@ -1,5 +1,6 @@
-# Checks docs/ci.md end to end on one runner (scripts/verify-ci-recipe.sh), and that the
-# React example passes, both against the package as built from this commit.
+# Checks docs/ci.md end to end on one runner (scripts/verify-ci-recipe.sh), runs the Action
+# itself against examples/plain-site, and checks that the React example passes, all against the
+# package as built from this commit.
 name: Examples
 
 on:
@@ -24,6 +25,32 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: examples/plain-site
       - run: scripts/verify-ci-recipe.sh
+
+  action:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read # fetch the example's baselines published from main
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm install --no-audit --no-fund
+        working-directory: examples/plain-site
+      - uses: ./
+        id: smoothness
+        with:
+          working-directory: examples/plain-site
+          artifact-name: plain-site-smoothness-baselines
+          comment: 'false'
+      - name: Check the Action's outputs
+        run: |
+          test "${{ steps.smoothness.outputs.outcome }}" = passed
+          test -f "examples/plain-site/${{ steps.smoothness.outputs.summary || 'test-results/smoothness/summary.md' }}"
 
   react-list:
     runs-on: ubuntu-latest

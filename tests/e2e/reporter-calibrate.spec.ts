@@ -56,6 +56,30 @@ test('the reporter writes the markdown summary and the job summary', () => {
   expect(child.stdout).toContain('Smoothness summary:');
 });
 
+test('the summary command writes the same summary from the result files alone', () => {
+  test.skip(!built, 'run npm run build first');
+  const out = join(work, 'from-files.md');
+  const step = join(work, 'step-summary-cli.md');
+  const child = spawnSync(
+    process.execPath,
+    [
+      'packages/playwright-smoothness/dist/cli.js',
+      'summary',
+      '--results',
+      join(work, 'out'),
+      '--out',
+      out,
+      '--github-summary',
+    ],
+    { env: { ...clean(), GITHUB_STEP_SUMMARY: step }, encoding: 'utf8' },
+  );
+  expect(child.status, child.stdout + child.stderr).toBe(0);
+  const fromReporter = readFileSync(join(work, 'out', 'smoothness', 'summary.md'), 'utf8');
+  expect(readFileSync(out, 'utf8')).toBe(fromReporter);
+  expect(readFileSync(step, 'utf8')).toBe(fromReporter + '\n');
+  expect(child.stdout).toContain('Smoothness summary of 1 result(s)');
+});
+
 test('calibrate is repeatable', () => {
   test.skip(!built, 'run npm run build first');
   const once = (n: number) => {

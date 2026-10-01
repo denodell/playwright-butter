@@ -1,8 +1,14 @@
 // Where Playwright Test keeps a test's baselines and results, in the plain form smoothness-core takes.
 import type { TestInfo } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { join } from 'node:path';
-import { slug, type BaselineTarget, type UpdateMode } from 'smoothness-core';
+import { join, relative } from 'node:path';
+import {
+  forwardSlashes,
+  slug,
+  type BaselineTarget,
+  type SmoothnessResult,
+  type UpdateMode,
+} from 'smoothness-core';
 
 /** The test's title without its file: `filters opens quickly`. */
 const titleOf = (testInfo: TestInfo) => slug(testInfo.titlePath.slice(1).join(' '), 80);
@@ -30,4 +36,12 @@ export function resultDir(testInfo: TestInfo): string {
   const id = createHash('sha256').update(testInfo.testId).digest('hex').slice(0, 8);
   const retry = testInfo.retry ? `-retry${testInfo.retry}` : '';
   return join(testInfo.project.outputDir, 'smoothness', `${titleOf(testInfo)}-${id}${retry}`);
+}
+
+export function testOf(testInfo: TestInfo): NonNullable<SmoothnessResult['test']> {
+  return {
+    title: testInfo.titlePath.slice(1).join(' › ') || testInfo.title,
+    file: forwardSlashes(relative(testInfo.config.rootDir, testInfo.file)),
+    project: testInfo.project.name,
+  };
 }
