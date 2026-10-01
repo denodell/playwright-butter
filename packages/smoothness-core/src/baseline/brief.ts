@@ -82,7 +82,7 @@ export function formatBrief(result: SmoothnessResult, comparison: Comparison, ct
       lines.push(`- ${t.event} on \`${t.target}\`: ${round1(t.ms)}ms to the next paint`);
     lines.push('');
   }
-  const scripts = result.longFrames?.topScripts.slice(0, BRIEF_SCRIPTS) ?? [];
+  const scripts = (result.longFrames?.topScripts ?? []).filter((s) => s.source).slice(0, BRIEF_SCRIPTS);
   if (scripts.length) {
     lines.push('Scripts running in the long frames:', '');
     for (const s of scripts) {

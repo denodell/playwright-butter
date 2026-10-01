@@ -55,6 +55,15 @@ test('the brief names what got worse, where, and how to check a fix', () => {
           during: ['click on button#filters'],
           line: 22,
         },
+        {
+          source: '',
+          fn: '',
+          invoker: 'PerformanceObserverCallback',
+          invokerType: 'classic-script',
+          blockingMs: 4,
+          durationMs: 6,
+          during: [],
+        },
       ],
     },
   });
@@ -66,6 +75,7 @@ test('the brief names what got worse, where, and how to check a fix', () => {
   );
   expect(brief).toContain('- click on `button#filters`: 112ms to the next paint');
   expect(brief).toContain('- `toggleFilters` at shop/src/Filters.tsx:22, run by BUTTON#filters.onclick');
+  expect(brief).not.toContain('PerformanceObserverCallback');
   expect(brief).toContain('   npx playwright test tests/filters.spec.ts:6 --update-snapshots=all');
   expect(brief).toContain('The baseline had input-to-paint (p95) 32ms.');
   expect(brief).toContain('`test-results/smoothness/x/open-filters.json`');

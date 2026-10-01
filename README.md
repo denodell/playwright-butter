@@ -164,6 +164,14 @@ npx playwright-smoothness brief --results test-results
 
 collects every brief from a run into one file, printed or written with `--out`. The GitHub Action adds them to its pull request comment, folded away under "Fix briefs for a coding agent".
 
+### The agent skill
+
+```bash
+npx playwright-smoothness init-agent
+```
+
+adds a skill that teaches coding agents what to do with a brief: which number to move, how to read the scripts and functions it names, the usual causes and their fixes (forced layout, work on every scroll event or animation frame, re-rendering every component, slow rows in a virtualized list, and more), and how to prove the fix on their own machine without loosening the check. It goes in `.claude/skills/` for Claude Code and `.agents/skills/` for Codex and other agents that read skills from there, and `AGENTS.md` gets a short section pointing to it for the rest. `--dir` puts it somewhere else. Run it again after upgrading to update the skill. It was checked by having an agent fix the slow version of each [demo app](demos/README.md#the-agent-skill-checked-against-them) from its brief alone: all seven came back at or near the fast version's numbers.
+
 ## Budgets
 
 A baseline catches a change that made things worse. A budget is a fixed limit you choose for one check, and it's checked on every run, including the first:
