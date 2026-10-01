@@ -29,6 +29,7 @@ interface MetricDef {
  * steps, so an 8ms floor would trip on a single rounding step.
  */
 export const INPUT_FLOOR_MS = 16;
+export const EVENT_TIMING_MIN_MS = 16;
 const LONG_FRAME_FLOOR = 1;
 const PERCENT_FLOOR_POINTS = 1;
 /** Total blocking time floor: one LoAF's worth of blocking beyond the 50ms budget. */
@@ -131,6 +132,11 @@ export function compareMetrics(
     };
     if (current === null) {
       const why = result.unavailable.find((u) => u.measurement === m.source);
+      if (m.source === 'input' && !why && result.input?.interactions === 0) {
+        check.reason = `every interaction painted in under ${EVENT_TIMING_MIN_MS}ms`;
+        checks.push(check);
+        continue;
+      }
       check.status = 'unavailable';
       check.reason = why ? why.reason : 'not measured in this run';
       checks.push(check);
