@@ -21,8 +21,7 @@
     "test:headless-modes": "playwright test --project=mode-headless-shell --project=mode-new-headless --project=mode-headed",
     "docs:images": "npm run build && node demos/make-images.mjs",
     "changeset": "changeset",
-    "release:check": "npm run build && npm publish --dry-run --workspace smoothness-core --workspace playwright-smoothness",
-    "release": "npm run build && changeset publish"
+    "release:check": "npm run build && npm publish --dry-run --workspace smoothness-core --workspace playwright-smoothness"
   },
   "devDependencies": {
     "@angular/common": "21.2.24",
