@@ -1,6 +1,7 @@
 import { isAbsolute, relative } from 'node:path';
 import type { BudgetCheck, Check, Comparison, HotFunction, SmoothnessResult, TopScript } from '../types.js';
 import { FORMAT_NAME } from '../constants.js';
+import { EVENT_TIMING_MIN_MS } from './compare.js';
 import { round1 } from '../analysis/stats.js';
 import { forwardSlashes } from '../output.js';
 
@@ -24,6 +25,7 @@ export function formatDelta(c: Check): string {
 
 /** `129ms (+20ms, +18%)`, `3 (+2)`, `92% (−5 points)`. */
 export function formatChange(c: Check): string {
+  if (c.current === null && c.status === 'pass') return `under ${EVENT_TIMING_MIN_MS}ms`;
   const now = formatValue(c.current, c.unit);
   if (c.change === null) return now;
   if (c.unit === '%') return `${now} (${signed(c.change)} points)`;

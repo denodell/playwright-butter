@@ -17,7 +17,7 @@ The first release. The public API and the JSON result format (`schemaVersion: 1`
 
 - `toBeSmooth()` compares a result with its stored baseline. Baselines are keyed by label, test, project, platform, mode, refresh rate, CPU throttling and CPU model, and `baselineDir` (or the `SMOOTHNESS_BASELINE_DIR` environment variable) reads the main branch's baselines in CI. A check gets worse when it grows past `maxIncrease` (15% by default) and a small floor, so rounding can't fail it. By default it warns, with an annotation and a GitHub Actions `::warning`, and `enforce: 'fail'` fails the test instead. Failure messages start with what got worse and the scripts responsible.
 - `toBeSmooth({ budget })` adds fixed limits that are checked on every run, including the first: `maxInputToPaintMs`, `maxLongFrames`, `minOnTimePercent` and `maxBlankFramePercent`. A missed budget fails the test whatever `enforce` says, and so does a budget that couldn't be checked.
-- A measurement that couldn't be taken is `null`, and its reason is listed in `unavailable`.
+- A measurement that couldn't be taken is `null`, and its reason is listed in `unavailable`. An interaction too quick for Event Timing to report (under 16ms) passes, shown as `under 16ms`.
 
 ### Reporting and fixing
 

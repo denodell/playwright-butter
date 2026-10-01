@@ -15,6 +15,7 @@ import {
   INPUT_FLOOR_MS,
 } from '../../packages/smoothness-core/src/baseline/compare.js';
 import { evaluate } from '../../packages/smoothness-core/src/baseline/evaluate.js';
+import { formatChange } from '../../packages/smoothness-core/src/baseline/message.js';
 import type { BaselineTarget, UpdateMode } from '../../packages/smoothness-core/src/baseline/store.js';
 import { writeBaseline } from '../../packages/smoothness-core/src/baseline/store.js';
 import { makeResult } from './result-factory.js';
@@ -135,6 +136,27 @@ test('missing measurements', () => {
     status: 'not-compared',
     reason: 'the baseline predates this metric',
   });
+});
+
+test('no interaction slow enough for Event Timing to report passes, rather than counting as missing', () => {
+  const fast = makeResult({
+    input: { interactions: 0, p95ToPaintMs: null, worstMs: null, byTarget: [] },
+  });
+  const check = compareMetrics(fast, { 'input.p95ToPaintMs': 20 }, 0.15).find(
+    (c) => c.metric === 'input.p95ToPaintMs',
+  )!;
+  expect(check).toMatchObject({ status: 'pass', current: null, baseline: 20 });
+  expect(formatChange(check)).toBe('under 16ms');
+
+  const unsupported = makeResult({
+    input: { interactions: 0, p95ToPaintMs: null, worstMs: null, byTarget: [] },
+    unavailable: [{ measurement: 'input', reason: 'Chromium only' }],
+  });
+  expect(
+    compareMetrics(unsupported, { 'input.p95ToPaintMs': 20 }, 0.15).find(
+      (c) => c.metric === 'input.p95ToPaintMs',
+    ),
+  ).toMatchObject({ status: 'unavailable', reason: 'Chromium only' });
 });
 
 test('metrics neither side measured are not checks', () => {
