@@ -53,7 +53,7 @@ When a spec file changes, the histories of the tests in it start again instead o
 
 ## Keep the history in CI
 
-The history has to outlive each CI run, so `historyDir` is kept as an artifact. It's downloaded after `npm ci`, which empties `node_modules`. The pattern is the same as for [baselines in CI](ci.md), and simpler, because history files are used where they're downloaded:
+The [GitHub Action](ci.md#the-github-action) keeps the history for you, with the baselines. Without it, the history has to outlive each CI run, so `historyDir` is kept as an artifact. It's downloaded after `npm ci`, which empties `node_modules`. The pattern is the same as for [baselines in CI](ci.md), and simpler, because history files are used where they're downloaded:
 
 ```yaml
 - uses: dawidd6/action-download-artifact@v6

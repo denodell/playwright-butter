@@ -26,7 +26,7 @@ import {
   type SmoothnessOptions as CoreOptions,
   type SmoothnessResult,
 } from 'smoothness-core';
-import { resultDir } from './testinfo.js';
+import { resultDir, testOf } from './testinfo.js';
 import { basename } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { locatorTarget, playwrightDriver } from './driver.js';
@@ -124,6 +124,7 @@ async function createSmoothness(
     } else {
       result = await run({ page: await driverFor(target), label, options, environment });
     }
+    result.test = testOf(testInfo);
     const path = resultPath(resultDir(testInfo), label);
     writeResult(result, path);
     outputs.set(label, { path, result });

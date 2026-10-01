@@ -83,7 +83,7 @@ export function resolveOptions<P = any>(
     maxIncrease,
     refreshRate,
     enforce,
-    baselineDir: o.baselineDir,
+    baselineDir: o.baselineDir ?? (env.SMOOTHNESS_BASELINE_DIR?.trim() || undefined),
     list: {
       background: o.list?.background ?? 'auto',
       placeholders: o.list?.placeholders ?? [],

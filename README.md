@@ -112,7 +112,7 @@ When a full-mode `measure()` or `scroll()` check gets worse, a video of one run 
 
 The first run records a baseline next to your test, the way `toMatchSnapshot()` does, and passes. Later runs compare with it, and `npx playwright test --update-snapshots` records it again: `=all` replaces every baseline, `=changed` only those that got worse, and `=none` never writes. Renaming a test starts a new baseline.
 
-A baseline belongs to one machine. Its key includes the label, test, project, platform, mode, refresh rate, CPU throttling and CPU model, because the same work took 150ms, 197ms or 226ms on different GitHub-hosted runners ([measurements](docs/measurements.md)). A baseline from your laptop isn't used in CI. In CI, baselines come from your main branch through `baselineDir`, and a run on a CPU model with no baseline yet skips its checks. The [CI guide](docs/ci.md) has a GitHub Actions recipe, and a dedicated or self-hosted runner gives the steadiest numbers.
+A baseline belongs to one machine. Its key includes the label, test, project, platform, mode, refresh rate, CPU throttling and CPU model, because the same work took 150ms, 197ms or 226ms on different GitHub-hosted runners ([measurements](docs/measurements.md)). A baseline from your laptop isn't used in CI. In CI, baselines come from your main branch through `baselineDir`, and a run on a CPU model with no baseline yet skips its checks. The [CI guide](docs/ci.md) covers the GitHub Action, and a dedicated or self-hosted runner gives the steadiest numbers.
 
 ## Results
 
@@ -216,7 +216,7 @@ The mode can also come from the `SMOOTHNESS_MODE` environment variable, and sche
 reporter: [['list'], ['playwright-smoothness/reporter']],
 ```
 
-The reporter writes `test-results/smoothness/summary.md`: each check's change against its baseline, such as `129ms (+20ms, +18%)`, the scripts and functions behind anything that got worse, and anything that couldn't be measured or compared. In GitHub Actions it's added to the job summary too. Its options are `outputFile`, `title` and `githubSummary`. Every result is also written as JSON (`schemaVersion: 1`) under `test-results/smoothness/` and attached to the test.
+The reporter writes `test-results/smoothness/summary.md`: each check's change against its baseline, such as `129ms (+20ms, +18%)`, the scripts and functions behind anything that got worse, and anything that couldn't be measured or compared. In GitHub Actions it's added to the job summary too. Its options are `outputFile`, `title` and `githubSummary`. Every result is also written as JSON (`schemaVersion: 1`) under `test-results/smoothness/` and attached to the test, so without the reporter, `npx playwright-smoothness summary` writes the same summary from those files afterwards.
 
 ## Choose `maxIncrease`
 
@@ -228,7 +228,13 @@ npx playwright-smoothness calibrate --runs 5 -- --project=chromium
 
 ## CI
 
-On the main branch, CI records baselines with `--update-snapshots=all` and uploads them. Pull requests download them and point `baselineDir` at them, so every check compares against main. Pull requests run in quick mode, and scheduled runs switch to full mode on their own. The [CI guide](docs/ci.md) has the whole recipe, including posting the summary on the pull request, and [`examples/github-actions`](examples/github-actions) has the workflow ready to copy.
+On GitHub, the Action does it all in one step: pull requests compare against baselines recorded on main and get the summary as a comment, pushes to main record and publish the baselines, and scheduled runs switch to full mode.
+
+```yaml
+- uses: denodell/playwright-smoothness@v1
+```
+
+The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the steps it takes for other CI systems. [`examples/github-actions`](examples/github-actions) has workflows ready to copy, with and without the Action.
 
 ## Limitations
 
@@ -243,7 +249,7 @@ On the main branch, CI records baselines with `--update-snapshots=all` and uploa
 ## Documentation
 
 - [FAQ](docs/faq.md): suite time, flakiness, requirements, privacy, and how it compares with Lighthouse and real-user monitoring
-- [CI](docs/ci.md): baselines in GitHub Actions, dedicated runners, full mode on a schedule, and the pull-request summary
+- [CI](docs/ci.md): the GitHub Action, the steps it takes for other CI systems, dedicated runners, and full mode on a schedule
 - [Automatic mode](docs/automatic-mode.md): measuring every test with `withSmoothness()`
 - [List detection](docs/list-detection.md): how blank rows are found, and replays
 - [Frameworks](docs/frameworks.md): React, Angular, and naming your handler through the CPU profile
@@ -254,7 +260,7 @@ On the main branch, CI records baselines with `--update-snapshots=all` and uploa
 
 - [`examples/plain-site`](examples/plain-site): a static page with a button and a long list. CI tests the baseline recipe against it.
 - [`examples/react-list`](examples/react-list): a minified React windowed list, where full mode names the slow component through source maps.
-- [`examples/github-actions`](examples/github-actions): the CI workflow from the CI guide.
+- [`examples/github-actions`](examples/github-actions): the CI workflows from the CI guide, with and without the Action.
 - [`demos`](demos): seven small apps, each with a fast and a slow version, from a trail journal to a design board.
 
 ## Packages

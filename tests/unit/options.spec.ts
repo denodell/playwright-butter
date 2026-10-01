@@ -18,6 +18,14 @@ test('defaults', () => {
   });
 });
 
+test('baselineDir comes from SMOOTHNESS_BASELINE_DIR unless an option sets it', () => {
+  expect(resolveOptions([], { SMOOTHNESS_BASELINE_DIR: 'from-env' }).baselineDir).toBe('from-env');
+  expect(resolveOptions([{ baselineDir: 'set' }], { SMOOTHNESS_BASELINE_DIR: 'from-env' }).baselineDir).toBe(
+    'set',
+  );
+  expect(resolveOptions([], { SMOOTHNESS_BASELINE_DIR: '  ' }).baselineDir).toBeUndefined();
+});
+
 test('later sources override earlier ones', () => {
   const o = resolveOptions([{ runs: 3, cpuThrottling: 2 }, { runs: 7 }], {});
   expect(o.runs).toBe(7);

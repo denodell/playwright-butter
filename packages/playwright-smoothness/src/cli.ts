@@ -1,20 +1,42 @@
 // npx playwright-smoothness calibrate [--runs 5] [--out smoothness-calibration.json] [-- <playwright test args>]
+// npx playwright-smoothness summary [--results test-results] [--out <file>] [--title <title>] [--github-summary]
 import { parseArgs } from 'node:util';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { basename, dirname, join, relative } from 'node:path';
 import {
   CALIBRATE_ENV,
+  buildMarkdown,
   calibrate,
   formatCalibration,
   forwardSlashes,
+  type ReportEntry,
   type SmoothnessResult,
 } from 'smoothness-core';
 import { PACKAGE_NAME } from './constants.js';
 
-const HELP = `Usage: npx ${PACKAGE_NAME} calibrate [options] [-- <playwright test arguments>]
+const HELP = `Usage: npx ${PACKAGE_NAME} <command> [options]
+
+Commands:
+  calibrate   How much each check varies between runs, with a suggested maxIncrease
+  summary     The Markdown summary of the last run, from its result files
+
+Run a command with --help for its options.
+`;
+
+const CALIBRATE_HELP = `Usage: npx ${PACKAGE_NAME} calibrate [options] [-- <playwright test arguments>]
 
 Runs your Playwright suite several times on unchanged code, and prints how much each
 smoothness check varies between runs, with a suggested maxIncrease for each.
@@ -52,12 +74,84 @@ function collect(outputDir: string): Map<string, SmoothnessResult> {
   return results;
 }
 
+const SUMMARY_HELP = `Usage: npx ${PACKAGE_NAME} summary [options]
+
+Writes the Markdown summary of the last run from its result files, the same summary the
+reporter writes, for runs that didn't use the reporter.
+
+Options:
+  --results <dir>    Playwright's output directory (default test-results)
+  --out <file>       Where to write it (default <results>/smoothness/summary.md)
+  --title <title>    The summary's heading (default Smoothness)
+  --github-summary   Also add it to the GitHub Actions job summary
+  --help             Show this help
+`;
+
+export function readResults(results: string): ReportEntry[] {
+  const root = join(results, 'smoothness');
+  const latest = new Map<string, { retry: number; files: string[] }>();
+  for (const file of jsonFiles(root)) {
+    const dir = dirname(file);
+    const m = /^(.*)-retry(\d+)$/.exec(basename(dir));
+    const key = m ? join(dirname(dir), m[1]!) : dir;
+    const retry = m ? Number(m[2]) : 0;
+    const seen = latest.get(key);
+    if (!seen || retry > seen.retry) latest.set(key, { retry, files: [file] });
+    else if (retry === seen.retry) seen.files.push(file);
+  }
+  const entries: ReportEntry[] = [];
+  for (const { files } of latest.values()) {
+    for (const file of files.sort()) {
+      try {
+        const r = JSON.parse(readFileSync(file, 'utf8')) as SmoothnessResult;
+        if (r.schemaVersion !== 1 || typeof r.label !== 'string') continue;
+        entries.push({
+          test: r.test?.title ?? basename(dirname(file)),
+          file: r.test?.file ?? '',
+          project: r.test?.project ?? '',
+          result: r,
+        });
+      } catch {
+        continue;
+      }
+    }
+  }
+  return entries;
+}
+
+function summary(args: string[]): number {
+  const { values } = parseArgs({
+    args,
+    options: {
+      results: { type: 'string', default: 'test-results' },
+      out: { type: 'string' },
+      title: { type: 'string' },
+      'github-summary': { type: 'boolean' },
+      help: { type: 'boolean' },
+    },
+  });
+  if (values.help) {
+    console.log(SUMMARY_HELP);
+    return 0;
+  }
+  const entries = readResults(values.results!);
+  const out = values.out ?? join(values.results!, 'smoothness', 'summary.md');
+  const md = buildMarkdown(entries, values.title);
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, md);
+  const jobSummary = process.env.GITHUB_STEP_SUMMARY;
+  if (values['github-summary'] && jobSummary) appendFileSync(jobSummary, md + '\n');
+  console.log(`Smoothness summary of ${entries.length} result(s): ${out}`);
+  return 0;
+}
+
 export function main(argv: string[]): number {
   const [command, ...rest] = argv;
   if (!command || command === '--help' || command === '-h') {
     console.log(HELP);
     return command ? 0 : 1;
   }
+  if (command === 'summary') return summary(rest);
   if (command !== 'calibrate') {
     console.error(`Unknown command '${command}'.\n\n${HELP}`);
     return 1;
@@ -74,7 +168,7 @@ export function main(argv: string[]): number {
     },
   });
   if (values.help) {
-    console.log(HELP);
+    console.log(CALIBRATE_HELP);
     return 0;
   }
   const runs = Number(values.runs);

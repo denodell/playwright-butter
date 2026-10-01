@@ -1,0 +1,132 @@
+name: playwright-smoothness
+description: Smoothness checks for Playwright in CI. Compares pull requests with main's baselines, posts the summary, and records baselines on main.
+author: Den Odell
+branding:
+  icon: activity
+  color: purple
+
+inputs:
+  command:
+    description: How to run the suite. With `npm run`, end it with `--` so the Action can add Playwright arguments, such as `npm run test:e2e --`.
+    default: npx playwright test
+  working-directory:
+    description: The folder to run in, for a monorepo.
+    default: .
+  snapshot-dir:
+    description: Where the tests' baselines live, relative to the working directory. Playwright's default is the test directory.
+    default: tests
+  results-dir:
+    description: Playwright's output directory, relative to the working directory.
+    default: test-results
+  comment:
+    description: Post the summary on the pull request, as one comment that each run updates.
+    default: 'true'
+  install-browsers:
+    description: Install Chromium and its system dependencies first.
+    default: 'true'
+  artifact-name:
+    description: The name main's baselines are published under. Two suites in one repository need different names.
+    default: smoothness-baselines
+  results-artifact-name:
+    description: The name results and replays are uploaded under. Default is one unique to this job.
+    default: ''
+  token:
+    description: "Token for reading main's baselines and posting the comment. Needs `actions: read` and `pull-requests: write`."
+    default: ${{ github.token }}
+
+outputs:
+  outcome:
+    description: '`passed` or `failed`: whether the Playwright run passed.'
+    value: ${{ steps.finish.outputs.outcome }}
+  summary:
+    description: Path to the Markdown summary.
+    value: ${{ steps.report.outputs.summary }}
+
+runs:
+  using: composite
+  steps:
+    - name: Plan
+      id: plan
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        RESULTS_ARTIFACT: ${{ inputs.results-artifact-name }}
+      run: bash "$GITHUB_ACTION_PATH/action/plan.sh"
+
+    - name: Install Chromium
+      if: inputs.install-browsers == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npx playwright install --with-deps chromium
+
+    - name: Fetch main's baselines
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        BASELINES: ${{ steps.plan.outputs.baselines }}
+      run: bash "$GITHUB_ACTION_PATH/action/fetch-baselines.sh"
+
+    - name: Compare with main
+      id: compare
+      if: steps.plan.outputs.compare == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        COMMAND: ${{ inputs.command }}
+        SMOOTHNESS_BASELINE_DIR: ${{ steps.plan.outputs.baselines }}
+        STARTED: ${{ steps.plan.outputs.started }}
+      run: bash "$GITHUB_ACTION_PATH/action/run.sh" compare
+
+    - name: Summary
+      id: report
+      if: always() && steps.plan.outputs.compare == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        RESULTS_DIR: ${{ inputs.results-dir }}
+        STARTED: ${{ steps.plan.outputs.started }}
+        COMMENT: ${{ inputs.comment }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: bash "$GITHUB_ACTION_PATH/action/report.sh"
+
+    - name: Record baselines
+      id: record
+      if: steps.plan.outputs.record == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        COMMAND: ${{ inputs.command }}
+        SMOOTHNESS_BASELINE_DIR: ${{ steps.plan.outputs.baselines }}
+        SNAPSHOT_DIR: ${{ inputs.snapshot-dir }}
+      run: bash "$GITHUB_ACTION_PATH/action/run.sh" record
+
+    - name: Publish baselines
+      if: steps.plan.outputs.record == 'true' && steps.record.outputs.collected == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.plan.outputs.baselines }}
+        include-hidden-files: true
+        retention-days: 90
+
+    - name: Upload results and replays
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.plan.outputs.results-artifact }}
+        path: ${{ inputs.working-directory }}/${{ inputs.results-dir }}
+        if-no-files-found: ignore
+        retention-days: 14
+
+    - name: Finish
+      id: finish
+      if: always()
+      shell: bash
+      env:
+        COMPARE_CODE: ${{ steps.compare.outputs.code }}
+        RECORD_CODE: ${{ steps.record.outputs.code }}
+      run: bash "$GITHUB_ACTION_PATH/action/finish.sh"

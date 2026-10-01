@@ -58,7 +58,7 @@ import {
   NameResolver,
   resolveScripts,
 } from 'smoothness-core';
-import { resultDir } from './testinfo.js';
+import { resultDir, testOf } from './testinfo.js';
 import { browserEnvironment, contextFetcher } from './driver.js';
 import { smoothnessFixtures, type SmoothnessFixtures, type SmoothnessOptions } from './fixture.js';
 
@@ -470,6 +470,7 @@ async function reportResult(
   result: SmoothnessResult,
   comparison: Comparison,
 ): Promise<void> {
+  result.test = testOf(testInfo);
   const out = resultPath(resultDir(testInfo), 'auto');
   writeResult(result, out);
   await testInfo.attach('smoothness: auto', { path: out, contentType: 'application/json' });
