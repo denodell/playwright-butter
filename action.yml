@@ -1,5 +1,5 @@
 name: playwright-smoothness
-description: Smoothness checks for Playwright in CI. Compares pull requests with main's baselines, posts the summary, and records baselines on main.
+description: Smoothness checks for Playwright in CI. Compares pull requests with main's baselines and comments on what got slower.
 author: Den Odell
 branding:
   icon: activity
