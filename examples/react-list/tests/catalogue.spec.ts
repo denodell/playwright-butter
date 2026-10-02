@@ -1,6 +1,6 @@
 import { test, expect } from 'playwright-smoothness';
 
-test('the catalogue stays drawn during a fast fling', async ({ page, smoothness }) => {
+test('the catalogue stays drawn during a fast scroll', async ({ page, smoothness }) => {
   await page.goto('/');
   const result = await smoothness.scroll(page.getByRole('list', { name: 'Catalogue' }), {
     mode: 'full',
@@ -15,7 +15,7 @@ test('the catalogue stays drawn during a fast fling', async ({ page, smoothness 
   // Blank frames are compared with the baseline by toBeSmooth(), not with a fixed number.
 });
 
-// The same list with expensive rows, flung with the wheel: the compositor keeps scrolling while
+// The same list with expensive rows, scrolled fast with the wheel: the compositor keeps scrolling while
 // the main thread is busy rendering rows, so the list goes blank. (With touch on this page the
 // list only moves as fast as rows render, so it stays drawn but scrolls slowly.) The CPU profile
 // names the slow code through the source map, although the bundle is minified.

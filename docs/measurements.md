@@ -97,7 +97,7 @@ Throttling slows work measured in iterations, but not a wait measured in wall-cl
 
 A noise workflow ran the whole detection suite five times in one job on `main` (run 35943204024). It has since been removed, and `calibrate` now does this job.
 
-Within one job, noise is very low. Every scroll-table number was identical across all five runs (0 / 0 / 2 / 4 / 8 dropped, with the LoAF and rAF columns exact too). Throttled long-frame counts didn't move (10 / 10 / 10), and throttled total blocking time varied by ±1–2%, against ±25–40% in the spike's single-CPU sandbox. Dropped-frame counts for the list fling were the least steady (cheap: 2–3; costly: 7–9).
+Within one job, noise is very low. Every scroll-table number was identical across all five runs (0 / 0 / 2 / 4 / 8 dropped, with the LoAF and rAF columns exact too). Throttled long-frame counts didn't move (10 / 10 / 10), and throttled total blocking time varied by ±1–2%, against ±25–40% in the spike's single-CPU sandbox. Dropped-frame counts for the fast list scroll were the least steady (cheap: 2–3; costly: 7–9).
 
 Between jobs, runner speed varies by up to 1.5x, and total blocking at 4x by up to 2x. The same iteration-based work took:
 
@@ -120,7 +120,7 @@ This had two effects on the library:
 - Frames per second with rAF in new headless: 60 by default, 57 with `--disable-frame-rate-limit`, and 60 with `--disable-gpu-vsync` (GitHub Actions: 60, 58, 61). As the spike found, the flags don't raise the rate.
 - AnimationFrame events after a warm-up wheel, locally: at 0ms blocking, 31 frames, 17 over 8.33ms, 3 over 16.7ms, longest 17.4ms. At 25ms blocking, 10 over 16.7ms, longest 42.8ms. On GitHub Actions: at 0ms, 10 of 31 over 8.33ms, none over 16.7ms, longest 16.5ms. At 25ms, 10 over 16.7ms, longest 25.2ms. None were over 50ms on either machine, so LoAF wouldn't see any of them. As in the spike, many frames take more than 8.33ms with no work, which is why the 120Hz budget is reported but not gated.
 
-## Long-list fling
+## Fast scroll through a long list
 
 `Input.synthesizeScrollGesture`, `yDistance: -20000`, `speed: 6000`, 600×600 viewport, with screenshots.
 
@@ -133,10 +133,10 @@ This had two effects on the library:
 | moderate, GHA              | 427    | 407       | 2       | 0                     | 205         | 19.9MB     |
 | costly, GHA                | 252    | 234       | 7       | 0                     | 205         | 12.4MB     |
 
-- Every fling scrolled the full 20,000px on the compositor thread (`SCROLL_COMPOSITOR_THREAD`).
+- Every scroll covered the full 20,000px on the compositor thread (`SCROLL_COMPOSITOR_THREAD`).
 - Dropped frames stay under 4% even for the costly list, so they can't reveal blank rows. That's why blank rows are measured from screenshots ([list-detection.md](list-detection.md)).
 - `has_missing_content` changed between Chrome versions. On 141 it was set on about 78% of frames for every list. On 153 it's 0 for every list, including the blank one, on both the Mac and the runner. The library doesn't use it, and the suite only asserts that it doesn't separate cheap from costly, which holds on both versions.
-- With screenshots on, a trace is about 10x the spike's estimate: 13–22MB per 3.3s fling, against about 1.8MB per 1.5s without screenshots. The library parses and discards each trace as soon as it's recorded.
+- With screenshots on, a trace is about 10x the spike's estimate: 13–22MB per 3.3s scroll, against about 1.8MB per 1.5s without screenshots. The library parses and discards each trace as soon as it's recorded.
 - `scroll()` measures blank-frame percentages (spike: cheap ≥87% drawn, costly median 0%), as described in [list-detection.md](list-detection.md).
 
 ## Synthetic touch scrolling
@@ -153,7 +153,7 @@ This had two effects on the library:
 | `synthesizeScrollGesture`, mouse source                  | 2,000px | 2,000px                 |
 | `Input.dispatchTouchEvent`: one 380px drag, then release | 544px   | 572px                   |
 
-`input: 'touch'` is built from real touch events instead. It makes repeated flicks (press, drag across 60% of the list at the requested speed, release, and let the list fling on) until the distance is covered, and it behaves the same on both platforms. The problem was found because the React example's "cheap list stays drawn" check passed on CI with 0% blank frames while the list didn't scroll at all. Since then, `scroll()` also reports list data as unavailable when no run moved the list.
+`input: 'touch'` is built from real touch events instead. It makes repeated swipes (press, drag across 60% of the list at the requested speed, release, and let the list keep moving on its own) until the distance is covered, and it behaves the same on both platforms. The problem was found because the React example's "cheap list stays drawn" check passed on CI with 0% blank frames while the list didn't scroll at all. Since then, `scroll()` also reports list data as unavailable when no run moved the list.
 
 ## Headless-mode detection
 

@@ -11,7 +11,7 @@ test('filters open smoothly', async ({ page, smoothness }) => {
   expect(result).toBeSmooth();
 });
 
-test('the article list stays drawn while flung', async ({ page, smoothness }) => {
+test('the article list stays drawn while scrolled fast', async ({ page, smoothness }) => {
   await page.goto(`/${query}`);
   const result = await smoothness.scroll(page.getByRole('list', { name: 'Articles' }), {
     mode: 'full',

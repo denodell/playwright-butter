@@ -69,14 +69,14 @@ await smoothness.measure('add to cart', action, {
 
 ### Scroll a list
 
-![A replay of a demo cycling club feed flung at 6,000px/s: the page stays at 60 frames per second for most of the fling, but the posts disappear and 115 of 124 frames are blank](docs/replay-blank-rows.gif)
+![A replay of a demo cycling club feed scrolled at 6,000px/s: the page stays at 60 frames per second for most of the scroll, but the posts disappear and 115 of 124 frames are blank](docs/replay-blank-rows.gif)
 
-A list can go blank without dropping frames. This demo feed builds its posts too slowly, so it stays at 60 frames per second for most of the fling while the list is empty in 115 of 124 frames. `scroll()` measures both.
+A list can go blank without dropping frames. This demo feed builds its posts too slowly, so it stays at 60 frames per second for most of the scroll while the list is empty in 115 of 124 frames. `scroll()` measures both.
 
 ```ts
 test.use({ hasTouch: true }); // input: 'touch' needs a touch-enabled context
 
-test('catalog flick stays drawn', async ({ page, smoothness }) => {
+test('catalog stays drawn during a fast swipe', async ({ page, smoothness }) => {
   await page.goto('/catalog');
   const result = await smoothness.scroll(page.getByRole('list', { name: 'Trending' }), {
     mode: 'full', // blank rows need the trace's screenshots
@@ -91,7 +91,7 @@ test('catalog flick stays drawn', async ({ page, smoothness }) => {
 `scroll()` makes the same repeated, reloaded runs as `measure()`, with the scroll as the action:
 
 - `'wheel'` sends a wheel gesture that the compositor scrolls.
-- `'touch'` flicks with real touch events, and throws in a context without touch support (`hasTouch: true`, or a mobile device).
+- `'touch'` swipes with real touch events, and throws in a context without touch support (`hasTouch: true`, or a mobile device).
 - `'keys'` presses the arrow keys 100ms apart and measures each press as an interaction.
 - `direction` is `'vertical'` (default) or `'horizontal'`.
 - `distance: 'end'` stops after 20,000px, and the result says how far the end really was. A pixel distance isn't capped.

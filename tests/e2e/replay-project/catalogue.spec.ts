@@ -1,6 +1,6 @@
 import { test, expect } from '../../../packages/playwright-smoothness/src/index.js';
 
-test('catalogue fling', async ({ page, smoothness }) => {
+test('catalogue fast scroll', async ({ page, smoothness }) => {
   await page.goto(
     `/list.html?cost=${process.env.ROW_COST ?? '0'}&overscan=${process.env.ROW_COST ? '0' : '2'}`,
   );

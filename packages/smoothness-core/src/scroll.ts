@@ -18,11 +18,14 @@ export const END_CAP_PX = 20_000;
 export const MIN_REMOVED_ROWS = 3;
 /** Chrome scrolls about 40px per arrow key; used to turn a pixel distance into presses. */
 export const PX_PER_ARROW_KEY = 40;
-/** The scroll has ended when the position is unchanged for this many polls in a row (a fling coasts). */
+/**
+ * The scroll has ended when the position is unchanged for this many polls in a row (the list
+ * keeps moving after the gesture ends).
+ */
 const REST_POLLS = 5;
-/** How often to check whether a fling has come to rest. About two frames at 60Hz. */
+/** How often to check whether the list has come to rest. About two frames at 60Hz. */
 const REST_POLL_MS = 32;
-/** Longest to wait for a fling to come to rest after the gesture. */
+/** Longest to wait for the list to come to rest after the gesture. */
 const REST_TIMEOUT_MS = 3_000;
 
 export interface ScrollOptions {
@@ -30,7 +33,7 @@ export interface ScrollOptions {
   distance?: 'end' | number;
   /** Default `'vertical'`. */
   direction?: 'vertical' | 'horizontal';
-  /** `'wheel'` (default) sends a compositor-driven gesture; `'touch'` flicks with touch events and needs `hasTouch`; `'keys'` presses arrow keys. */
+  /** `'wheel'` (default) sends a compositor-driven gesture; `'touch'` swipes with touch events and needs `hasTouch`; `'keys'` presses arrow keys. */
   input?: 'wheel' | 'touch' | 'keys';
   /** `'slow'` (1,500px/s), `'normal'` (3,000px/s, default), `'fast'` (6,000px/s), or pixels per second. Ignored for keys. */
   speed?: keyof typeof SPEEDS | number;
@@ -96,25 +99,26 @@ async function waitForRest(target: ElementTarget, s: ResolvedScroll): Promise<nu
   return last;
 }
 
-/** A flick drags across this share of the list, from one side towards the other. */
-const FLICK_SPAN = 0.6;
+/** A swipe drags across this share of the list, from one side towards the other. */
+const SWIPE_SPAN = 0.6;
 /** Time between touch moves: one frame at 60Hz, so every frame sees the finger move. */
 const TOUCH_MOVE_MS = 16;
 /**
- * Pause between flicks, so each fling coasts before the next touch stops it. A flick coasted
- * about 1,000px in 750ms on the test list; touching again after 50ms cut that to 400px.
+ * Pause between swipes, so the list keeps moving after each one before the next touch stops it.
+ * After one swipe, the test list kept moving about 1,000px in 750ms; touching again after 50ms
+ * cut that to 400px.
  */
-const FLICK_GAP_MS = 300;
-/** Most flicks per run; with a huge `distance`, the run stops here and says so. */
-const MAX_FLICKS = 200;
+const SWIPE_GAP_MS = 300;
+/** Most swipes per run; with a huge `distance`, the run stops here and says so. */
+const MAX_SWIPES = 200;
 
 /**
  * Touch scrolling as a user does it: press, drag across the list at the requested speed,
- * release (the list flings on), and repeat until the distance is covered. Sent as real touch
- * events (Input.dispatchTouchEvent). Input.synthesizeScrollGesture with a touch source does
+ * release (the list keeps moving on its own), and repeat until the distance is covered. Sent as
+ * real touch events (Input.dispatchTouchEvent). Input.synthesizeScrollGesture with a touch source does
  * nothing on Linux, with no error (docs/measurements.md).
  */
-async function flick(
+async function swipe(
   cdp: CdpSession,
   target: ElementTarget,
   s: ResolvedScroll,
@@ -125,14 +129,14 @@ async function flick(
   const vertical = s.direction === 'vertical';
   const cx = (box.x0 + box.x1) / 2;
   const cy = (box.y0 + box.y1) / 2;
-  const span = FLICK_SPAN * (vertical ? box.y1 - box.y0 : box.x1 - box.x0);
+  const span = SWIPE_SPAN * (vertical ? box.y1 - box.y0 : box.x1 - box.x0);
   const point = (offset: number) => [
     {
       x: Math.round(vertical ? cx : cx + span / 2 - offset),
       y: Math.round(vertical ? cy + span / 2 - offset : cy),
     },
   ];
-  for (let i = 0; i < MAX_FLICKS; i++) {
+  for (let i = 0; i < MAX_SWIPES; i++) {
     if (position(await listGeometry(target), s) - start >= requested) return;
     // https://chromedevtools.github.io/devtools-protocol/tot/Input/#method-dispatchTouchEvent
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: point(0) });
@@ -146,7 +150,7 @@ async function flick(
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: point(moved) });
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await sleep(FLICK_GAP_MS);
+    await sleep(SWIPE_GAP_MS);
   }
 }
 
@@ -217,7 +221,7 @@ export async function restoreScroll(target: ElementTarget, s: ResolvedScroll, px
 }
 
 /**
- * Scrolls the target once. Returns the pixels requested and actually scrolled (a fling can
+ * Scrolls the target once. Returns the pixels requested and actually scrolled (a fast scroll can
  * overshoot a pixel distance; the end of the list stops it short).
  */
 export async function performScroll(
@@ -258,7 +262,7 @@ export async function performScroll(
       y1: Math.min(g.viewport.height, g.rect.y + g.rect.height),
     };
     if (s.input === 'touch') {
-      await flick(cdp, target, s, box, start, requested);
+      await swipe(cdp, target, s, box, start, requested);
     } else {
       // https://chromedevtools.github.io/devtools-protocol/tot/Input/#method-synthesizeScrollGesture
       // Negative distances move the content up (or left): scrolling towards the end. The call
