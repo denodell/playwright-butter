@@ -1,4 +1,5 @@
 import { test as base } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -27,7 +28,7 @@ function resultsLabelled(label: string): SmoothnessResult[] {
   return out;
 }
 
-const shell = test.extend({
+const shell = test.extend<{ page: Page }>({
   page: async ({ playwright, baseURL }, use) => {
     const browser = await playwright.chromium.launch({ channel: 'chromium-headless-shell' });
     await use(await browser.newPage({ baseURL }));
@@ -44,7 +45,7 @@ shell("Chromium's headless shell gets a warning", async ({ page, smoothness }) =
   });
 });
 
-const noCdp = test.extend({
+const noCdp = test.extend<{ page: Page }>({
   page: async ({ playwright, baseURL }, use) => {
     const browser = await playwright.chromium.launch();
     browser.newBrowserCDPSession = async () => {
@@ -60,7 +61,7 @@ noCdp("a browser that won't say which headless mode it is gets no warning", asyn
   expect(test.info().annotations.map((a) => a.type)).not.toContain('smoothness-warning');
 });
 
-const noBrowser = test.extend({
+const noBrowser = test.extend<{ page: Page }>({
   page: async ({ browser, baseURL }, use) => {
     const context = await browser.newContext({ baseURL });
     context.browser = () => null;
@@ -96,7 +97,7 @@ test('toBeSmooth() needs a result, and has no .not', () => {
 });
 
 const preexposed = withSmoothness(
-  base.extend({
+  base.extend<{ context: BrowserContext }>({
     context: async ({ context }, use) => {
       await context.exposeBinding('__playwrightSmoothnessStream', () => undefined);
       await use(context);
@@ -114,7 +115,7 @@ preexposed("automatic mode that can't start says so", async ({ page }) => {
 });
 
 const autoWithoutBrowser = withSmoothness(
-  base.extend({
+  base.extend<{ context: BrowserContext }>({
     context: async ({ context }, use) => {
       context.browser = () => null;
       await use(context);
