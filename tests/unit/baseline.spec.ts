@@ -137,6 +137,11 @@ test('missing measurements', () => {
     status: 'not-compared',
     reason: 'the baseline predates this metric',
   });
+  const nullBaselineValue = compareMetrics(makeResult(), { 'input.p95ToPaintMs': null }, 0.15);
+  expect(nullBaselineValue.find((c) => c.metric === 'input.p95ToPaintMs')).toMatchObject({
+    status: 'not-compared',
+    reason: 'the baseline has no value for this metric',
+  });
 });
 
 test('no interaction slow enough for Event Timing to report passes, rather than counting as missing', () => {
@@ -325,6 +330,23 @@ test.describe('evaluate', () => {
     const c = evaluate(makeResult(), fakeInfo(dir));
     expect(c.status).toBe('baseline-created');
     expect(c.notes.join(' ')).toMatch(/is not a playwright-smoothness baseline/);
+
+    writeFileSync(path, 'not json');
+    expect(evaluate(makeResult(), fakeInfo(dir)).notes.join(' ')).toMatch(/could not be read: SyntaxError/);
+
+    writeFileSync(path, '{"kind":"playwright-smoothness-baseline","schemaVersion":2}');
+    expect(evaluate(makeResult(), fakeInfo(dir)).notes.join(' ')).toMatch(
+      /has schemaVersion 2; this version reads 1/,
+    );
+  });
+
+  test('a baseline recorded for a different check is ignored with a note', () => {
+    const path = evaluate(makeResult(), fakeInfo(dir)).baseline!.path;
+    const file = JSON.parse(readFileSync(path, 'utf8'));
+    writeFileSync(path, JSON.stringify({ ...file, key: { ...file.key, label: 'something else' } }));
+    const c = evaluate(makeResult(), fakeInfo(dir));
+    expect(c.status).toBe('baseline-created');
+    expect(c.notes.join(' ')).toMatch(/it was recorded for .*"label":"something else"/);
   });
 
   test('a result with nothing measured is not compared', () => {
