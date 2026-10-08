@@ -53,7 +53,7 @@ export interface SmoothnessOptions<P = any> {
   enforce?: Enforce;
   /** Directory of baselines downloaded from the main branch, checked before the snapshot path. Default: `SMOOTHNESS_BASELINE_DIR`. */
   baselineDir?: string;
-  /** Options for `smoothness.scroll()` blank-row detection. */
+  /** Options for `silky.scroll()` blank-row detection. */
   list?: ListOptions;
   /** How to reset the page between runs. Default `'reload'`. */
   reset?: ResetStrategy<P>;

@@ -3,19 +3,19 @@ import { test, expect } from '../../packages/playwright-butter/src/index.js';
 
 test.use({ smoothnessOptions: { mode: 'full', runs: 2 } });
 
-test('a busy web worker is never blamed for the main thread', async ({ page, smoothness }) => {
+test('a busy web worker is never blamed for the main thread', async ({ page, silky }) => {
   await page.goto('/worker.html?ms=150');
   await page.waitForTimeout(300);
-  const result = await smoothness.measure('click next to a busy worker', () => page.click('#heavy'));
+  const result = await silky.measure('click next to a busy worker', () => page.click('#heavy'));
   const fns = result.profile!.hotFunctions.map((f) => f.fn);
   expect(fns).not.toContain('workerSpin');
   expect(fns[0]).toBe('busyWait');
   expect(result.profile!.hotFunctions[0]!.callers[0]).toBe('onHeavyClick');
 });
 
-test('hot functions carry location, self and total time', async ({ page, smoothness }) => {
+test('hot functions carry location, self and total time', async ({ page, silky }) => {
   await page.goto('/click.html?ms=150');
-  const result = await smoothness.measure('profiled click', () => page.click('#heavy'));
+  const result = await silky.measure('profiled click', () => page.click('#heavy'));
   const top = result.profile!.hotFunctions[0]!;
   expect(top).toMatchObject({
     fn: 'busyWait',
@@ -27,9 +27,9 @@ test('hot functions carry location, self and total time', async ({ page, smoothn
   expect(result.profile!.sampledMs).toBeGreaterThan(100);
 });
 
-test('quick mode has no profile', async ({ page, smoothness }) => {
+test('quick mode has no profile', async ({ page, silky }) => {
   await page.goto('/click.html?ms=60');
-  const result = await smoothness.measure('quick click', () => page.click('#heavy'), {
+  const result = await silky.measure('quick click', () => page.click('#heavy'), {
     mode: 'quick',
     runs: 1,
   });

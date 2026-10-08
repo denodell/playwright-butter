@@ -5,11 +5,11 @@ import { test } from '../../packages/playwright-butter/src/index.js';
 
 test.use({ viewport: { width: 600, height: 600 }, smoothnessOptions: { replay: 'on', runs: 1 } });
 
-test('replay frame image', async ({ page, smoothness }) => {
+test('replay frame image', async ({ page, silky }) => {
   test.skip(!process.env.REPLAY_FRAME_IMAGE, 'set REPLAY_FRAME_IMAGE=1 to record the replay');
   test.setTimeout(120_000);
   await page.goto('/list.html?cost=15&overscan=0');
-  await smoothness.scroll(page.locator('#list'), {
+  await silky.scroll(page.locator('#list'), {
     speed: 'fast',
     distance: 20_000,
     mode: 'full',

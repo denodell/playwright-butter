@@ -14,13 +14,13 @@ const PAGES = [
 ] as const;
 
 for (const name of PAGES) {
-  test(`attribution on ${name}`, async ({ page, smoothness }) => {
+  test(`attribution on ${name}`, async ({ page, silky }) => {
     await page.goto(`/frameworks/dist/${name}.html`);
     await page.locator('#checkout').waitFor();
-    const click = await smoothness.measure(`${name} checkout`, () => page.click('#checkout .label'), {
+    const click = await silky.measure(`${name} checkout`, () => page.click('#checkout .label'), {
       runs: 2,
     });
-    const typing = await smoothness.measure(
+    const typing = await silky.measure(
       `${name} search`,
       async () => {
         await page.locator('#search').waitFor();
@@ -58,10 +58,10 @@ for (const name of PAGES) {
 // Full mode's CPU profile names the app's handler behind each framework's dispatcher, which
 // LoAF can't. In minified builds the names come back through the page's source maps.
 for (const name of PAGES) {
-  test(`CPU profile names onCheckout on ${name}`, async ({ page, smoothness }) => {
+  test(`CPU profile names onCheckout on ${name}`, async ({ page, silky }) => {
     await page.goto(`/frameworks/dist/${name}.html`);
     await page.locator('#checkout').waitFor();
-    const result = await smoothness.measure(`${name} profile`, () => page.click('#checkout .label'), {
+    const result = await silky.measure(`${name} profile`, () => page.click('#checkout .label'), {
       mode: 'full',
       runs: 2,
     });

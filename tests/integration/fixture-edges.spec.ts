@@ -36,9 +36,9 @@ const shell = test.extend<{ page: Page }>({
   },
 });
 
-shell("Chromium's headless shell gets a warning", async ({ page, smoothness }) => {
+shell("Chromium's headless shell gets a warning", async ({ page, silky }) => {
   await page.goto('/click.html?ms=20');
-  await smoothness.measure('click', () => page.click('#heavy'), { runs: 1, cpuThrottling: 1 });
+  await silky.measure('click', () => page.click('#heavy'), { runs: 1, cpuThrottling: 1 });
   expect(test.info().annotations).toContainEqual({
     type: 'smoothness-warning',
     description: expect.stringContaining("Running in Chromium's headless shell"),
@@ -56,8 +56,8 @@ const noCdp = test.extend<{ page: Page }>({
   },
 });
 
-noCdp("a browser that won't say which headless mode it is gets no warning", async ({ smoothness }) => {
-  void smoothness;
+noCdp("a browser that won't say which headless mode it is gets no warning", async ({ silky }) => {
+  void silky;
   expect(test.info().annotations.map((a) => a.type)).not.toContain('smoothness-warning');
 });
 
@@ -70,9 +70,9 @@ const noBrowser = test.extend<{ page: Page }>({
   },
 });
 
-noBrowser('a context with no Browser is not measured or compared', async ({ page, smoothness }) => {
+noBrowser('a context with no Browser is not measured or compared', async ({ page, silky }) => {
   await page.goto('/click.html?ms=20');
-  const r = await smoothness.measure('click', () => page.click('#heavy'));
+  const r = await silky.measure('click', () => page.click('#heavy'));
   expect(r.runs).toBe(0);
   expect(r.unavailable[0]!.reason).toBe('smoothness is measured in Chromium only; this is unknown');
   expect(r).toBeSmooth();
@@ -81,16 +81,16 @@ noBrowser('a context with no Browser is not measured or compared', async ({ page
   );
 });
 
-test('a label used twice in one test throws', async ({ page, smoothness }) => {
+test('a label used twice in one test throws', async ({ page, silky }) => {
   await page.goto('/click.html?ms=0');
-  await smoothness.measure('click', () => page.click('#heavy'), { runs: 1, cpuThrottling: 1 });
-  await expect(smoothness.measure('click', () => page.click('#heavy'))).rejects.toThrow(
+  await silky.measure('click', () => page.click('#heavy'), { runs: 1, cpuThrottling: 1 });
+  await expect(silky.measure('click', () => page.click('#heavy'))).rejects.toThrow(
     'the label "click" is already used in this test',
   );
 });
 
 test('toBeSmooth() needs a result, and has no .not', () => {
-  expect(() => expect({} as SmoothnessResult).toBeSmooth()).toThrow(/expects a result from smoothness/);
+  expect(() => expect({} as SmoothnessResult).toBeSmooth()).toThrow(/expects a result from silky/);
   expect(() => expect({} as SmoothnessResult).not.toBeSmooth()).toThrow(
     /not\.toBeSmooth\(\) is not supported/,
   );
@@ -178,9 +178,9 @@ test.afterAll(({ browser }) => {
   if (newContext) browser.newContext = newContext as typeof browser.newContext;
 });
 
-test('a replay that has no page to render in', async ({ page, smoothness, browser }) => {
+test('a replay that has no page to render in', async ({ page, silky, browser }) => {
   await page.goto('/list.html?cost=15&overscan=0');
-  await smoothness.scroll(page.locator('#list'), {
+  await silky.scroll(page.locator('#list'), {
     label: 'replay without a page',
     distance: 2000,
     speed: 'fast',
@@ -205,4 +205,8 @@ test('says why there is no replay', ({ browser }) => {
   newContext = undefined;
   const [r] = resultsLabelled('replay without a page');
   expect(r!.notes.join(' ')).toMatch(/No replay: .*blocked/);
+});
+
+test('the smoothness fixture still works under its old name', ({ smoothness, silky }) => {
+  expect(smoothness).toBe(silky);
 });

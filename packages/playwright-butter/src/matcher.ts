@@ -25,7 +25,7 @@ function isResult(v: unknown): v is SmoothnessResult {
 
 export const expect = baseExpect.extend({
   /**
-   * Compares a result from `smoothness.measure()` or `smoothness.scroll()` with its stored baseline. With
+   * Compares a result from `silky.measure()` or `silky.scroll()` with its stored baseline. With
    * `enforce: 'fail'` a regression fails the test; with `'warn'` (the default) it adds an
    * annotation and, in GitHub Actions, a `::warning` on the pull request.
    */
@@ -38,7 +38,7 @@ export const expect = baseExpect.extend({
         pass: false,
         name: 'toBeSmooth',
         message: () =>
-          `toBeSmooth() expects a result from smoothness.measure() or scroll() (schemaVersion ${SCHEMA_VERSION}).`,
+          `toBeSmooth() expects a result from silky.measure() or scroll() (schemaVersion ${SCHEMA_VERSION}).`,
       };
     }
     const testInfo = test.info();
