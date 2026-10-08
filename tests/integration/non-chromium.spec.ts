@@ -1,5 +1,5 @@
 // Outside Chromium the measurement is skipped with a visible annotation.
-import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
+import { test, expect } from '../../packages/playwright-butter/src/index.js';
 
 test('skipped outside Chromium', async ({ page, smoothness }) => {
   await page.goto('/click.html?ms=20');

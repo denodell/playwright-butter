@@ -1,4 +1,4 @@
-# playwright-smoothness
+# playwright-butter
 
 Smoothness checks for [Playwright](https://playwright.dev). It measures interactions and list scrolling in Chromium, compares each one with a stored baseline, and tells you which element and which code got slower.
 
@@ -11,7 +11,7 @@ It only warns until you switch a check to fail, has no third-party runtime depen
 ## Install
 
 ```bash
-npm install -D playwright-smoothness
+npm install -D playwright-butter
 ```
 
 It needs Node 20 or later and `@playwright/test` 1.49 or later. Measurements run in Chromium, and new headless mode is closest to real Chrome:
@@ -28,7 +28,7 @@ use: { browserName: 'chromium', channel: 'chromium' },
 ```ts
 // tests/fixtures.ts
 import { test as base } from '@playwright/test';
-import { withSmoothness } from 'playwright-smoothness';
+import { withSmoothness } from 'playwright-butter';
 export const test = withSmoothness(base, { auto: true });
 export { expect } from '@playwright/test';
 ```
@@ -39,7 +39,7 @@ Tests that import `test` from this file are measured as they run, with no other 
 
 ```ts
 // tests/smoothness.spec.ts
-import { test, expect } from 'playwright-smoothness';
+import { test, expect } from 'playwright-butter';
 
 test('filters open smoothly', async ({ page, smoothness }) => {
   await page.goto('/articles');
@@ -159,7 +159,7 @@ Scripts blocking the interaction:
 When a check gets worse or misses its budget, a fix brief is written next to its result as `<result>.fix.md` and attached to the test. It's a short Markdown file meant to be pasted into a coding agent such as Claude Code or Copilot: what got worse and by how much, the interactions, scripts and functions behind it with their files and line numbers, and how to check a fix. That last part matters because a baseline belongs to one machine: the brief gives the exact command to record a baseline on the unchanged code, make the change, and run the check again, so the agent compares its fix with its own machine rather than with CI's numbers.
 
 ```bash
-npx playwright-smoothness brief --results test-results
+npx playwright-butter brief --results test-results
 ```
 
 collects every brief from a run into one file, printed or written with `--out`. The GitHub Action adds them to its pull request comment, folded away under "Fix briefs for a coding agent".
@@ -167,12 +167,12 @@ collects every brief from a run into one file, printed or written with `--out`. 
 ### The agent skill
 
 ```bash
-npx playwright-smoothness init-agents
+npx playwright-butter init-agents
 ```
 
 adds a skill that teaches coding agents what to do with a brief: which number to move, how to read the scripts and functions it names, the usual causes and their fixes (forced layout, work on every scroll event or animation frame, re-rendering every component, slow rows in a virtualized list, and more), and how to prove the fix on their own machine without loosening the check. It goes in `.claude/skills/` for Claude Code and `.agents/skills/` for Codex and other agents that read skills from there, and `AGENTS.md` gets a short section pointing to it for the rest. `--dir` puts it somewhere else. Run it again after upgrading to update the skill, the way Playwright's own `init-agents` works.
 
-The skill also ships in the package at `skills/playwright-smoothness/`, where [TanStack Intent](https://tanstack.com/intent/latest) and [skills-npm](https://github.com/antfu/skills-npm) find it on their own. With either of those, the skill always matches the installed version and there's nothing to rerun.
+The skill also ships in the package at `skills/playwright-butter/`, where [TanStack Intent](https://tanstack.com/intent/latest) and [skills-npm](https://github.com/antfu/skills-npm) find it on their own. With either of those, the skill always matches the installed version and there's nothing to rerun.
 
 The skill was checked by having an agent fix the slow version of each [demo app](demos/README.md#the-agent-skill-checked-against-them) from its brief alone: all seven came back at or near the fast version's numbers.
 
@@ -208,7 +208,7 @@ Options can be set for a whole project, for a file with `test.use({ smoothnessOp
 ```ts
 // playwright.config.ts
 import { defineConfig } from '@playwright/test';
-import type { SmoothnessTestOptions } from 'playwright-smoothness';
+import type { SmoothnessTestOptions } from 'playwright-butter';
 
 export default defineConfig<SmoothnessTestOptions>({
   use: { channel: 'chromium', smoothnessOptions: { runs: 3 } },
@@ -235,15 +235,15 @@ The mode can also come from the `SMOOTHNESS_MODE` environment variable, and sche
 
 ```ts
 // playwright.config.ts
-reporter: [['list'], ['playwright-smoothness/reporter']],
+reporter: [['list'], ['playwright-butter/reporter']],
 ```
 
-The reporter writes `test-results/smoothness/summary.md`: each check's change against its baseline, such as `129ms (+20ms, +18%)`, the scripts and functions behind anything that got worse, and anything that couldn't be measured or compared. In GitHub Actions it's added to the job summary too. Its options are `outputFile`, `title` and `githubSummary`. Every result is also written as JSON (`schemaVersion: 1`) under `test-results/smoothness/` and attached to the test, so without the reporter, `npx playwright-smoothness summary` writes the same summary from those files afterwards.
+The reporter writes `test-results/smoothness/summary.md`: each check's change against its baseline, such as `129ms (+20ms, +18%)`, the scripts and functions behind anything that got worse, and anything that couldn't be measured or compared. In GitHub Actions it's added to the job summary too. Its options are `outputFile`, `title` and `githubSummary`. Every result is also written as JSON (`schemaVersion: 1`) under `test-results/smoothness/` and attached to the test, so without the reporter, `npx playwright-butter summary` writes the same summary from those files afterwards.
 
 ## Choose `maxIncrease`
 
 ```bash
-npx playwright-smoothness calibrate --runs 5 -- --project=chromium
+npx playwright-butter calibrate --runs 5 -- --project=chromium
 ```
 
 `calibrate` runs your suite 5 times on unchanged code, without comparing or recording baselines, and prints how much each check moved between runs. For each check it suggests the smallest `maxIncrease`, in steps of 0.05, that covers that movement, and warns when a check needs more than the default. Arguments after `--` go to `playwright test`, and the results are also saved to `smoothness-calibration.json`. Run it on the machine that gates your builds, since that's where the noise matters.
@@ -253,13 +253,13 @@ npx playwright-smoothness calibrate --runs 5 -- --project=chromium
 On GitHub, two steps go around the step that already runs your Playwright tests, and that step stays as it is:
 
 ```yaml
-- uses: denodell/playwright-smoothness/setup@v1
+- uses: denodell/playwright-butter/setup@v1
 - run: npx playwright test
-- uses: denodell/playwright-smoothness/report@v1
+- uses: denodell/playwright-butter/report@v1
   if: always()
 ```
 
-Pull requests compare against baselines recorded on main and get the summary as a comment. Pushes to main compare with the previous baselines, then record and publish new ones, and scheduled runs switch to full mode. For a new workflow, `uses: denodell/playwright-smoothness@v1` does the same in one step and runs the tests itself. On other CI systems, setting `SMOOTHNESS_RECORD_BASELINES=1` on main makes each check record its result into `baselineDir` after comparing, ready to upload.
+Pull requests compare against baselines recorded on main and get the summary as a comment. Pushes to main compare with the previous baselines, then record and publish new ones, and scheduled runs switch to full mode. For a new workflow, `uses: denodell/playwright-butter@v1` does the same in one step and runs the tests itself. On other CI systems, setting `SMOOTHNESS_RECORD_BASELINES=1` on main makes each check record its result into `baselineDir` after comparing, ready to upload.
 
 The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the steps it takes for other CI systems. [`examples/github-actions`](examples/github-actions) has workflows ready to copy: the two steps added to an existing workflow, the Action on its own, and the steps by hand.
 
@@ -292,7 +292,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 
 ## Packages
 
-This repository publishes two packages. `playwright-smoothness` is the one to install. It depends on [`smoothness-core`](packages/smoothness-core), the measuring engine, which other browser libraries can drive through a small adapter.
+This repository publishes two packages. `playwright-butter` is the one to install. It depends on [`butter-core`](packages/butter-core), the measuring engine, which other browser libraries can drive through a small adapter.
 
 ## License
 

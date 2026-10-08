@@ -1,5 +1,5 @@
 import { defineConfig } from '@playwright/test';
-import type { SmoothnessTestOptions } from 'playwright-smoothness';
+import type { SmoothnessTestOptions } from 'playwright-butter';
 
 export default defineConfig<SmoothnessTestOptions>({
   testDir: 'tests',

@@ -1,4 +1,4 @@
-import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
+import { test, expect } from '../../packages/playwright-butter/src/index.js';
 import type { Page } from '@playwright/test';
 
 test.use({

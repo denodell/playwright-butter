@@ -5,7 +5,7 @@ Automatic mode measures every test you already have, with one change to your fix
 ```ts
 // tests/fixtures.ts
 import { test as base } from '@playwright/test';
-import { withSmoothness } from 'playwright-smoothness';
+import { withSmoothness } from 'playwright-butter';
 
 export const test = withSmoothness(base, { auto: true });
 export { expect } from '@playwright/test';

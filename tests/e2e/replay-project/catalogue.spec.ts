@@ -1,4 +1,4 @@
-import { test, expect } from '../../../packages/playwright-smoothness/src/index.js';
+import { test, expect } from '../../../packages/playwright-butter/src/index.js';
 
 test('catalogue fast scroll', async ({ page, smoothness }) => {
   await page.goto(

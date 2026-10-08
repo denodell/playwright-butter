@@ -1,19 +1,16 @@
 // smoothness.scroll() on the virtualized test list. Full mode, unthrottled and fast, like the
 // scroll in docs/measurements.md (Fast scroll through a long list: 20,000px at 6,000px/s).
-import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
+import { test, expect } from '../../packages/playwright-butter/src/index.js';
 import type { Page } from '@playwright/test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { notesApartFromThrottling, save } from '../detection/helpers.js';
-import { traceRun } from '../../packages/smoothness-core/src/trace/tracer.js';
-import {
-  FRAME_CATEGORIES,
-  SCREENSHOT_CATEGORIES,
-} from '../../packages/smoothness-core/src/trace/categories.js';
-import { analyzeFrames } from '../../packages/smoothness-core/src/list/analyze.js';
-import { locatorTarget, playwrightDriver } from '../../packages/playwright-smoothness/src/driver.js';
-import { blankColors, listGeometry, referenceShot } from '../../packages/smoothness-core/src/list/probe.js';
-import { compareMetrics, metricsOf } from '../../packages/smoothness-core/src/baseline/compare.js';
+import { traceRun } from '../../packages/butter-core/src/trace/tracer.js';
+import { FRAME_CATEGORIES, SCREENSHOT_CATEGORIES } from '../../packages/butter-core/src/trace/categories.js';
+import { analyzeFrames } from '../../packages/butter-core/src/list/analyze.js';
+import { locatorTarget, playwrightDriver } from '../../packages/playwright-butter/src/driver.js';
+import { blankColors, listGeometry, referenceShot } from '../../packages/butter-core/src/list/probe.js';
+import { compareMetrics, metricsOf } from '../../packages/butter-core/src/baseline/compare.js';
 
 test.use({
   viewport: { width: 600, height: 600 },

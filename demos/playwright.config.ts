@@ -1,5 +1,5 @@
 import { defineConfig } from '@playwright/test';
-import type { SmoothnessTestOptions } from 'playwright-smoothness';
+import type { SmoothnessTestOptions } from 'playwright-butter';
 
 // Run from the repository root after `npm run build`:
 //   APP_VARIANT=good npx playwright test -c demos   (records baselines)

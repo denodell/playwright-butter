@@ -2,14 +2,14 @@
 // through the library (12ms blocking: no dropped frames; 25ms: some). Unthrottled, as the table
 // was measured.
 // With RECORD_FIXTURES=1, trimmed traces are saved for the parser's unit tests.
-import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
+import { test, expect } from '../../packages/playwright-butter/src/index.js';
 import { writeFileSync } from 'node:fs';
 import {
   FRAME_CATEGORIES,
   ANIMATION_FRAME_CATEGORIES,
   PROFILE_CATEGORIES,
-} from '../../packages/smoothness-core/src/trace/categories.js';
-import { MARK_END, MARK_START } from '../../packages/smoothness-core/src/trace/parse.js';
+} from '../../packages/butter-core/src/trace/categories.js';
+import { MARK_END, MARK_START } from '../../packages/butter-core/src/trace/parse.js';
 import { attach, tenWheelScrolls } from '../detection/helpers.js';
 
 test.use({ smoothnessOptions: { mode: 'full', cpuThrottling: 1, runs: 5 } });

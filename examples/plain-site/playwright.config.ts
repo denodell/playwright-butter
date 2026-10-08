@@ -1,10 +1,10 @@
 import { defineConfig } from '@playwright/test';
-import type { SmoothnessTestOptions } from 'playwright-smoothness';
+import type { SmoothnessTestOptions } from 'playwright-butter';
 
 export default defineConfig<SmoothnessTestOptions>({
   testDir: 'tests',
   // The smoothness summary (test-results/smoothness/summary.md, and the GitHub job summary).
-  reporter: [['list'], ['playwright-smoothness/reporter']],
+  reporter: [['list'], ['playwright-butter/reporter']],
   // A measurement is a warm-up plus several reloaded runs; a traced fast scroll through a list takes a while.
   timeout: 120_000,
   // Timing tests shouldn't compete with each other for the CPU.

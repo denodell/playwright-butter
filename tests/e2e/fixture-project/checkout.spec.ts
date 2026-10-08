@@ -1,4 +1,4 @@
-import { test, expect } from '../../../packages/playwright-smoothness/src/index.js';
+import { test, expect } from '../../../packages/playwright-butter/src/index.js';
 
 test.use({
   smoothnessOptions: { runs: 3, enforce: process.env.ENFORCE === 'fail' ? 'fail' : 'warn' },

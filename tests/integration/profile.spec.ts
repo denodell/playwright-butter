@@ -1,5 +1,5 @@
 // Full mode's CPU profile: attributed to the page's main thread only, and to the interaction.
-import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
+import { test, expect } from '../../packages/playwright-butter/src/index.js';
 
 test.use({ smoothnessOptions: { mode: 'full', runs: 2 } });
 

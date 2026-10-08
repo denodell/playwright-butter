@@ -9,13 +9,13 @@ import {
   outsideRecentRange,
   readHistory,
   specHash,
-} from '../../packages/smoothness-core/src/auto/history.js';
+} from '../../packages/butter-core/src/auto/history.js';
 import {
   analyzeDocs,
   defaultHistoryDir,
   type DocData,
-} from '../../packages/playwright-smoothness/src/withSmoothness.js';
-import { onMainBranch } from '../../packages/smoothness-core/src/ci.js';
+} from '../../packages/playwright-butter/src/withSmoothness.js';
+import { onMainBranch } from '../../packages/butter-core/src/ci.js';
 import { makeResult } from './result-factory.js';
 
 test('medianMetrics skips unmeasured runs', () => {

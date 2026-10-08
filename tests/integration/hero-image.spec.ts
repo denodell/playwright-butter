@@ -1,17 +1,14 @@
 // Generates docs/hero.png for the README: a frame from a cheap list's fast scroll next to the
 // least-drawn frame from a costly list's, with the real numbers from the same runs.
 // Opt-in: HERO_IMAGE=1 npx playwright test --project=integration hero-image
-import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
+import { test, expect } from '../../packages/playwright-butter/src/index.js';
 import type { Page } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
-import { traceRun } from '../../packages/smoothness-core/src/trace/tracer.js';
-import {
-  FRAME_CATEGORIES,
-  SCREENSHOT_CATEGORIES,
-} from '../../packages/smoothness-core/src/trace/categories.js';
-import { analyzeFrames } from '../../packages/smoothness-core/src/list/analyze.js';
-import { locatorTarget, playwrightDriver } from '../../packages/playwright-smoothness/src/driver.js';
-import { blankColors, listGeometry, referenceShot } from '../../packages/smoothness-core/src/list/probe.js';
+import { traceRun } from '../../packages/butter-core/src/trace/tracer.js';
+import { FRAME_CATEGORIES, SCREENSHOT_CATEGORIES } from '../../packages/butter-core/src/trace/categories.js';
+import { analyzeFrames } from '../../packages/butter-core/src/list/analyze.js';
+import { locatorTarget, playwrightDriver } from '../../packages/playwright-butter/src/driver.js';
+import { blankColors, listGeometry, referenceShot } from '../../packages/butter-core/src/list/probe.js';
 
 test.use({
   viewport: { width: 600, height: 600 },

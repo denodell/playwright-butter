@@ -1,4 +1,4 @@
-import { test, expect } from 'playwright-smoothness';
+import { test, expect } from 'playwright-butter';
 
 test('the catalogue stays drawn during a fast scroll', async ({ page, smoothness }) => {
   await page.goto('/');

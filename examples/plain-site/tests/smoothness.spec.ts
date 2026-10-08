@@ -1,4 +1,4 @@
-import { test, expect } from 'playwright-smoothness';
+import { test, expect } from 'playwright-butter';
 
 // In CI, SLOW=80 simulates a regression in the filters button.
 const query = process.env.SLOW ? `?slow=${process.env.SLOW}` : '';

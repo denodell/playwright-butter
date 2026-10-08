@@ -1,4 +1,4 @@
-import { test, expect } from 'playwright-smoothness';
+import { test, expect } from 'playwright-butter';
 
 // Same tests, same labels, different app version: APP_VARIANT=good records baselines,
 // APP_VARIANT=bad is compared against them.

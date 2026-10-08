@@ -1,6 +1,6 @@
 // Does tracing change what's measured? The same interactions in quick and full mode, at the
 // default 4x throttling. Numbers are saved for docs/trace-categories.md.
-import { test, expect } from '../../packages/playwright-smoothness/src/index.js';
+import { test, expect } from '../../packages/playwright-butter/src/index.js';
 import type { Page } from '@playwright/test';
 import { save } from '../detection/helpers.js';
 

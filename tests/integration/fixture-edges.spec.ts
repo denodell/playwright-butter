@@ -3,8 +3,8 @@ import type { BrowserContext, Page } from '@playwright/test';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, expect, withSmoothness } from '../../packages/playwright-smoothness/src/index.js';
-import type { SmoothnessResult } from '../../packages/smoothness-core/src/types.js';
+import { test, expect, withSmoothness } from '../../packages/playwright-butter/src/index.js';
+import type { SmoothnessResult } from '../../packages/butter-core/src/types.js';
 
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(120_000);
