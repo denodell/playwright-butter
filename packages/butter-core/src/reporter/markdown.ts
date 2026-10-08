@@ -58,7 +58,7 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness', cwd 
   const lines: string[] = [`## ${title}`, ''];
   if (entries.length === 0) {
     lines.push(
-      'No smoothness measurements ran. Results come from `smoothness.measure()` and `smoothness.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withSmoothness()`.',
+      'No smoothness measurements ran. Results come from `smoothness.measure()` and `smoothness.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withButter()`.',
     );
     return lines.join('\n') + '\n';
   }

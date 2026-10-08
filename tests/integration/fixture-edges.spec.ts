@@ -3,7 +3,7 @@ import type { BrowserContext, Page } from '@playwright/test';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, expect, withSmoothness } from '../../packages/playwright-butter/src/index.js';
+import { test, expect, withButter } from '../../packages/playwright-butter/src/index.js';
 import type { SmoothnessResult } from '../../packages/butter-core/src/types.js';
 
 test.describe.configure({ mode: 'serial' });
@@ -96,7 +96,7 @@ test('toBeSmooth() needs a result, and has no .not', () => {
   );
 });
 
-const preexposed = withSmoothness(
+const preexposed = withButter(
   base.extend<{ context: BrowserContext }>({
     context: async ({ context }, use) => {
       await context.exposeBinding('__playwrightSmoothnessStream', () => undefined);
@@ -114,7 +114,7 @@ preexposed("automatic mode that can't start says so", async ({ page }) => {
   await page.goto('/click.html?ms=0');
 });
 
-const autoWithoutBrowser = withSmoothness(
+const autoWithoutBrowser = withButter(
   base.extend<{ context: BrowserContext }>({
     context: async ({ context }, use) => {
       context.browser = () => null;
@@ -132,7 +132,7 @@ autoWithoutBrowser('automatic mode skips a context with no Browser', async ({ pa
   await page.goto('/click.html?ms=0');
 });
 
-const auto = withSmoothness(base, { auto: true, record: false, historyDir: history });
+const auto = withButter(base, { auto: true, record: false, historyDir: history });
 const BROKEN = 'a page that breaks the collector, with a missing source map';
 
 auto(BROKEN, async ({ page }) => {

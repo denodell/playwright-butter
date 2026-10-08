@@ -28,8 +28,8 @@ use: { browserName: 'chromium', channel: 'chromium' },
 ```ts
 // tests/fixtures.ts
 import { test as base } from '@playwright/test';
-import { withSmoothness } from 'playwright-butter';
-export const test = withSmoothness(base, { auto: true });
+import { withButter } from 'playwright-butter';
+export const test = withButter(base, { auto: true });
 export { expect } from '@playwright/test';
 ```
 
@@ -277,7 +277,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 
 - [FAQ](docs/faq.md): suite time, flakiness, requirements, privacy, and how it compares with Lighthouse and real-user monitoring
 - [CI](docs/ci.md): the GitHub Action, the steps it takes for other CI systems, dedicated runners, and full mode on a schedule
-- [Automatic mode](docs/automatic-mode.md): measuring every test with `withSmoothness()`
+- [Automatic mode](docs/automatic-mode.md): measuring every test with `withButter()`
 - [List detection](docs/list-detection.md): how blank rows are found, and replays
 - [Frameworks](docs/frameworks.md): React, Angular, and naming your handler through the CPU profile
 - [How it works](docs/how-it-works.md): the browser signals used, how frames are classified, and how baselines are compared

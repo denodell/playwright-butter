@@ -61,7 +61,7 @@ jobs:
 - **Scheduled runs** use full mode, and compare and record the same way.
 - **Every run** installs Chromium, adds the summary to the job summary, and uploads results and replays as an artifact. The job fails when the Playwright run fails.
 
-Automatic mode's history is kept in the same artifact, so tests wrapped with `withSmoothness()` need nothing extra either way.
+Automatic mode's history is kept in the same artifact, so tests wrapped with `withButter()` need nothing extra either way.
 
 | Input                   | Default                  | Description                                                                                |
 | ----------------------- | ------------------------ | ------------------------------------------------------------------------------------------ |

@@ -188,7 +188,7 @@ async function attachReplay(
   writeResult(result, path);
 }
 
-/** The fixture definitions, shared by `test` and `withSmoothness()`. */
+/** The fixture definitions, shared by `test` and `withButter()`. */
 export const smoothnessFixtures: Fixtures<
   SmoothnessFixtures,
   object,

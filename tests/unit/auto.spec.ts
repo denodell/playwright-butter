@@ -14,7 +14,7 @@ import {
   analyzeDocs,
   defaultHistoryDir,
   type DocData,
-} from '../../packages/playwright-butter/src/withSmoothness.js';
+} from '../../packages/playwright-butter/src/withButter.js';
 import { onMainBranch } from '../../packages/butter-core/src/ci.js';
 import { makeResult } from './result-factory.js';
 
@@ -231,4 +231,9 @@ test("analyzeDocs: inputs that aren't reported", () => {
     [1_000_960, doc({ timeOrigin: 1_000_960, page: 1 })],
   ]);
   expect(analyzeDocs(otherTab).unmeasured).toEqual([]);
+});
+
+test('withSmoothness() still works under its old name', async () => {
+  const lib = await import('../../packages/playwright-butter/src/index.js');
+  expect(lib.withSmoothness).toBe(lib.withButter);
 });

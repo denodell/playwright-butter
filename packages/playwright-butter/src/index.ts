@@ -2,8 +2,8 @@ import type { Page } from '@playwright/test';
 import type { ResetStrategy as CoreResetStrategy } from 'butter-core';
 
 export { test } from './fixture.js';
-export { withSmoothness } from './withSmoothness.js';
-export type { AutoOptions } from './withSmoothness.js';
+export { withButter, withSmoothness } from './withButter.js';
+export type { AutoOptions } from './withButter.js';
 export type { Smoothness, SmoothnessFixtures, SmoothnessOptions, SmoothnessTestOptions } from './fixture.js';
 export { expect } from './matcher.js';
 export { PACKAGE_NAME } from './constants.js';

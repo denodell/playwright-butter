@@ -2,8 +2,8 @@
 //
 //   // fixtures.ts
 //   import { test as base } from '@playwright/test';
-//   import { withSmoothness } from 'playwright-butter';
-//   export const test = withSmoothness(base, { auto: true });
+//   import { withButter } from 'playwright-butter';
+//   export const test = withButter(base, { auto: true });
 import type {
   BrowserContext,
   Page,
@@ -494,7 +494,7 @@ async function reportResult(
  * changes, and compared with a rolling median of recent passing runs on the main branch.
  * `smoothness` and `smoothnessOptions` are available too.
  */
-export function withSmoothness<T extends object, W extends object>(
+export function withButter<T extends object, W extends object>(
   base: TestType<T, W>,
   options: AutoOptions,
 ): TestType<T & SmoothnessFixtures, W> {
@@ -597,3 +597,6 @@ export function withSmoothness<T extends object, W extends object>(
   });
   return extended as unknown as TestType<T & SmoothnessFixtures, W>;
 }
+
+/** @deprecated Renamed to `withButter()`. */
+export const withSmoothness = withButter;

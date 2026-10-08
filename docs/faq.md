@@ -13,7 +13,7 @@ Checks only run where you add them, and you decide how long each one takes.
 | `measure()` on a click, `runs: 1`                      | 0.7s                                 |
 | `measure()` in full mode (tracing, CPU profile)        | 4.2s                                 |
 | `scroll()` 20,000px at `'fast'`, 5 runs                | 26s                                  |
-| Automatic mode (`withSmoothness`), per test            | about 0.1s: no reruns, no throttling |
+| Automatic mode (`withButter`), per test                | about 0.1s: no reruns, no throttling |
 
 Each run reloads the page and waits for it to settle, so a check takes roughly `runs + 1` times as long as the action plus a reload. `runs`, `speed` and `distance` all change that. A common setup is automatic mode on every test, plus a handful of explicit `measure()` and `scroll()` checks for the interactions you care about most.
 
