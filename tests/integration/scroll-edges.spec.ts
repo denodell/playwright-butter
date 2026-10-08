@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 
 test.use({
   viewport: { width: 600, height: 600 },
-  smoothnessOptions: { cpuThrottling: 1, runs: 2, mode: 'quick' },
+  butterOptions: { cpuThrottling: 1, runs: 2, mode: 'quick' },
 });
 test.setTimeout(120_000);
 

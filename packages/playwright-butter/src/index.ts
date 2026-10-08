@@ -4,7 +4,13 @@ import type { ResetStrategy as CoreResetStrategy } from 'butter-core';
 export { test } from './fixture.js';
 export { withButter, withSmoothness } from './withButter.js';
 export type { AutoOptions } from './withButter.js';
-export type { Smoothness, SmoothnessFixtures, SmoothnessOptions, SmoothnessTestOptions } from './fixture.js';
+export type {
+  ButterTestOptions,
+  Smoothness,
+  SmoothnessFixtures,
+  SmoothnessOptions,
+  SmoothnessTestOptions,
+} from './fixture.js';
 export { expect } from './matcher.js';
 export { PACKAGE_NAME } from './constants.js';
 export { SCHEMA_VERSION } from 'butter-core';

@@ -3,7 +3,7 @@
 // Opt-in: REPLAY_FRAME_IMAGE=1 npx playwright test --project=integration replay-frame-image
 import { test } from '../../packages/playwright-butter/src/index.js';
 
-test.use({ viewport: { width: 600, height: 600 }, smoothnessOptions: { replay: 'on', runs: 1 } });
+test.use({ viewport: { width: 600, height: 600 }, butterOptions: { replay: 'on', runs: 1 } });
 
 test('replay frame image', async ({ page, silky }) => {
   test.skip(!process.env.REPLAY_FRAME_IMAGE, 'set REPLAY_FRAME_IMAGE=1 to record the replay');

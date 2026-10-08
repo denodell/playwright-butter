@@ -1,7 +1,7 @@
 import { test, expect } from '../../../packages/playwright-butter/src/index.js';
 
 test.use({
-  smoothnessOptions: { runs: 3, enforce: process.env.ENFORCE === 'fail' ? 'fail' : 'warn' },
+  butterOptions: { runs: 3, enforce: process.env.ENFORCE === 'fail' ? 'fail' : 'warn' },
 });
 
 test('checkout click', async ({ page, silky }) => {

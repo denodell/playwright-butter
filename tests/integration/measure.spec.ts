@@ -1,7 +1,7 @@
 import { test, expect } from '../../packages/playwright-butter/src/index.js';
 import { attach, notesApartFromThrottling } from '../detection/helpers.js';
 
-test.use({ smoothnessOptions: { runs: 3 } });
+test.use({ butterOptions: { runs: 3 } });
 
 test('a 150ms click handler', async ({ page, silky }) => {
   await page.goto('/click.html?ms=150');

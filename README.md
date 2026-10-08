@@ -139,7 +139,7 @@ Full mode traces each run, which adds about 5–25% to its time without changing
 `enforce: 'warn'` is the default. A check that got worse adds a `smoothness-warning` annotation, prints the full report and, in GitHub Actions, a `::warning` on the pull request, but the test passes. Once you trust a check, `'fail'` makes it fail the test:
 
 ```ts
-test.use({ smoothnessOptions: { enforce: 'fail' } });
+test.use({ butterOptions: { enforce: 'fail' } });
 // or for one assertion
 expect(result).toBeSmooth({ enforce: 'fail' });
 ```
@@ -203,15 +203,15 @@ The numbers depend on the machine and the CPU throttling, and runners vary (see 
 
 ## Options
 
-Options can be set for a whole project, for a file with `test.use({ smoothnessOptions: { ... } })`, or for one call as the last argument to `measure()` or `scroll()`:
+Options can be set for a whole project, for a file with `test.use({ butterOptions: { ... } })`, or for one call as the last argument to `measure()` or `scroll()`:
 
 ```ts
 // playwright.config.ts
 import { defineConfig } from '@playwright/test';
-import type { SmoothnessTestOptions } from 'playwright-butter';
+import type { ButterTestOptions } from 'playwright-butter';
 
-export default defineConfig<SmoothnessTestOptions>({
-  use: { channel: 'chromium', smoothnessOptions: { runs: 3 } },
+export default defineConfig<ButterTestOptions>({
+  use: { channel: 'chromium', butterOptions: { runs: 3 } },
 });
 ```
 

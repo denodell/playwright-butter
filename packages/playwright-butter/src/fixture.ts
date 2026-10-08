@@ -57,12 +57,17 @@ export interface Smoothness {
 
 /**
  * The option fixture on its own, for typing `playwright.config.ts`:
- * `defineConfig<SmoothnessTestOptions>({ use: { smoothnessOptions: { ... } } })`.
+ * `defineConfig<ButterTestOptions>({ use: { butterOptions: { ... } } })`.
  */
+export type ButterTestOptions = Pick<SmoothnessFixtures, 'butterOptions'>;
+
+/** @deprecated Renamed to `ButterTestOptions`. */
 export type SmoothnessTestOptions = Pick<SmoothnessFixtures, 'smoothnessOptions'>;
 
 export interface SmoothnessFixtures {
-  /** Options for every measurement in the test. Set with `test.use({ smoothnessOptions: {...} })`. */
+  /** Options for every measurement in the test. Set with `test.use({ butterOptions: {...} })`. */
+  butterOptions: SmoothnessOptions;
+  /** @deprecated Renamed to `butterOptions`. */
   smoothnessOptions: SmoothnessOptions;
   silky: Smoothness;
   /** @deprecated Renamed to `silky`. */
@@ -84,7 +89,7 @@ function warn(testInfo: TestInfo, message: string): void {
 async function createSmoothness(
   page: Page,
   driver: PageDriver,
-  defaults: SmoothnessOptions,
+  defaults: SmoothnessOptions[],
   testInfo: TestInfo,
   outputs: Map<string, { path: string; result: SmoothnessResult }>,
 ): Promise<Smoothness> {
@@ -118,7 +123,7 @@ async function createSmoothness(
         `smoothness: the label "${label}" is already used in this test. Labels name baselines, so each must be unique.`,
       );
     }
-    const options = resolveOptions([defaults, overrides]);
+    const options = resolveOptions([...defaults, overrides]);
     let result: SmoothnessResult;
     if (environment.browserName !== 'chromium') {
       const reason = `smoothness is measured in Chromium only; this is ${environment.browserName}`;
@@ -196,12 +201,13 @@ export const smoothnessFixtures: Fixtures<
   object,
   PlaywrightTestArgs & PlaywrightTestOptions
 > = {
+  butterOptions: [{}, { option: true }],
   smoothnessOptions: [{}, { option: true }],
-  silky: async ({ page, smoothnessOptions }, use, testInfo) => {
+  silky: async ({ page, butterOptions, smoothnessOptions }, use, testInfo) => {
     const driver = playwrightDriver(page);
     if (page.context().browser()?.browserType().name() === 'chromium') await preparePage(driver);
     const outputs = new Map<string, { path: string; result: SmoothnessResult }>();
-    await use(await createSmoothness(page, driver, smoothnessOptions, testInfo, outputs));
+    await use(await createSmoothness(page, driver, [smoothnessOptions, butterOptions], testInfo, outputs));
     // Attached after the test body, so each file includes toBeSmooth()'s comparison.
     for (const [label, { path, result }] of outputs) {
       await attachReplay(driver, testInfo, label, path, result);

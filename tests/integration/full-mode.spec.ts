@@ -12,7 +12,7 @@ import {
 import { MARK_END, MARK_START } from '../../packages/butter-core/src/trace/parse.js';
 import { attach, tenWheelScrolls } from '../detection/helpers.js';
 
-test.use({ smoothnessOptions: { mode: 'full', cpuThrottling: 1, runs: 5 } });
+test.use({ butterOptions: { mode: 'full', cpuThrottling: 1, runs: 5 } });
 
 for (const wait of [12, 25]) {
   test(`scroll handler blocking ${wait}ms`, async ({ page, silky }) => {

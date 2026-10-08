@@ -492,7 +492,7 @@ async function reportResult(
 /**
  * Wraps a Playwright `test` so every test that opens a page is measured once, with no code
  * changes, and compared with a rolling median of recent passing runs on the main branch.
- * `silky` and `smoothnessOptions` are available too.
+ * `silky` and `butterOptions` are available too.
  */
 export function withButter<T extends object, W extends object>(
   base: TestType<T, W>,
@@ -514,12 +514,13 @@ export function withButter<T extends object, W extends object>(
   const extended = b.extend<SmoothnessFixtures & { _smoothnessAuto: void }>({
     ...smoothnessFixtures,
     _smoothnessAuto: [
-      async ({ context, browser, smoothnessOptions }, use, testInfo) => {
+      async ({ context, browser, butterOptions, smoothnessOptions }, use, testInfo) => {
         const environment = await browserEnvironment(context.browser());
         const resolved = resolveOptions([
           { cpuThrottling: AUTO_CPU_THROTTLING },
           defaults,
           smoothnessOptions,
+          butterOptions,
         ]);
         const label = testInfo.titlePath.slice(1).join(' › ');
         if (environment.browserName !== 'chromium') {

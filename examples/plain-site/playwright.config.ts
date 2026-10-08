@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
-import type { SmoothnessTestOptions } from 'playwright-butter';
+import type { ButterTestOptions } from 'playwright-butter';
 
-export default defineConfig<SmoothnessTestOptions>({
+export default defineConfig<ButterTestOptions>({
   testDir: 'tests',
   // The smoothness summary (test-results/smoothness/summary.md, and the GitHub job summary).
   reporter: [['list'], ['playwright-butter/reporter']],
@@ -13,7 +13,7 @@ export default defineConfig<SmoothnessTestOptions>({
     baseURL: 'http://localhost:4180',
     browserName: 'chromium',
     channel: 'chromium', // new headless: closer to real Chrome than the headless shell
-    smoothnessOptions: {
+    butterOptions: {
       // Baselines downloaded from main (see ../../docs/ci.md); unset locally.
       baselineDir: process.env.SMOOTHNESS_BASELINE_DIR,
       enforce: process.env.SMOOTHNESS_ENFORCE === 'fail' ? 'fail' : 'warn',

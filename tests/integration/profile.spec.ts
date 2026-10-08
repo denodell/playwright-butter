@@ -1,7 +1,7 @@
 // Full mode's CPU profile: attributed to the page's main thread only, and to the interaction.
 import { test, expect } from '../../packages/playwright-butter/src/index.js';
 
-test.use({ smoothnessOptions: { mode: 'full', runs: 2 } });
+test.use({ butterOptions: { mode: 'full', runs: 2 } });
 
 test('a busy web worker is never blamed for the main thread', async ({ page, silky }) => {
   await page.goto('/worker.html?ms=150');

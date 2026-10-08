@@ -210,3 +210,13 @@ test('says why there is no replay', ({ browser }) => {
 test('the smoothness fixture still works under its old name', ({ smoothness, silky }) => {
   expect(smoothness).toBe(silky);
 });
+
+test.describe('smoothnessOptions under its old name', () => {
+  test.use({ smoothnessOptions: { runs: 1, cpuThrottling: 1 } });
+
+  test('still sets the options', async ({ page, silky }) => {
+    await page.goto('/click.html?ms=0');
+    const r = await silky.measure('click', () => page.click('#heavy'));
+    expect(r.runs).toBe(1);
+  });
+});

@@ -4,7 +4,7 @@ import { test, expect } from 'playwright-butter';
 // APP_VARIANT=bad is compared against them.
 const v = process.env.APP_VARIANT ?? 'good';
 test.use({
-  smoothnessOptions: { mode: 'full', replay: process.env.REPLAY === 'on' ? 'on' : 'on-regression' },
+  butterOptions: { mode: 'full', replay: process.env.REPLAY === 'on' ? 'on' : 'on-regression' },
 });
 
 test('invoice search', async ({ page, silky }) => {

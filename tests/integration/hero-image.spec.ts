@@ -12,7 +12,7 @@ import { blankColors, listGeometry, referenceShot } from '../../packages/butter-
 
 test.use({
   viewport: { width: 600, height: 600 },
-  smoothnessOptions: { mode: 'full', cpuThrottling: 1, runs: 3 },
+  butterOptions: { mode: 'full', cpuThrottling: 1, runs: 3 },
 });
 
 async function fastScrollFrames(page: Page, url: string) {

@@ -14,7 +14,7 @@ import { compareMetrics, metricsOf } from '../../packages/butter-core/src/baseli
 
 test.use({
   viewport: { width: 600, height: 600 },
-  smoothnessOptions: { mode: 'full', cpuThrottling: 1, runs: 3 },
+  butterOptions: { mode: 'full', cpuThrottling: 1, runs: 3 },
 });
 test.setTimeout(120_000);
 
