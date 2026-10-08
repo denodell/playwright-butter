@@ -41,9 +41,9 @@ Tests that import `test` from this file are measured as they run, with no other 
 // tests/smoothness.spec.ts
 import { test, expect } from 'playwright-butter';
 
-test('filters open smoothly', async ({ page, silky }) => {
+test('filters open smoothly', async ({ page, butter }) => {
   await page.goto('/articles');
-  const result = await silky.measure('open filters', async () => {
+  const result = await butter.measure('open filters', async () => {
     await page.getByRole('button', { name: 'Filters' }).click();
   });
   expect(result).toBeSmooth();
@@ -54,12 +54,12 @@ test('filters open smoothly', async ({ page, silky }) => {
 
 That takes several times as long as the interaction itself, so these tests usually need a longer `timeout` than Playwright's 30-second default.
 
-A test that opens its own page with `browser.newPage()` passes it as `page`: `silky.measure('open filters', action, { page })`. `scroll()` measures the page its locator is on.
+A test that opens its own page with `browser.newPage()` passes it as `page`: `butter.measure('open filters', action, { page })`. `scroll()` measures the page its locator is on.
 
 If a plain reload doesn't put the page back in the state your action needs, `reset` does it instead:
 
 ```ts
-await silky.measure('add to cart', action, {
+await butter.measure('add to cart', action, {
   reset: async ({ page }) => {
     await page.goto('/product/42');
     await page.getByRole('button', { name: 'Accept cookies' }).click();
@@ -76,9 +76,9 @@ A list can go blank without dropping frames. This demo feed builds its posts too
 ```ts
 test.use({ hasTouch: true }); // input: 'touch' needs a touch-enabled context
 
-test('catalog stays drawn during a fast swipe', async ({ page, silky }) => {
+test('catalog stays drawn during a fast swipe', async ({ page, butter }) => {
   await page.goto('/catalog');
-  const result = await silky.scroll(page.getByRole('list', { name: 'Trending' }), {
+  const result = await butter.scroll(page.getByRole('list', { name: 'Trending' }), {
     mode: 'full', // blank rows need the trace's screenshots
     input: 'touch', // 'wheel' (default) | 'touch' | 'keys'
     speed: 'fast', // 'slow' | 'normal' (default) | 'fast' | pixels per second
@@ -99,7 +99,7 @@ test('catalog stays drawn during a fast swipe', async ({ page, silky }) => {
 In full mode, `scroll()` also counts blank frames: frames where the list was drawn to less than half of how it looks at rest. They mean rows that weren't built in time, which only happens in a virtualized list (one that removes rows as they scroll away and builds new ones). `scroll()` detects that by watching for removed rows, and only gates blank frames on a virtualized list. `list: { virtualized: true }` overrides the detection, and `list.placeholders` makes skeleton rows count as blank:
 
 ```ts
-await silky.scroll(list, { mode: 'full', list: { placeholders: ['.skeleton-row', '#e5e7eb'] } });
+await butter.scroll(list, { mode: 'full', list: { placeholders: ['.skeleton-row', '#e5e7eb'] } });
 ```
 
 If the list never moves, for example because the locator isn't the element that scrolls, its blank-frame numbers are reported as unavailable, not as 0%. [List detection](docs/list-detection.md) explains how blank frames are found and what the detection can't see.

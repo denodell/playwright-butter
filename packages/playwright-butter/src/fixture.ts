@@ -69,8 +69,8 @@ export interface SmoothnessFixtures {
   butterOptions: SmoothnessOptions;
   /** @deprecated Renamed to `butterOptions`. */
   smoothnessOptions: SmoothnessOptions;
-  silky: Smoothness;
-  /** @deprecated Renamed to `silky`. */
+  butter: Smoothness;
+  /** @deprecated Renamed to `butter`. */
   smoothness: Smoothness;
 }
 
@@ -156,7 +156,7 @@ async function createSmoothness(
           // Touch events on a page that reports no touch support aren't what a phone does:
           // pages branch on touch support (pointer: coarse, touch handlers).
           throw new Error(
-            "silky.scroll(): input: 'touch' needs a touch-enabled browser context. Use test.use({ hasTouch: true }) or a mobile device, such as devices['Pixel 7'].",
+            "butter.scroll(): input: 'touch' needs a touch-enabled browser context. Use test.use({ hasTouch: true }) or a mobile device, such as devices['Pixel 7'].",
           );
         }
         return measureScroll(ctx, target, s);
@@ -203,7 +203,7 @@ export const smoothnessFixtures: Fixtures<
 > = {
   butterOptions: [{}, { option: true }],
   smoothnessOptions: [{}, { option: true }],
-  silky: async ({ page, butterOptions, smoothnessOptions }, use, testInfo) => {
+  butter: async ({ page, butterOptions, smoothnessOptions }, use, testInfo) => {
     const driver = playwrightDriver(page);
     if (page.context().browser()?.browserType().name() === 'chromium') await preparePage(driver);
     const outputs = new Map<string, { path: string; result: SmoothnessResult }>();
@@ -215,7 +215,7 @@ export const smoothnessFixtures: Fixtures<
       await writeBrief(testInfo, label, path, result);
     }
   },
-  smoothness: async ({ silky }, use) => use(silky),
+  smoothness: async ({ butter }, use) => use(butter),
 };
 
 export const test = base.extend<SmoothnessFixtures>(smoothnessFixtures);

@@ -492,7 +492,7 @@ async function reportResult(
 /**
  * Wraps a Playwright `test` so every test that opens a page is measured once, with no code
  * changes, and compared with a rolling median of recent passing runs on the main branch.
- * `silky` and `butterOptions` are available too.
+ * `butter` and `butterOptions` are available too.
  */
 export function withButter<T extends object, W extends object>(
   base: TestType<T, W>,

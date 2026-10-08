@@ -15,10 +15,10 @@ import { attach, tenWheelScrolls } from '../detection/helpers.js';
 test.use({ butterOptions: { mode: 'full', cpuThrottling: 1, runs: 5 } });
 
 for (const wait of [12, 25]) {
-  test(`scroll handler blocking ${wait}ms`, async ({ page, silky }) => {
+  test(`scroll handler blocking ${wait}ms`, async ({ page, butter }) => {
     test.setTimeout(120_000);
     await page.goto(`/scroll.html?wait=${wait}`);
-    const result = await silky.measure(`scroll ${wait}ms`, () => tenWheelScrolls(page));
+    const result = await butter.measure(`scroll ${wait}ms`, () => tenWheelScrolls(page));
     await attach(result);
     expect(result.mode).toBe('full');
     expect(result.unavailable).toEqual([]);
@@ -32,9 +32,9 @@ for (const wait of [12, 25]) {
   });
 }
 
-test('refreshRate 120 adds a reported-only prediction', async ({ page, silky }) => {
+test('refreshRate 120 adds a reported-only prediction', async ({ page, butter }) => {
   await page.goto('/scroll.html?wait=12');
-  const result = await silky.measure('scroll 120', () => tenWheelScrolls(page), {
+  const result = await butter.measure('scroll 120', () => tenWheelScrolls(page), {
     refreshRate: 120,
     runs: 2,
   });
@@ -45,9 +45,9 @@ test('refreshRate 120 adds a reported-only prediction', async ({ page, silky }) 
   expect(result.budget120!.framesOverBudget).toBeGreaterThanOrEqual(8);
 });
 
-test('quick mode has no frames or 120Hz prediction', async ({ page, silky }) => {
+test('quick mode has no frames or 120Hz prediction', async ({ page, butter }) => {
   await page.goto('/scroll.html?wait=12');
-  const result = await silky.measure('quick 120', () => tenWheelScrolls(page), {
+  const result = await butter.measure('quick 120', () => tenWheelScrolls(page), {
     mode: 'quick',
     refreshRate: 120,
     runs: 1,
@@ -57,9 +57,9 @@ test('quick mode has no frames or 120Hz prediction', async ({ page, silky }) => 
   expect(result.notes).toContain('refreshRate 120 adds a prediction in full mode only; this was quick mode.');
 });
 
-test('full mode gates on-time frames against the baseline', async ({ page, silky }) => {
+test('full mode gates on-time frames against the baseline', async ({ page, butter }) => {
   await page.goto('/scroll.html?wait=12');
-  const result = await silky.measure('gated', () => tenWheelScrolls(page), { runs: 2 });
+  const result = await butter.measure('gated', () => tenWheelScrolls(page), { runs: 2 });
   expect(result).toBeSmooth();
   expect(result.comparison!.status).toBe('baseline-created');
 });

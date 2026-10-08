@@ -11,7 +11,7 @@ export const test = withButter(base, { auto: true });
 export { expect } from '@playwright/test';
 ```
 
-Tests that import `test` from this file get `silky` and `butterOptions` too, for explicit `measure()` and `scroll()` calls.
+Tests that import `test` from this file get `butter` and `butterOptions` too, for explicit `measure()` and `scroll()` calls.
 
 ## What's measured
 

@@ -28,13 +28,13 @@ const CASES: { name: string; url: string; action: (page: Page) => Promise<void> 
 ];
 
 for (const c of CASES) {
-  test(`quick and full mode agree: ${c.name}`, async ({ page, silky }) => {
+  test(`quick and full mode agree: ${c.name}`, async ({ page, butter }) => {
     test.setTimeout(120_000);
     await page.goto(c.url);
     const t0 = Date.now();
-    const quick = await silky.measure(`${c.name} quick`, () => c.action(page), { mode: 'quick' });
+    const quick = await butter.measure(`${c.name} quick`, () => c.action(page), { mode: 'quick' });
     const t1 = Date.now();
-    const full = await silky.measure(`${c.name} full`, () => c.action(page), { mode: 'full' });
+    const full = await butter.measure(`${c.name} full`, () => c.action(page), { mode: 'full' });
     const t2 = Date.now();
     const pick = (r: typeof quick) => ({
       longFrames: r.longFrames!.count,

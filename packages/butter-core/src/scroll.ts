@@ -53,12 +53,12 @@ export function resolveScroll(o: ScrollOptions): ResolvedScroll {
   const speedPxPerSec = typeof speed === 'number' ? speed : SPEEDS[speed];
   if (!(speedPxPerSec > 0))
     throw new Error(
-      `silky.scroll(): speed must be slow, normal, fast or a positive number, got ${String(speed)}.`,
+      `butter.scroll(): speed must be slow, normal, fast or a positive number, got ${String(speed)}.`,
     );
   const distance = o.distance ?? 'end';
   if (distance !== 'end' && !(typeof distance === 'number' && distance > 0)) {
     throw new Error(
-      `silky.scroll(): distance must be 'end' or a positive number of pixels, got ${String(distance)}.`,
+      `butter.scroll(): distance must be 'end' or a positive number of pixels, got ${String(distance)}.`,
     );
   }
   return { distance, direction: o.direction ?? 'vertical', input: o.input ?? 'wheel', speedPxPerSec };

@@ -1,6 +1,6 @@
 # Blank rows in lists
 
-A virtualized list that can't build its rows in time leaves the user scrolling through empty space, and the frame rate doesn't show it. In the costly test list below, 97% of frames were on time while 91% were blank. In full mode, `silky.scroll()` finds these blank frames in the trace's screenshots. The [README](../README.md#scroll-a-list) covers the options, and this page explains how the measurement works.
+A virtualized list that can't build its rows in time leaves the user scrolling through empty space, and the frame rate doesn't show it. In the costly test list below, 97% of frames were on time while 91% were blank. In full mode, `butter.scroll()` finds these blank frames in the trace's screenshots. The [README](../README.md#scroll-a-list) covers the options, and this page explains how the measurement works.
 
 ![A drawn list frame next to a blank one](hero.png)
 

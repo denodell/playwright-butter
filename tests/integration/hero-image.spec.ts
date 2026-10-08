@@ -55,18 +55,18 @@ async function fastScrollFrames(page: Page, url: string) {
   return { jpegs: trace.screenshots, coverage: a.frames };
 }
 
-test('hero image', async ({ page, silky }) => {
+test('hero image', async ({ page, butter }) => {
   test.skip(!process.env.HERO_IMAGE, 'set HERO_IMAGE=1 to regenerate docs/hero.png');
   test.setTimeout(180_000);
   // The numbers, measured the way a user would.
   await page.goto('/list.html?cost=0&overscan=2');
-  const cheap = await silky.scroll(page.locator('#list'), {
+  const cheap = await butter.scroll(page.locator('#list'), {
     speed: 'fast',
     distance: 20000,
     label: 'cheap',
   });
   await page.goto('/list.html?cost=15&overscan=0');
-  const costly = await silky.scroll(page.locator('#list'), {
+  const costly = await butter.scroll(page.locator('#list'), {
     speed: 'fast',
     distance: 20000,
     label: 'costly',

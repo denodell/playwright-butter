@@ -1,4 +1,4 @@
-// silky.scroll() on the virtualized test list. Full mode, unthrottled and fast, like the
+// butter.scroll() on the virtualized test list. Full mode, unthrottled and fast, like the
 // scroll in docs/measurements.md (Fast scroll through a long list: 20,000px at 6,000px/s).
 import { test, expect } from '../../packages/playwright-butter/src/index.js';
 import type { Page } from '@playwright/test';
@@ -21,9 +21,9 @@ test.setTimeout(120_000);
 const FAST_SCROLL = { speed: 'fast', distance: 20_000 } as const;
 const list = (page: Page) => page.locator('#list');
 
-test('a cheap list stays drawn: close to 0% blank frames', async ({ page, silky }) => {
+test('a cheap list stays drawn: close to 0% blank frames', async ({ page, butter }) => {
   await page.goto('/list.html?cost=0&overscan=2');
-  const r = await silky.scroll(list(page), FAST_SCROLL);
+  const r = await butter.scroll(list(page), FAST_SCROLL);
   save('list-cheap', r);
   expect(r.unavailable).toEqual([]);
   expect(r.list!.frames).toBeGreaterThanOrEqual(100);
@@ -38,9 +38,9 @@ test('a cheap list stays drawn: close to 0% blank frames', async ({ page, silky 
   expect(r.scroll!.scrolledPx).toBeGreaterThanOrEqual(19_000);
 });
 
-test('a costly list is mostly blank', async ({ page, silky }) => {
+test('a costly list is mostly blank', async ({ page, butter }) => {
   await page.goto('/list.html?cost=15&overscan=0');
-  const r = await silky.scroll(list(page), FAST_SCROLL);
+  const r = await butter.scroll(list(page), FAST_SCROLL);
   save('list-costly', r);
   expect(r.list!.blankFramePercent).toBeGreaterThan(50);
   expect(r.list!.leastDrawnPercent).toBeLessThan(20);
@@ -50,24 +50,24 @@ test('a costly list is mostly blank', async ({ page, silky }) => {
   expect(r.spread['list.blankFramePercent']).toBeDefined();
 });
 
-test('the blank-row gate catches a regression', async ({ page, silky }) => {
+test('the blank-row gate catches a regression', async ({ page, butter }) => {
   await page.goto('/list.html?cost=0&overscan=2');
-  const before = await silky.scroll(list(page), { ...FAST_SCROLL, label: 'catalogue' });
+  const before = await butter.scroll(list(page), { ...FAST_SCROLL, label: 'catalogue' });
   expect(before).toBeSmooth();
   await page.goto('/list.html?cost=15&overscan=0');
   // Same label in a second test would be separate; compare by hand against the first result.
-  const after = await silky.scroll(list(page), { ...FAST_SCROLL, label: 'catalogue costly' });
+  const after = await butter.scroll(list(page), { ...FAST_SCROLL, label: 'catalogue costly' });
   const check = compareMetrics(after, metricsOf(before), 0.15).find(
     (c) => c.metric === 'list.blankFramePercent',
   )!;
   expect(check.status).toBe('worse');
 });
 
-test('placeholders: skeleton rows count as blank only when named', async ({ page, silky }) => {
+test('placeholders: skeleton rows count as blank only when named', async ({ page, butter }) => {
   // Rows show a grey skeleton for 250ms before their content.
   await page.goto('/list.html?cost=0&overscan=0&skeleton=250');
-  const without = await silky.scroll(list(page), { ...FAST_SCROLL, label: 'skeleton, not named' });
-  const named = await silky.scroll(list(page), {
+  const without = await butter.scroll(list(page), { ...FAST_SCROLL, label: 'skeleton, not named' });
+  const named = await butter.scroll(list(page), {
     ...FAST_SCROLL,
     label: 'skeleton, named',
     list: { background: 'auto', placeholders: ['#dddddd'] },
@@ -76,22 +76,22 @@ test('placeholders: skeleton rows count as blank only when named', async ({ page
   expect(named.list!.blankFramePercent).toBeGreaterThan(without.list!.blankFramePercent + 20);
 });
 
-test("background 'auto' reads the list's own color (a dark list)", async ({ page, silky }) => {
+test("background 'auto' reads the list's own color (a dark list)", async ({ page, butter }) => {
   await page.goto('/list.html?cost=15&overscan=0&bg=%23202020');
-  const r = await silky.scroll(list(page), FAST_SCROLL);
+  const r = await butter.scroll(list(page), FAST_SCROLL);
   expect(r.list!.blankFramePercent).toBeGreaterThan(50);
   expect(notesApartFromThrottling(r.notes)).toEqual([]);
 });
 
-test('horizontal lists', async ({ page, silky }) => {
+test('horizontal lists', async ({ page, butter }) => {
   await page.goto('/list.html?axis=x&cost=0&overscan=2');
-  const cheap = await silky.scroll(list(page), {
+  const cheap = await butter.scroll(list(page), {
     ...FAST_SCROLL,
     direction: 'horizontal',
     label: 'h cheap',
   });
   await page.goto('/list.html?axis=x&cost=15&overscan=0');
-  const costly = await silky.scroll(list(page), {
+  const costly = await butter.scroll(list(page), {
     ...FAST_SCROLL,
     direction: 'horizontal',
     label: 'h costly',
@@ -108,18 +108,18 @@ test('horizontal lists', async ({ page, silky }) => {
 
 test.describe('touch', () => {
   test.use({ hasTouch: true });
-  test('touch input swipes, and distance end scrolls to the end', async ({ page, silky }) => {
+  test('touch input swipes, and distance end scrolls to the end', async ({ page, butter }) => {
     await page.goto('/list.html?rows=200&cost=0'); // about 16,000px: within the 'end' cap
-    const r = await silky.scroll(list(page), { input: 'touch', speed: 'fast', runs: 2 });
+    const r = await butter.scroll(list(page), { input: 'touch', speed: 'fast', runs: 2 });
     const max = await list(page).evaluate((el) => el.scrollHeight - el.clientHeight);
     expect(r.scroll).toMatchObject({ input: 'touch', requestedPx: max, scrolledPx: max });
     expect(r.label).toBe("scroll locator('#list') touch 6000px/s");
   });
 });
 
-test("distance 'end' on a very long list", async ({ page, silky }) => {
+test("distance 'end' on a very long list", async ({ page, butter }) => {
   await page.goto('/list.html?cost=0');
-  const r = await silky.scroll(list(page), { speed: 'fast', mode: 'quick', runs: 1 });
+  const r = await butter.scroll(list(page), { speed: 'fast', mode: 'quick', runs: 1 });
   const max = await list(page).evaluate((el) => el.scrollHeight - el.clientHeight);
   expect(max).toBeGreaterThan(100_000);
   expect(r.scroll!.requestedPx).toBe(20_000);
@@ -129,17 +129,17 @@ test("distance 'end' on a very long list", async ({ page, silky }) => {
   );
 });
 
-test('touch input without a touch context', async ({ page, silky }) => {
+test('touch input without a touch context', async ({ page, butter }) => {
   await page.goto('/list.html?rows=300&cost=0');
-  await expect(silky.scroll(list(page), { input: 'touch' })).rejects.toThrow(
+  await expect(butter.scroll(list(page), { input: 'touch' })).rejects.toThrow(
     /needs a touch-enabled browser context/,
   );
 });
 
-test("a locator that doesn't scroll", async ({ page, silky }) => {
+test("a locator that doesn't scroll", async ({ page, butter }) => {
   await page.goto('/list.html?cost=15&overscan=0');
   // The spacer inside the list isn't the scroller; scrolling "it" moves nothing.
-  const r = await silky.scroll(page.locator('#spacer'), { ...FAST_SCROLL, distance: 2000, runs: 2 });
+  const r = await butter.scroll(page.locator('#spacer'), { ...FAST_SCROLL, distance: 2000, runs: 2 });
   expect(r.list).toBeNull();
   expect(r.unavailable).toContainEqual({
     measurement: 'list',
@@ -147,13 +147,13 @@ test("a locator that doesn't scroll", async ({ page, silky }) => {
   });
 });
 
-test('arrow keys', async ({ page, silky }) => {
+test('arrow keys', async ({ page, butter }) => {
   // 25ms per new row, and a new row every couple of presses. Arrow keys scroll smoothly over
   // several frames, so a row is often built after the press's own paint, and how many presses
   // Event Timing counts as slow varies with frame timing (2 on some CI runs, 5 on others). The test
   // checks that key presses are measured at all, not how many.
   await page.goto('/list.html?cost=25&overscan=0');
-  const r = await silky.scroll(list(page), { input: 'keys', distance: 400, mode: 'quick', runs: 2 });
+  const r = await butter.scroll(list(page), { input: 'keys', distance: 400, mode: 'quick', runs: 2 });
   save('list-keys', r);
   expect(r.scroll).toMatchObject({ input: 'keys', speedPxPerSec: null, requestedPx: 400, keyPresses: 10 });
   expect(r.scroll!.scrolledPx).toBeGreaterThan(0);
@@ -165,9 +165,9 @@ test('arrow keys', async ({ page, silky }) => {
   expect(r.input!.p95ToPaintMs!).toBeGreaterThanOrEqual(16);
 });
 
-test('quick mode has no list data', async ({ page, silky }) => {
+test('quick mode has no list data', async ({ page, butter }) => {
   await page.goto('/list.html?cost=0');
-  const r = await silky.scroll(list(page), { ...FAST_SCROLL, mode: 'quick', runs: 1 });
+  const r = await butter.scroll(list(page), { ...FAST_SCROLL, mode: 'quick', runs: 1 });
   expect('list' in r).toBe(false);
   expect(r.notes.join(' ')).toMatch(/Blank rows in lists are measured in full mode only/);
 });
@@ -255,9 +255,9 @@ async function outputOf(titleStart: string) {
 test.describe('replays', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test("'on': a replay even when nothing got worse", async ({ page, silky }) => {
+  test("'on': a replay even when nothing got worse", async ({ page, butter }) => {
     await page.goto('/list.html?cost=15&overscan=0');
-    const r = await silky.scroll(list(page), { ...FAST_SCROLL, replay: 'on', runs: 2 });
+    const r = await butter.scroll(list(page), { ...FAST_SCROLL, replay: 'on', runs: 2 });
     expect(r).toBeSmooth(); // the first run creates the baseline; 'on' attaches a replay anyway
   });
 
@@ -279,9 +279,9 @@ test.describe('replays', () => {
     expect(info.seekedTo).toBeGreaterThan(info.duration / 4); // seeking works
   });
 
-  test("'on-regression' (the default): no replay when nothing got worse", async ({ page, silky }) => {
+  test("'on-regression' (the default): no replay when nothing got worse", async ({ page, butter }) => {
     await page.goto('/list.html?cost=15&overscan=0');
-    const r = await silky.scroll(list(page), { ...FAST_SCROLL, runs: 2 });
+    const r = await butter.scroll(list(page), { ...FAST_SCROLL, runs: 2 });
     expect(r).toBeSmooth(); // the first run records the baseline
     expect(r.comparison!.status).toBe('baseline-created');
   });
@@ -292,9 +292,9 @@ test.describe('replays', () => {
     expect(files.some((f) => f.endsWith('.replay.webm'))).toBe(false);
   });
 
-  test("measure(): 'on' makes a replay of the interaction", async ({ page, silky }) => {
+  test("measure(): 'on' makes a replay of the interaction", async ({ page, butter }) => {
     await page.goto('/click.html?ms=80');
-    const r = await silky.measure('heavy click', () => page.click('#heavy'), {
+    const r = await butter.measure('heavy click', () => page.click('#heavy'), {
       mode: 'full',
       replay: 'on',
       runs: 2,
@@ -311,9 +311,9 @@ test.describe('replays', () => {
     expect(info.duration).toBeGreaterThan(1);
   });
 
-  test('quick mode has no frames to replay', async ({ page, silky }) => {
+  test('quick mode has no frames to replay', async ({ page, butter }) => {
     await page.goto('/list.html?cost=0');
-    const r = await silky.scroll(list(page), { ...FAST_SCROLL, mode: 'quick', replay: 'on', runs: 1 });
+    const r = await butter.scroll(list(page), { ...FAST_SCROLL, mode: 'quick', replay: 'on', runs: 1 });
     expect(r).toBeSmooth();
   });
 
@@ -323,21 +323,21 @@ test.describe('replays', () => {
   });
 });
 
-test('a page that scrolls itself starts each run from the same place too', async ({ page, silky }) => {
+test('a page that scrolls itself starts each run from the same place too', async ({ page, butter }) => {
   // The page keeps its own position, starting from wherever it loaded. With Chrome's scroll
   // restoration, that was where the last run stopped, and it put the page back there.
   await page.goto('/scroll.html?smooth=1');
-  const r = await silky.scroll(page.locator('html'), { mode: 'quick', runs: 3, distance: 3000 });
+  const r = await butter.scroll(page.locator('html'), { mode: 'quick', runs: 3, distance: 3000 });
   expect(r.notes.join(' ')).not.toContain("didn't all start");
   expect(r.scroll!.scrolledPx).toBeGreaterThanOrEqual(2900);
 });
 
-test('a scrolling document starts each run from the same place', async ({ page, silky }) => {
+test('a scrolling document starts each run from the same place', async ({ page, butter }) => {
   // Chrome restores a document's scroll position on reload. Without putting it back, every run
   // after the warm-up would start at the end of the page and scroll nothing.
   await page.goto('/scroll.html');
   const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
-  const r = await silky.scroll(page.locator('html'), { mode: 'quick', runs: 2 });
+  const r = await butter.scroll(page.locator('html'), { mode: 'quick', runs: 2 });
   const expected = Math.min(max, 20_000); // 'end' stops at 20,000px
   expect(r.scroll!.requestedPx).toBe(expected);
   expect(r.scroll!.scrolledPx).toBeGreaterThanOrEqual(expected - 1);
@@ -346,19 +346,19 @@ test('a scrolling document starts each run from the same place', async ({ page, 
 
 test("a page that isn't virtualized: blank frames reported but not gated, with a note", async ({
   page,
-  silky,
+  butter,
 }) => {
   await page.goto('/scroll.html');
-  const r = await silky.scroll(page.locator('html'), { distance: 3000, runs: 2 });
+  const r = await butter.scroll(page.locator('html'), { distance: 3000, runs: 2 });
   expect(r.list!.virtualized).toBe(false);
   expect(r.notes.join(' ')).toContain("doesn't appear to be virtualized");
   expect(r).toBeSmooth(); // records the baseline
   expect(r.comparison!.checks.some((c) => c.metric === 'list.blankFramePercent')).toBe(false);
 });
 
-test('list.virtualized overrides the detection', async ({ page, silky }) => {
+test('list.virtualized overrides the detection', async ({ page, butter }) => {
   await page.goto('/scroll.html');
-  const r = await silky.scroll(page.locator('html'), {
+  const r = await butter.scroll(page.locator('html'), {
     distance: 3000,
     runs: 1,
     list: { virtualized: true },

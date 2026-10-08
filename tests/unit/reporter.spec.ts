@@ -121,7 +121,7 @@ test('summary: re-recorded baselines are counted as such, not as within baseline
 
 test('summary: nothing ran', () => {
   expect(buildMarkdown([])).toBe(
-    '## Smoothness\n\nNo smoothness measurements ran. Results come from `silky.measure()` and `silky.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withButter()`.\n',
+    '## Smoothness\n\nNo smoothness measurements ran. Results come from `butter.measure()` and `butter.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withButter()`.\n',
   );
 });
 
