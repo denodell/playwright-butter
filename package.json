@@ -3,14 +3,14 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/butter-core",
+    "packages/butter-churn",
     "packages/playwright-butter"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "npm run build --workspace butter-core --workspace playwright-butter",
+    "build": "npm run build --workspace butter-churn --workspace playwright-butter",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
@@ -21,7 +21,7 @@
     "test:headless-modes": "playwright test --project=mode-headless-shell --project=mode-new-headless --project=mode-headed",
     "docs:images": "npm run build && node demos/make-images.mjs",
     "changeset": "changeset",
-    "release:check": "npm run build && npm publish --dry-run --workspace butter-core --workspace playwright-butter",
+    "release:check": "npm run build && npm publish --dry-run --workspace butter-churn --workspace playwright-butter",
     "coverage": "npm run build && node scripts/coverage/run.mjs"
   },
   "devDependencies": {

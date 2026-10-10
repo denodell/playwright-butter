@@ -38,11 +38,11 @@ Trace screenshots are JPEGs. They could be decoded in Node with a dependency suc
 - Chrome's native decoder is fast. 200 frames decode and measure in about 0.5s locally and 1.2s on a 4-vCPU GitHub Actions runner, inside a 2-second budget that `tests/integration/list.spec.ts` asserts.
 - The throwaway page has its own browser context, so it can't affect the page being measured.
 
-The line-counting function (`packages/butter-core/src/list/coverage.ts`) is plain code with no dependencies. It runs in that page, and unit tests call it directly in Node.
+The line-counting function (`packages/butter-churn/src/list/coverage.ts`) is plain code with no dependencies. It runs in that page, and unit tests call it directly in Node.
 
 ## Replays
 
-A replay is a WebM video of one extra run, made after the measured runs, and attached to the test as `smoothness replay: <label>`. The [README](../README.md#replays) covers when a replay is attached.
+A replay is a WebM video of one extra run, made after the measured runs, and attached to the test as `butter replay: <label>`. The [README](../README.md#replays) covers when a replay is attached.
 
 ![A replay frame: the empty list is outlined in black and tagged "Blank: rows not rendered yet". Below it, large type reads 60 frames per second beside a chart of the frame rate.](replay-frame.png)
 
@@ -50,7 +50,7 @@ Each frame of the video shows the list with an outline. On a blank frame, the ou
 
 Recording frames takes compositor time, so the replay's run is kept apart from the measured runs and never counted. Its frames come from Chrome's screencast (`Page.startScreencast`) at the page's own size, up to 1280px on the longer side. A trace's screenshots would be too small for a desktop-sized page: Chrome fits them in 250px or 500px, depending on its version. The panel is laid out for a 500px recording and scales up with a wider one. With `replay: 'off'` there's no extra run, and when no replay is wanted, nothing is encoded.
 
-Encoding uses WebCodecs (`VideoEncoder`, VP8) in a throwaway page of the same Chromium. That page is served from `http://localhost`, because WebCodecs needs a secure context. The library writes the WebM container itself (`packages/butter-core/src/replay/webm.ts`), including cues so the report's player can seek, and has no dependencies for it. A 3.3-second fast scroll becomes a 15-second replay of about 500KB, encoded in under a second locally.
+Encoding uses WebCodecs (`VideoEncoder`, VP8) in a throwaway page of the same Chromium. That page is served from `http://localhost`, because WebCodecs needs a secure context. The library writes the WebM container itself (`packages/butter-churn/src/replay/webm.ts`), including cues so the report's player can seek, and has no dependencies for it. A 3.3-second fast scroll becomes a 15-second replay of about 500KB, encoded in under a second locally.
 
 ## Results
 

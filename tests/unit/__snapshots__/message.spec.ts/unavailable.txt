@@ -9,4 +9,4 @@ Notes:
   The page didn't go quiet within 5000ms before 2 run(s).
   The baseline was recorded with chromium 152.0.1; this run used 153.0.8010.12.
 
-Baseline: tests/checkout.spec.ts-snapshots/smoothness/open-filters-quick-60hz-cpu4x-amd-epyc-7763-4cpu-chromium-linux.json (snapshot, recorded 2026-09-20, chromium 153.0.8010.12, AMD EPYC 7763 64-Core Processor)
+Baseline: tests/checkout.spec.ts-snapshots/butter/open-filters-quick-60hz-cpu4x-amd-epyc-7763-4cpu-chromium-linux.json (snapshot, recorded 2026-09-20, chromium 153.0.8010.12, AMD EPYC 7763 64-Core Processor)

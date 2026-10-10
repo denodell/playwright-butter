@@ -7,7 +7,7 @@ import { makeResult } from './result-factory.js';
 
 let dir: string;
 test.beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'smoothness-cli-'));
+  dir = mkdtempSync(join(tmpdir(), 'butter-cli-'));
 });
 test.afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -53,20 +53,20 @@ test('each command has its own help', () => {
 });
 
 test('summary skips result files it cannot read', () => {
-  const results = join(dir, 'test-results', 'smoothness', 'a-test');
+  const results = join(dir, 'test-results', 'butter', 'a-test');
   mkdirSync(results, { recursive: true });
   writeFileSync(join(results, 'good.json'), JSON.stringify(makeResult({ label: 'good' })));
   writeFileSync(join(results, 'bad.json'), 'not json');
   const r = cli('summary');
   expect(r.code).toBe(0);
-  expect(r.out).toContain('Smoothness summary of 1 result(s)');
-  expect(readFileSync(join(dir, 'test-results', 'smoothness', 'summary.md'), 'utf8')).toContain('"good"');
+  expect(r.out).toContain('Butter summary of 1 result(s)');
+  expect(readFileSync(join(dir, 'test-results', 'butter', 'summary.md'), 'utf8')).toContain('"good"');
 });
 
 test('brief: nothing to fix, and writing the briefs to a file', () => {
   expect(cli('brief')).toMatchObject({ code: 0, err: expect.stringContaining('No fix briefs') });
 
-  const results = join(dir, 'test-results', 'smoothness', 'a-test');
+  const results = join(dir, 'test-results', 'butter', 'a-test');
   mkdirSync(results, { recursive: true });
   writeFileSync(join(results, 'open-filters.fix.md'), '# Fix brief: open filters\n\nDetails.\n');
   const r = cli('brief', '--out', 'out/briefs.md');

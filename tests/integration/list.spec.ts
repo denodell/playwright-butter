@@ -5,12 +5,12 @@ import type { Page } from '@playwright/test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { notesApartFromThrottling, save } from '../detection/helpers.js';
-import { traceRun } from '../../packages/butter-core/src/trace/tracer.js';
-import { FRAME_CATEGORIES, SCREENSHOT_CATEGORIES } from '../../packages/butter-core/src/trace/categories.js';
-import { analyzeFrames } from '../../packages/butter-core/src/list/analyze.js';
+import { traceRun } from '../../packages/butter-churn/src/trace/tracer.js';
+import { FRAME_CATEGORIES, SCREENSHOT_CATEGORIES } from '../../packages/butter-churn/src/trace/categories.js';
+import { analyzeFrames } from '../../packages/butter-churn/src/list/analyze.js';
 import { locatorTarget, playwrightDriver } from '../../packages/playwright-butter/src/driver.js';
-import { blankColors, listGeometry, referenceShot } from '../../packages/butter-core/src/list/probe.js';
-import { compareMetrics, metricsOf } from '../../packages/butter-core/src/baseline/compare.js';
+import { blankColors, listGeometry, referenceShot } from '../../packages/butter-churn/src/list/probe.js';
+import { compareMetrics, metricsOf } from '../../packages/butter-churn/src/baseline/compare.js';
 
 test.use({
   viewport: { width: 600, height: 600 },
@@ -243,9 +243,9 @@ async function playable(page: Page, file: string) {
   }, bytes);
 }
 
-/** The files a test left in test-results/smoothness/, found by the start of its title. */
+/** The files a test left in test-results/butter/, found by the start of its title. */
 async function outputOf(titleStart: string) {
-  const root = join(test.info().project.outputDir, 'smoothness');
+  const root = join(test.info().project.outputDir, 'butter');
   const dir = existsSync(root) ? readdirSync(root).find((d) => d.startsWith(titleStart)) : undefined;
   return dir ? readdirSync(join(root, dir)).map((f) => join(root, dir, f)) : [];
 }

@@ -19,7 +19,7 @@ Each test that opens a page is measured once, for its whole run, with no warm-up
 
 - `auto.interactions` lists each click, tap or key press with its element and input-to-paint time (`click on button#checkout: 180ms`), in order, across every page and navigation. `input.byTarget` summarizes them per element.
 - Long frames caused by those interactions are listed with the scripts responsible, as in `measure()`. Frames from page loads and background timers are left out.
-- The result is written to `test-results/smoothness/<test>/auto.json` and attached as `smoothness: auto`, so the [reporter](../README.md#reporter) includes it.
+- The result is written to `test-results/butter/<test>/auto.json` and attached as `butter: auto`, so the [reporter](../README.md#reporter) includes it.
 
 Tests that never open a page, such as API tests, produce no result.
 
@@ -32,7 +32,7 @@ Each test's baseline is the median of its last 10 passing runs on the main branc
 - Runs are recorded on push builds of the main (or master) branch in CI. GitHub Actions, GitLab CI, Azure Pipelines and CircleCI are detected. `record: true` or `BUTTER_RECORD=1` forces recording, and `record: false` turns it off. Pull requests only compare, so they never change main's history.
 - Only runs where the test itself passed are recorded.
 - Histories are keyed by test, project, platform, CPU model and CPU throttling, like `measure()` baselines, because hosted runners differ in speed ([measurements.md](measurements.md)).
-- Files live in `historyDir`. By default that's `baselineDir` if you set one, and otherwise `.cache/playwright-smoothness/history` in your project's `node_modules`: the nearest one from your Playwright config up to the project root, so a workspace package whose dependencies are hoisted uses the root's. Histories are rewritten while other tests are running, and a dev server that watches your project reloads its pages when a file it watches changes. Dev servers don't watch `node_modules`, so the default stays out of their way. A project with no `node_modules`, as with Yarn Plug'n'Play, keeps them in `smoothness-history` next to the config instead, and the result notes it. That folder, or a `historyDir` or `baselineDir` elsewhere in the project, needs adding to the dev server's ignored files, such as Vite's `server.watch.ignored`.
+- Files live in `historyDir`. By default that's `baselineDir` if you set one, and otherwise `.cache/playwright-butter/history` in your project's `node_modules`: the nearest one from your Playwright config up to the project root, so a workspace package whose dependencies are hoisted uses the root's. Histories are rewritten while other tests are running, and a dev server that watches your project reloads its pages when a file it watches changes. Dev servers don't watch `node_modules`, so the default stays out of their way. A project with no `node_modules`, as with Yarn Plug'n'Play, keeps them in `butter-history` next to the config instead, and the result notes it. That folder, or a `historyDir` or `baselineDir` elsewhere in the project, needs adding to the dev server's ignored files, such as Vite's `server.watch.ignored`.
 
 ### When a run warns
 
@@ -49,7 +49,7 @@ The test it missed runs the delay twice, and its input-to-paint and long frames 
 
 ### Changed spec files
 
-When a spec file changes, the histories of the tests in it start again instead of failing, since the tests may now do different things. The whole spec file is hashed, so editing one test resets its neighbors too, which is conservative but simple. The result notes the reset, and the test gets a `smoothness-baseline-reset` annotation.
+When a spec file changes, the histories of the tests in it start again instead of failing, since the tests may now do different things. The whole spec file is hashed, so editing one test resets its neighbors too, which is conservative but simple. The result notes the reset, and the test gets a `butter-baseline-reset` annotation.
 
 ## Keep the history in CI
 
@@ -59,10 +59,10 @@ The [GitHub Action](ci.md#the-github-action) keeps the history for you, with the
 - uses: dawidd6/action-download-artifact@v6
   continue-on-error: true # the first run has no history yet
   with:
-    workflow: smoothness.yml
+    workflow: butter.yml
     branch: main
-    name: smoothness-history
-    path: node_modules/.cache/playwright-smoothness/history
+    name: butter-history
+    path: node_modules/.cache/playwright-butter/history
 
 - run: npx playwright test # records on main, compares on pull requests
 
@@ -70,8 +70,8 @@ The [GitHub Action](ci.md#the-github-action) keeps the history for you, with the
   if: github.ref == 'refs/heads/main'
   uses: actions/upload-artifact@v4
   with:
-    name: smoothness-history
-    path: node_modules/.cache/playwright-smoothness/history
+    name: butter-history
+    path: node_modules/.cache/playwright-butter/history
     retention-days: 90
 ```
 

@@ -1,7 +1,7 @@
 import type { TestInfo } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
 import { relative } from 'node:path';
-import { formatBrief, forwardSlashes, needsBrief, type SmoothnessResult } from 'butter-core';
+import { formatBrief, forwardSlashes, needsBrief, type ButterResult } from 'butter-churn';
 
 const quote = (s: string) => (/^[\w./:@=-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`);
 
@@ -15,11 +15,11 @@ export async function writeBrief(
   testInfo: TestInfo,
   label: string,
   resultFile: string,
-  result: SmoothnessResult,
+  result: ButterResult,
   comparison = result.comparison,
 ) {
   if (!comparison || !needsBrief(comparison)) return;
   const file = resultFile.replace(/\.json$/, '.fix.md');
   writeFileSync(file, formatBrief(result, comparison, { rerun: rerunCommand(testInfo), resultFile }));
-  await testInfo.attach(`smoothness fix brief: ${label}`, { path: file, contentType: 'text/markdown' });
+  await testInfo.attach(`butter fix brief: ${label}`, { path: file, contentType: 'text/markdown' });
 }

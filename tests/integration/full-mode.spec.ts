@@ -8,8 +8,8 @@ import {
   FRAME_CATEGORIES,
   ANIMATION_FRAME_CATEGORIES,
   PROFILE_CATEGORIES,
-} from '../../packages/butter-core/src/trace/categories.js';
-import { MARK_END, MARK_START } from '../../packages/butter-core/src/trace/parse.js';
+} from '../../packages/butter-churn/src/trace/categories.js';
+import { MARK_END, MARK_START } from '../../packages/butter-churn/src/trace/parse.js';
 import { attach, tenWheelScrolls } from '../detection/helpers.js';
 
 test.use({ butterOptions: { mode: 'full', cpuThrottling: 1, runs: 5 } });

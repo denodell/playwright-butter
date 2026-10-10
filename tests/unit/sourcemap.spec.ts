@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { build } from 'esbuild';
-import { decodeSegment } from '../../packages/butter-core/src/sourcemap/vlq.js';
-import { SourceMap } from '../../packages/butter-core/src/sourcemap/sourcemap.js';
+import { decodeSegment } from '../../packages/butter-churn/src/sourcemap/vlq.js';
+import { SourceMap } from '../../packages/butter-churn/src/sourcemap/sourcemap.js';
 import {
   NameResolver,
   generatedName,
   resolveScripts,
   type FetchText,
-} from '../../packages/butter-core/src/sourcemap/resolve.js';
+} from '../../packages/butter-churn/src/sourcemap/resolve.js';
 
 const vlq = (s: string) => decodeSegment(s, 0, s.length);
 

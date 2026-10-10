@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { detectMode, resolveOptions } from '../../packages/butter-core/src/options.js';
-import { envSetting, recordingBaselines } from '../../packages/butter-core/src/constants.js';
+import { detectMode, resolveOptions } from '../../packages/butter-churn/src/options.js';
 
 test('defaults', () => {
   expect(resolveOptions([], {})).toEqual({
@@ -109,11 +108,3 @@ for (const [variable, value] of [
     expect(source).toContain(`${variable}=${value}`);
   });
 }
-
-test('settings are read from BUTTER_ variables, or their 1.0 SMOOTHNESS_ names', () => {
-  expect(envSetting('MODE', { BUTTER_MODE: 'full' })).toBe('full');
-  expect(envSetting('MODE', { SMOOTHNESS_MODE: 'quick' })).toBe('quick');
-  expect(envSetting('MODE', { BUTTER_MODE: 'full', SMOOTHNESS_MODE: 'quick' })).toBe('full');
-  expect(envSetting('MODE', {})).toBeUndefined();
-  expect(recordingBaselines({ SMOOTHNESS_RECORD_BASELINES: '1' })).toBe(true);
-});

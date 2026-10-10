@@ -1,9 +1,9 @@
 ---
 name: playwright-butter
-description: Fix a smoothness regression caught by playwright-butter, such as a fix brief (a .fix.md file or a "Fix brief" pasted from a pull request), a toBeSmooth() failure or smoothness-warning, slow input-to-paint, long animation frames, dropped frames, or blank frames in a scrolled list. Use it when asked to make an interaction, scroll, animation or drag smooth again.
+description: Fix a regression caught by playwright-butter, where scrolling or an interaction got less smooth, such as a fix brief (a .fix.md file or a "Fix brief" pasted from a pull request), a toBeSmooth() failure or butter-warning, slow input-to-paint, long animation frames, dropped frames, or blank frames in a scrolled list. Use it when asked to make an interaction, scroll, animation or drag smooth again.
 ---
 
-# Fix a smoothness regression
+# Fix a playwright-butter regression
 
 playwright-butter measures an interaction or a scroll in Chromium and compares it with a baseline. When a check gets worse, it writes a fix brief: what got worse, the code behind it, and the commands to check a fix. This skill turns a brief into a fix and proves the fix worked.
 
@@ -73,7 +73,7 @@ npx playwright test path/to/test.spec.ts:12
 The check now compares with the baseline from step 4. The brief also gives the baseline from CI. Numbers from a different machine won't match it exactly, but they should end up near it:
 
 - **Barely moved:** the change missed the cause. Go back to step 3.
-- **Better, but still far from the CI baseline** (twice it or more, or a number that hasn't moved): there's usually a second cause. The run's result JSON under `test-results/smoothness/` holds what the brief was made from: `input.byTarget` for the slowest interactions, `longFrames.topScripts` for the scripts, and `profile.hotFunctions` for where the CPU time went. What's in them now is what's left. Fix that too, or say clearly what's left and why you stopped.
+- **Better, but still far from the CI baseline** (twice it or more, or a number that hasn't moved): there's usually a second cause. The run's result JSON under `test-results/butter/` holds what the brief was made from: `input.byTarget` for the slowest interactions, `longFrames.topScripts` for the scripts, and `profile.hotFunctions` for where the CPU time went. What's in them now is what's left. Fix that too, or say clearly what's left and why you stopped.
 - **A different number got worse:** the fix moved the work rather than removing it.
 - **Every number that got worse is close to the CI baseline:** it's fixed.
 

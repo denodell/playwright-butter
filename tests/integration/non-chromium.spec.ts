@@ -10,7 +10,7 @@ test('skipped outside Chromium', async ({ page, butter }) => {
   expect(result.longFrames).toBeNull();
   expect(result.unavailable.map((u) => u.measurement)).toEqual(['input', 'longFrames']);
   expect(test.info().annotations).toContainEqual({
-    type: 'smoothness-skipped',
+    type: 'butter-skipped',
     description: expect.stringContaining('Chromium only'),
   });
 });

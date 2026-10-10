@@ -1,4 +1,4 @@
-// npx playwright-butter calibrate [--runs 5] [--out smoothness-calibration.json] [-- <playwright test args>]
+// npx playwright-butter calibrate [--runs 5] [--out butter-calibration.json] [-- <playwright test args>]
 // npx playwright-butter summary [--results test-results] [--out <file>] [--title <title>] [--github-summary]
 // npx playwright-butter brief [--results test-results] [--out <file>]
 // npx playwright-butter init-agents [--dir <folder>]... [--no-agents-md]
@@ -20,14 +20,14 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative } from 'node:path';
 import {
   CALIBRATE_ENV,
-  FORMAT_NAME,
+  TOOL_NAME,
   buildMarkdown,
   calibrate,
   formatCalibration,
   forwardSlashes,
   type ReportEntry,
-  type SmoothnessResult,
-} from 'butter-core';
+  type ButterResult,
+} from 'butter-churn';
 import { PACKAGE_NAME } from './constants.js';
 import { SKILL_DIRS, initAgents } from './init-agents.js';
 
@@ -45,11 +45,11 @@ Run a command with --help for its options.
 const CALIBRATE_HELP = `Usage: npx ${PACKAGE_NAME} calibrate [options] [-- <playwright test arguments>]
 
 Runs your Playwright suite several times on unchanged code, and prints how much each
-smoothness check varies between runs, with a suggested maxIncrease for each.
+check varies between runs, with a suggested maxIncrease for each.
 
 Options:
   --runs <n>     How many times to run the suite (default 5, at least 2)
-  --out <file>   Where to write the results as JSON (default smoothness-calibration.json)
+  --out <file>   Where to write the results as JSON (default butter-calibration.json)
   --help         Show this help
 
 Example:
@@ -80,14 +80,14 @@ function latestAttempts(files: string[]): string[] {
   return [...latest.values()].flatMap(({ files }) => files.sort());
 }
 
-function collect(outputDir: string): Map<string, SmoothnessResult> {
-  const root = join(outputDir, 'smoothness');
-  const results = new Map<string, SmoothnessResult>();
+function collect(outputDir: string): Map<string, ButterResult> {
+  const root = join(outputDir, 'butter');
+  const results = new Map<string, ButterResult>();
   for (const file of jsonFiles(root)) {
     const id = forwardSlashes(relative(root, file));
     if (/-retry\d+\//.test(id)) continue; // a retry is a different attempt, not another sample
     try {
-      const r = JSON.parse(readFileSync(file, 'utf8')) as SmoothnessResult;
+      const r = JSON.parse(readFileSync(file, 'utf8')) as ButterResult;
       if (r.schemaVersion === 1) results.set(id, r);
     } catch {
       // unreadable file: skipped
@@ -103,17 +103,17 @@ reporter writes, for runs that didn't use the reporter.
 
 Options:
   --results <dir>    Playwright's output directory (default test-results)
-  --out <file>       Where to write it (default <results>/smoothness/summary.md)
-  --title <title>    The summary's heading (default Smoothness)
+  --out <file>       Where to write it (default <results>/butter/summary.md)
+  --title <title>    The summary's heading (default Butter)
   --github-summary   Also add it to the GitHub Actions job summary
   --help             Show this help
 `;
 
 export function readResults(results: string): ReportEntry[] {
   const entries: ReportEntry[] = [];
-  for (const file of latestAttempts(jsonFiles(join(results, 'smoothness')))) {
+  for (const file of latestAttempts(jsonFiles(join(results, 'butter')))) {
     try {
-      const r = JSON.parse(readFileSync(file, 'utf8')) as SmoothnessResult;
+      const r = JSON.parse(readFileSync(file, 'utf8')) as ButterResult;
       if (r.schemaVersion !== 1 || typeof r.label !== 'string') continue;
       entries.push({
         test: r.test?.title ?? basename(dirname(file)),
@@ -140,14 +140,14 @@ Options:
 `;
 
 export function collectBriefs(results: string): string {
-  const briefs = latestAttempts(filesEndingIn(join(results, 'smoothness'), '.fix.md')).map((f) =>
+  const briefs = latestAttempts(filesEndingIn(join(results, 'butter'), '.fix.md')).map((f) =>
     readFileSync(f, 'utf8').trimEnd(),
   );
   if (!briefs.length) return '';
   const head =
     briefs.length === 1
       ? ''
-      : `# ${briefs.length} smoothness checks to fix\n\nEach section is one check. Fix and re-run them one at a time.\n\n`;
+      : `# ${briefs.length} butter checks to fix\n\nEach section is one check. Fix and re-run them one at a time.\n\n`;
   return (
     head +
     briefs
@@ -174,7 +174,7 @@ function brief(args: string[]): number {
   }
   const md = collectBriefs(values.results!);
   if (!md) {
-    console.error('No fix briefs: no smoothness check got worse or missed its budget in the last run.');
+    console.error('No fix briefs: no butter check got worse or missed its budget in the last run.');
     return 0;
   }
   if (values.out) {
@@ -238,13 +238,13 @@ function summary(args: string[]): number {
     return 0;
   }
   const entries = readResults(values.results!);
-  const out = values.out ?? join(values.results!, 'smoothness', 'summary.md');
+  const out = values.out ?? join(values.results!, 'butter', 'summary.md');
   const md = buildMarkdown(entries, values.title);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, md);
   const jobSummary = process.env.GITHUB_STEP_SUMMARY;
   if (values['github-summary'] && jobSummary) appendFileSync(jobSummary, md + '\n');
-  console.log(`Smoothness summary of ${entries.length} result(s): ${out}`);
+  console.log(`Butter summary of ${entries.length} result(s): ${out}`);
   return 0;
 }
 
@@ -268,7 +268,7 @@ export function main(argv: string[]): number {
     args: own,
     options: {
       runs: { type: 'string', default: '5' },
-      out: { type: 'string', default: 'smoothness-calibration.json' },
+      out: { type: 'string', default: 'butter-calibration.json' },
       help: { type: 'boolean' },
     },
   });
@@ -291,8 +291,8 @@ export function main(argv: string[]): number {
     console.error("Couldn't find @playwright/test in this project. Run calibrate from the project's folder.");
     return 1;
   }
-  const work = mkdtempSync(join(tmpdir(), 'smoothness-calibrate-'));
-  const collected: Map<string, SmoothnessResult>[] = [];
+  const work = mkdtempSync(join(tmpdir(), 'butter-calibrate-'));
+  const collected: Map<string, ButterResult>[] = [];
   try {
     for (let i = 1; i <= runs; i++) {
       const outputDir = join(work, `run-${i}`);
@@ -311,8 +311,8 @@ export function main(argv: string[]): number {
       }
       const results = collect(outputDir);
       if (child.status !== 0)
-        console.warn(`  Run ${i}: some tests failed; their smoothness results are still used.`);
-      console.log(`  ${results.size} smoothness result(s)`);
+        console.warn(`  Run ${i}: some tests failed; their butter results are still used.`);
+      console.log(`  ${results.size} butter result(s)`);
       collected.push(results);
     }
   } finally {
@@ -324,7 +324,7 @@ export function main(argv: string[]): number {
   writeFileSync(
     values.out!,
     JSON.stringify(
-      { schemaVersion: 1, kind: `${FORMAT_NAME}-calibration`, invocations: runs, checks },
+      { schemaVersion: 1, kind: `${TOOL_NAME}-calibration`, invocations: runs, checks },
       null,
       2,
     ) + '\n',

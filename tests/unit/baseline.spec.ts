@@ -8,17 +8,17 @@ import {
   machineSlug,
   slug,
   baselineFileName,
-} from '../../packages/butter-core/src/baseline/key.js';
+} from '../../packages/butter-churn/src/baseline/key.js';
 import {
   compareMetrics,
   metricsOf,
   INPUT_FLOOR_MS,
-} from '../../packages/butter-core/src/baseline/compare.js';
-import { evaluate } from '../../packages/butter-core/src/baseline/evaluate.js';
-import { formatChange } from '../../packages/butter-core/src/baseline/message.js';
-import { recordingBaselines } from '../../packages/butter-core/src/constants.js';
-import type { BaselineTarget, UpdateMode } from '../../packages/butter-core/src/baseline/store.js';
-import { writeBaseline } from '../../packages/butter-core/src/baseline/store.js';
+} from '../../packages/butter-churn/src/baseline/compare.js';
+import { evaluate } from '../../packages/butter-churn/src/baseline/evaluate.js';
+import { formatChange } from '../../packages/butter-churn/src/baseline/message.js';
+import { recordingBaselines } from '../../packages/butter-churn/src/constants.js';
+import type { BaselineTarget, UpdateMode } from '../../packages/butter-churn/src/baseline/store.js';
+import { writeBaseline } from '../../packages/butter-churn/src/baseline/store.js';
 import { makeResult } from './result-factory.js';
 
 // ---- keys ----
@@ -202,10 +202,7 @@ function fakeInfo(
 ): BaselineTarget {
   return {
     path: (fileName) =>
-      join(dir, 'spec.ts-snapshots', 'smoothness', title, fileName).replace(
-        /\.json$/,
-        '-chromium-linux.json',
-      ),
+      join(dir, 'spec.ts-snapshots', 'butter', title, fileName).replace(/\.json$/, '-chromium-linux.json'),
     root: dir,
     project: 'chromium',
     update,
@@ -216,7 +213,7 @@ function fakeInfo(
 test.describe('evaluate', () => {
   let dir: string;
   test.beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'smoothness-'));
+    dir = mkdtempSync(join(tmpdir(), 'butter-'));
   });
   test.afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -226,7 +223,7 @@ test.describe('evaluate', () => {
     const file = JSON.parse(readFileSync(c.baseline!.path, 'utf8'));
     expect(file).toMatchObject({
       schemaVersion: 1,
-      kind: 'playwright-smoothness-baseline',
+      kind: 'playwright-butter-baseline',
       key: { label: 'open filters', machine: 'amd-epyc-7763-4cpu' },
       metrics: { 'input.p95ToPaintMs': 112, 'longFrames.count': 1, 'longFrames.totalBlockingMs': 58 },
     });
@@ -329,12 +326,12 @@ test.describe('evaluate', () => {
     writeFileSync(path, '{"kind":"something-else"}');
     const c = evaluate(makeResult(), fakeInfo(dir));
     expect(c.status).toBe('baseline-created');
-    expect(c.notes.join(' ')).toMatch(/is not a playwright-smoothness baseline/);
+    expect(c.notes.join(' ')).toMatch(/is not a playwright-butter baseline/);
 
     writeFileSync(path, 'not json');
     expect(evaluate(makeResult(), fakeInfo(dir)).notes.join(' ')).toMatch(/could not be read: SyntaxError/);
 
-    writeFileSync(path, '{"kind":"playwright-smoothness-baseline","schemaVersion":2}');
+    writeFileSync(path, '{"kind":"playwright-butter-baseline","schemaVersion":2}');
     expect(evaluate(makeResult(), fakeInfo(dir)).notes.join(' ')).toMatch(
       /has schemaVersion 2; this version reads 1/,
     );
@@ -364,7 +361,7 @@ test.describe('evaluate', () => {
 });
 
 test('same label, different tests: separate baselines', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'smoothness-'));
+  const dir = mkdtempSync(join(tmpdir(), 'butter-'));
   try {
     const a = evaluate(makeResult(), fakeInfo(dir));
     const b = evaluate(

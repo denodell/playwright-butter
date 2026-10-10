@@ -6,7 +6,7 @@ import {
   MARK_START,
   parseTrace,
   type TraceEvent,
-} from '../../packages/butter-core/src/trace/parse.js';
+} from '../../packages/butter-churn/src/trace/parse.js';
 
 const load = (name: string) =>
   JSON.parse(readFileSync(`tests/fixtures/traces/${name}.json`, 'utf8')) as {
@@ -119,7 +119,7 @@ test('missing marks: unavailable, with the Chrome version', () => {
   expect(out.unavailable).toEqual([
     {
       measurement: 'frames',
-      reason: expect.stringMatching(/no playwright-smoothness:start .* marks.*Chrome 153/),
+      reason: expect.stringMatching(/no playwright-butter:start .* marks.*Chrome 153/),
     },
     { measurement: 'budget120', reason: 'the trace could not be windowed' },
   ]);

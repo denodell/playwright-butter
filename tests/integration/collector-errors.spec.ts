@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { COLLECTOR_KEY, installCollector } from '../../packages/butter-core/src/collector/collector.js';
-import { COLLECTOR_CONFIG } from '../../packages/butter-core/src/runner.js';
+import { COLLECTOR_KEY, installCollector } from '../../packages/butter-churn/src/collector/collector.js';
+import { COLLECTOR_CONFIG } from '../../packages/butter-churn/src/runner.js';
 
 interface Snapshot {
   supported: { loaf: boolean; event: boolean };
@@ -155,7 +155,7 @@ test('listeners, navigation timing and installing can all fail without breaking 
     };
     const define = Object.defineProperty;
     Object.defineProperty = function (o: object, key: PropertyKey, d: PropertyDescriptor) {
-      if (o === window && key === '__playwrightSmoothness') throw new Error('blocked');
+      if (o === window && key === '__playwrightButter') throw new Error('blocked');
       return define(o, key, d);
     } as typeof Object.defineProperty;
   });

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { detectHeadlessMode } from '../../packages/butter-core/src/environment.js';
-import { githubWarning } from '../../packages/butter-core/src/ci.js';
+import { detectHeadlessMode } from '../../packages/butter-churn/src/environment.js';
+import { githubWarning } from '../../packages/butter-churn/src/ci.js';
 
 // Values recorded by the headless-matrix workflow (docs/measurements.md).
 test('headless mode from CDP Browser.getVersion', () => {
@@ -25,7 +25,7 @@ test('headless mode from CDP Browser.getVersion', () => {
 
 test('githubWarning escapes properties and data', () => {
   expect(githubWarning('p95 up 40%\nclick on button#buy', { file: 'tests/a,b.spec.ts', line: 12 })).toBe(
-    '::warning file=tests/a%2Cb.spec.ts,line=12,title=Smoothness::p95 up 40%25%0Aclick on button#buy',
+    '::warning file=tests/a%2Cb.spec.ts,line=12,title=Butter::p95 up 40%25%0Aclick on button#buy',
   );
-  expect(githubWarning('x')).toBe('::warning title=Smoothness::x');
+  expect(githubWarning('x')).toBe('::warning title=Butter::x');
 });

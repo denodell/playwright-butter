@@ -22,14 +22,14 @@ The job needs `permissions: { contents: read, pull-requests: write, actions: rea
 
 `setup` downloads main's baselines and sets `BUTTER_BASELINE_DIR` for the rest of the job, so your config needs no changes. On a push, a schedule or a manual run on the default branch, it also sets `BUTTER_RECORD_BASELINES=1`. `report` adds the summary to the job summary, posts it on pull requests as one comment that each push updates, with any [fix briefs](../README.md#fix-briefs) folded underneath, and on the default branch publishes the recorded baselines.
 
-| Step     | Input               | Default                | Description                                                                                |
-| -------- | ------------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `setup`  | `artifact-name`     | `smoothness-baselines` | The name baselines are published under. Two suites in one repository need different names. |
-| `setup`  | `token`             | `github.token`         | Needs `actions: read` to fetch baselines.                                                  |
-| `report` | `working-directory` | `.`                    | The folder your tests run in, for a monorepo.                                              |
-| `report` | `results-dir`       | `test-results`         | Playwright's output directory, relative to the working directory.                          |
-| `report` | `comment`           | `true`                 | Post the summary on the pull request.                                                      |
-| `report` | `token`             | `github.token`         | Needs `pull-requests: write` to comment.                                                   |
+| Step     | Input               | Default            | Description                                                                                |
+| -------- | ------------------- | ------------------ | ------------------------------------------------------------------------------------------ |
+| `setup`  | `artifact-name`     | `butter-baselines` | The name baselines are published under. Two suites in one repository need different names. |
+| `setup`  | `token`             | `github.token`     | Needs `actions: read` to fetch baselines.                                                  |
+| `report` | `working-directory` | `.`                | The folder your tests run in, for a monorepo.                                              |
+| `report` | `results-dir`       | `test-results`     | Playwright's output directory, relative to the working directory.                          |
+| `report` | `comment`           | `true`             | Post the summary on the pull request.                                                      |
+| `report` | `token`             | `github.token`     | Needs `pull-requests: write` to comment.                                                   |
 
 `setup` has a `record` output, `true` when the run records baselines, and `report` has a `summary` output with the summary's path. Uploading results and replays is left to your workflow, since most already upload `test-results` or the Playwright report.
 
@@ -38,15 +38,15 @@ The job needs `permissions: { contents: read, pull-requests: write, actions: rea
 For a new workflow, the Action can run the suite too, in one step:
 
 ```yaml
-# .github/workflows/smoothness.yml
-name: Smoothness
+# .github/workflows/butter.yml
+name: Butter
 on:
   push: { branches: [main] }
   pull_request:
   schedule: [{ cron: '0 3 * * *' }]
 permissions: { contents: read, pull-requests: write, actions: read }
 jobs:
-  smoothness:
+  butter:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +70,7 @@ Automatic mode's history is kept in the same artifact, so tests wrapped with `wi
 | `results-dir`           | `test-results`           | Playwright's output directory.                                                             |
 | `comment`               | `true`                   | Post the summary on the pull request.                                                      |
 | `install-browsers`      | `true`                   | Install Chromium and its system dependencies first.                                        |
-| `artifact-name`         | `smoothness-baselines`   | The name baselines are published under. Two suites in one repository need different names. |
+| `artifact-name`         | `butter-baselines`       | The name baselines are published under. Two suites in one repository need different names. |
 | `results-artifact-name` | a name unique to the job | The name results and replays are uploaded under.                                           |
 | `token`                 | `github.token`           | Needs `actions: read` to fetch baselines and `pull-requests: write` to comment.            |
 
@@ -81,15 +81,15 @@ The Action's outputs are `outcome` (`passed` or `failed`) and `summary` (the sum
 These are the steps the Action takes, for other CI systems or a workflow of your own.
 
 ```yaml
-# .github/workflows/smoothness.yml
-name: Smoothness
+# .github/workflows/butter.yml
+name: Butter
 on:
   push:
     branches: [main]
   pull_request:
 
 jobs:
-  smoothness:
+  butter:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,30 +103,30 @@ jobs:
       - uses: dawidd6/action-download-artifact@v6
         continue-on-error: true # the very first run has no artifact yet
         with:
-          workflow: smoothness.yml
+          workflow: butter.yml
           branch: main
-          name: smoothness-baselines
-          path: smoothness-baselines
+          name: butter-baselines
+          path: butter-baselines
 
       - name: 'Pull request: compare with main'
         if: github.event_name == 'pull_request'
         run: npx playwright test
         env:
-          BUTTER_BASELINE_DIR: smoothness-baselines
+          BUTTER_BASELINE_DIR: butter-baselines
 
       - name: 'Main: compare, then record baselines'
         if: github.ref == 'refs/heads/main'
         run: npx playwright test
         env:
-          BUTTER_BASELINE_DIR: smoothness-baselines
+          BUTTER_BASELINE_DIR: butter-baselines
           BUTTER_RECORD_BASELINES: 1
 
       - name: 'Main: publish baselines'
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
-          name: smoothness-baselines
-          path: smoothness-baselines
+          name: butter-baselines
+          path: butter-baselines
           retention-days: 90
 ```
 
@@ -134,14 +134,14 @@ jobs:
 
 ### Post the summary on the pull request
 
-With the reporter in your config (`reporter: [['list'], ['playwright-butter/reporter']]`), each run adds the smoothness summary to the GitHub Actions job summary. Without it, `npx playwright-butter summary --github-summary` writes the same summary from the run's result files. This step also posts it as a comment on the pull request:
+With the reporter in your config (`reporter: [['list'], ['playwright-butter/reporter']]`), each run adds the butter summary to the GitHub Actions job summary. Without it, `npx playwright-butter summary --github-summary` writes the same summary from the run's result files. This step also posts it as a comment on the pull request:
 
 ```yaml
 - name: 'Pull request: comment with the summary'
   if: github.event_name == 'pull_request' && always()
   env:
     GH_TOKEN: ${{ github.token }}
-  run: gh pr comment ${{ github.event.pull_request.number }} --body-file test-results/smoothness/summary.md --edit-last --create-if-none
+  run: gh pr comment ${{ github.event.pull_request.number }} --body-file test-results/butter/summary.md --edit-last --create-if-none
 ```
 
 The job needs `permissions: pull-requests: write`. `--edit-last` updates the previous comment, so each push doesn't add a new one.

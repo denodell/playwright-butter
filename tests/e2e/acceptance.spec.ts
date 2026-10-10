@@ -5,14 +5,14 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { SmoothnessResult } from '../../packages/butter-core/src/types.js';
+import type { ButterResult } from '../../packages/butter-churn/src/types.js';
 import { files, PLAYWRIGHT_CLI } from './helpers.js';
 
 const CONFIG = 'tests/e2e/fixture-project/playwright.config.ts';
 
 let work: string;
 test.beforeAll(() => {
-  work = mkdtempSync(join(tmpdir(), 'smoothness-e2e-'));
+  work = mkdtempSync(join(tmpdir(), 'butter-e2e-'));
 });
 test.afterAll(() => rmSync(work, { recursive: true, force: true }));
 
@@ -32,8 +32,8 @@ function run(env: Record<string, string>, args: string[] = []) {
     encoding: 'utf8',
     timeout: 120_000,
   });
-  const [jsonPath] = files(join(out, 'smoothness'), 'checkout.json');
-  const result = jsonPath ? (JSON.parse(readFileSync(jsonPath, 'utf8')) as SmoothnessResult) : null;
+  const [jsonPath] = files(join(out, 'butter'), 'checkout.json');
+  const result = jsonPath ? (JSON.parse(readFileSync(jsonPath, 'utf8')) as ButterResult) : null;
   const output = `${child.stdout}\n${child.stderr}`;
   test
     .info()
@@ -71,7 +71,7 @@ test("the same regression with enforce: 'warn'", () => {
   expect(r.code, r.output).toBe(0);
   expect(r.result!.comparison!.status).toBe('warn');
   expect(r.output).toMatch(
-    /::warning file=tests\/e2e\/fixture-project\/checkout\.spec\.ts,line=\d+,title=Smoothness::"checkout" got worse/,
+    /::warning file=tests\/e2e\/fixture-project\/checkout\.spec\.ts,line=\d+,title=Butter::"checkout" got worse/,
   );
 });
 

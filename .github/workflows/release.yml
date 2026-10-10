@@ -26,7 +26,7 @@ jobs:
       - name: Check the tag matches both packages
         run: |
           version="${GITHUB_REF_NAME#v}"
-          for pkg in butter-core playwright-butter; do
+          for pkg in butter-churn playwright-butter; do
             actual=$(node -p "require('./packages/$pkg/package.json').version")
             if [ "$actual" != "$version" ]; then
               echo "::error::$pkg is $actual, but the tag is $GITHUB_REF_NAME"
@@ -50,7 +50,7 @@ jobs:
       - name: Stage both packages on npm for approval
         run: |
           version="${GITHUB_REF_NAME#v}"
-          for pkg in butter-core playwright-butter; do
+          for pkg in butter-churn playwright-butter; do
             if npm view "$pkg@$version" version > /dev/null 2>&1; then
               echo "$pkg@$version is already on npm"
             else

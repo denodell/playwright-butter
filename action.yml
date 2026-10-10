@@ -1,5 +1,5 @@
 name: playwright-butter
-description: Visual smoothness checks for Playwright in CI. Flags PRs that make scrolling or interacting less smooth than previous runs.
+description: Butter-smooth checks for Playwright in CI. Flags PRs that make scrolling or interacting less smooth than previous runs.
 author: Den Odell
 branding:
   icon: activity
@@ -27,7 +27,7 @@ inputs:
     default: 'true'
   artifact-name:
     description: The name main's baselines are published under. Two suites in one repository need different names.
-    default: smoothness-baselines
+    default: butter-baselines
   results-artifact-name:
     description: The name results and replays are uploaded under. Default is one unique to this job.
     default: ''

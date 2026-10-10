@@ -9,10 +9,10 @@ import {
   type CollectorApi,
   type CollectorSnapshot,
   type LoafRecord,
-} from '../../packages/butter-core/src/collector/collector.js';
-import { COLLECTOR_CONFIG } from '../../packages/butter-core/src/runner.js';
-import { groupInteractions } from '../../packages/butter-core/src/analysis/interactions.js';
-import { classifyFrames, type FrameClass } from '../../packages/butter-core/src/analysis/classify.js';
+} from '../../packages/butter-churn/src/collector/collector.js';
+import { COLLECTOR_CONFIG } from '../../packages/butter-churn/src/runner.js';
+import { groupInteractions } from '../../packages/butter-churn/src/analysis/interactions.js';
+import { classifyFrames, type FrameClass } from '../../packages/butter-churn/src/analysis/classify.js';
 
 const RUNS = 20;
 const REQUIRED = 19;

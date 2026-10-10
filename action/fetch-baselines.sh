@@ -12,7 +12,7 @@ if [ -z "$id" ]; then
   exit 0
 fi
 
-zip="${RUNNER_TEMP:-/tmp}/smoothness-baselines.zip"
+zip="${RUNNER_TEMP:-/tmp}/butter-baselines.zip"
 if ! gh api "repos/$repo/actions/artifacts/$id/zip" > "$zip"; then
   echo "::warning::Couldn't download main's baselines (artifact $id). Does the job have permissions: actions: read?"
   exit 0

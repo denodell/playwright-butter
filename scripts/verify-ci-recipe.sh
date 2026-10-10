@@ -7,20 +7,20 @@
 # The cross-run artifact download (dawidd6/action-download-artifact) isn't exercised here.
 set -euo pipefail
 cd "$(dirname "$0")/../examples/plain-site"
-rm -rf smoothness-baselines test-results tests/*-snapshots
+rm -rf butter-baselines test-results tests/*-snapshots
 
 echo "== main: record baselines"
-BUTTER_BASELINE_DIR=smoothness-baselines BUTTER_RECORD_BASELINES=1 npx playwright test
-test -n "$(find smoothness-baselines -type f)" || { echo 'no baselines were recorded'; exit 1; }
-find smoothness-baselines -type f
+BUTTER_BASELINE_DIR=butter-baselines BUTTER_RECORD_BASELINES=1 npx playwright test
+test -n "$(find butter-baselines -type f)" || { echo 'no baselines were recorded'; exit 1; }
+find butter-baselines -type f
 
 echo "== pull request: compare against main's baselines"
 rm -rf tests/*-snapshots
-BUTTER_BASELINE_DIR=smoothness-baselines npx playwright test --update-snapshots=none
+BUTTER_BASELINE_DIR=butter-baselines npx playwright test --update-snapshots=none
 node -e "
 const fs = require('fs'), path = require('path');
 const files = [];
-(function walk(d) { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); fs.statSync(p).isDirectory() ? walk(p) : p.endsWith('.json') && files.push(p); } })('test-results/smoothness');
+(function walk(d) { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); fs.statSync(p).isDirectory() ? walk(p) : p.endsWith('.json') && files.push(p); } })('test-results/butter');
 let bad = 0;
 for (const f of files) {
   const r = JSON.parse(fs.readFileSync(f, 'utf8'));
@@ -33,14 +33,14 @@ if (files.length !== 2 || bad) { console.error('expected 2 results compared agai
 "
 
 echo "== regression: must fail"
-if SLOW=80 BUTTER_ENFORCE=fail BUTTER_BASELINE_DIR=smoothness-baselines npx playwright test --update-snapshots=none -g 'filters' > regression.log 2>&1; then
+if SLOW=80 BUTTER_ENFORCE=fail BUTTER_BASELINE_DIR=butter-baselines npx playwright test --update-snapshots=none -g 'filters' > regression.log 2>&1; then
   cat regression.log; echo 'the regression passed, but should have failed'; exit 1
 fi
 grep -q 'is less smooth than its baseline' regression.log
 grep -q 'toggleFilters' regression.log
 # The reporter (loaded by package name in the example's config) names it in the summary.
-grep -q '\*\*1 got worse\*\*' test-results/smoothness/summary.md
-grep -q 'toggleFilters' test-results/smoothness/summary.md
+grep -q '\*\*1 got worse\*\*' test-results/butter/summary.md
+grep -q 'toggleFilters' test-results/butter/summary.md
 echo "regression failed as expected:"; grep -A4 'is less smooth' regression.log | head -6
 rm -f regression.log
 echo "CI recipe verified"

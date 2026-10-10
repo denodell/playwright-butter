@@ -12,7 +12,7 @@ const REPORTER = join(process.cwd(), 'packages/playwright-butter/dist', 'reporte
 
 let work: string;
 test.beforeAll(() => {
-  work = mkdtempSync(join(tmpdir(), 'smoothness-replay-'));
+  work = mkdtempSync(join(tmpdir(), 'butter-replay-'));
 });
 test.afterAll(() => rmSync(work, { recursive: true, force: true }));
 test.describe.configure({ mode: 'serial' });
@@ -45,19 +45,17 @@ test('a drawn list: baseline recorded, no replay', () => {
   test.skip(!existsSync(REPORTER), 'run npm run build first');
   const r = run();
   expect(r.code).toBe(0);
-  expect(files(join(r.out, 'smoothness'), '.replay.webm')).toEqual([]);
+  expect(files(join(r.out, 'butter'), '.replay.webm')).toEqual([]);
 });
 
 test('blank rows appear: a warning and a replay', () => {
   test.skip(!existsSync(REPORTER), 'run npm run build first');
   const r = run({ ROW_COST: '15' });
   expect(r.code).toBe(0); // enforce: 'warn'
-  const [webm] = files(join(r.out, 'smoothness'), '.replay.webm');
+  const [webm] = files(join(r.out, 'butter'), '.replay.webm');
   expect(webm).toBeTruthy();
   expect(statSync(webm!).size).toBeGreaterThan(50_000);
-  const summary = readFileSync(join(r.out, 'smoothness', 'summary.md'), 'utf8');
+  const summary = readFileSync(join(r.out, 'butter', 'summary.md'), 'utf8');
   expect(summary).toContain('blank list frames');
-  expect(summary).toContain(
-    'A replay of the scroll is attached to the test as `smoothness replay: catalogue`',
-  );
+  expect(summary).toContain('A replay of the scroll is attached to the test as `butter replay: catalogue`');
 });

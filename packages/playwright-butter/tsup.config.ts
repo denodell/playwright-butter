@@ -1,11 +1,11 @@
 import { defineConfig, type Options } from 'tsup';
 
-// butter-core is a dependency, so it stays an import rather than being bundled in.
+// butter-churn is a dependency, so it stays an import rather than being bundled in.
 const shared: Options = {
   sourcemap: true,
   target: 'node20',
   tsconfig: 'tsconfig.build.json',
-  external: ['@playwright/test', 'butter-core'],
+  external: ['@playwright/test', 'butter-churn'],
 };
 
 export default defineConfig([

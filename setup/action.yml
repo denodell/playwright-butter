@@ -1,11 +1,11 @@
 name: playwright-butter setup
-description: Goes before your Playwright step. Fetches main's smoothness baselines and sets the run up to compare with them, and on main to record new ones.
+description: Goes before your Playwright step. Fetches main's butter baselines and sets the run up to compare with them, and on main to record new ones.
 author: Den Odell
 
 inputs:
   artifact-name:
     description: The name main's baselines are published under. Two suites in one repository need different names.
-    default: smoothness-baselines
+    default: butter-baselines
   token:
     description: "Token for reading main's baselines. Needs `actions: read`."
     default: ${{ github.token }}

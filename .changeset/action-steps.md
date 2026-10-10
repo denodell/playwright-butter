@@ -1,6 +1,6 @@
 ---
 'playwright-butter': minor
-'butter-core': minor
+'butter-churn': minor
 ---
 
 The GitHub Action can now go around a Playwright step you already have: `denodell/playwright-butter/setup@v1` before it fetches main's baselines and sets up the run, and `denodell/playwright-butter/report@v1` after it writes the summary, comments on the pull request and, on main, publishes the baselines. The all-in-one Action still works as before, and now runs the suite once on scheduled runs instead of twice. Its `snapshot-dir` input is no longer used. Recording through the Action now needs playwright-butter 1.1 or later.
