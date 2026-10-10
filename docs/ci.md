@@ -2,7 +2,7 @@
 
 A baseline only means something on the machine that gates, so in CI the baselines come from CI runs on your main branch, never from developer laptops:
 
-1. On the main branch, the suite runs with `SMOOTHNESS_RECORD_BASELINES=1`. Each check still compares with the baselines main had, then records this run's result as the new baseline, into the folder `baselineDir` points at. That folder is uploaded as an artifact.
+1. On the main branch, the suite runs with `BUTTER_RECORD_BASELINES=1`. Each check still compares with the baselines main had, then records this run's result as the new baseline, into the folder `baselineDir` points at. That folder is uploaded as an artifact.
 2. On pull requests, the latest artifact from main is downloaded into a folder, and `baselineDir` points at it. Each check then compares against main.
 
 `baselineDir` mirrors your snapshot layout: a baseline at `<snapshotDir>/<path>` is looked for at `<baselineDir>/<path>` first. Baselines are matched on CPU model, so an artifact built on one hosted-runner CPU won't be used on another. Main starts from the previous artifact before recording, so each CPU model's files are kept, and a dedicated runner avoids the problem.
@@ -12,15 +12,15 @@ A baseline only means something on the machine that gates, so in CI the baseline
 Most projects already have a workflow that runs Playwright. Two steps go around the step that runs it, and that step stays as it is:
 
 ```yaml
-- uses: denodell/playwright-smoothness/setup@v1
+- uses: denodell/playwright-butter/setup@v1
 - run: npx playwright test # your step, unchanged
-- uses: denodell/playwright-smoothness/report@v1
+- uses: denodell/playwright-butter/report@v1
   if: always()
 ```
 
 The job needs `permissions: { contents: read, pull-requests: write, actions: read }`, and the workflow needs to run on pushes to main as well as pull requests, so main records the baselines pull requests compare with. [`examples/github-actions/add-to-existing.yml`](../examples/github-actions/add-to-existing.yml) is a whole workflow.
 
-`setup` downloads main's baselines and sets `SMOOTHNESS_BASELINE_DIR` for the rest of the job, so your config needs no changes. On a push, a schedule or a manual run on the default branch, it also sets `SMOOTHNESS_RECORD_BASELINES=1`. `report` adds the summary to the job summary, posts it on pull requests as one comment that each push updates, with any [fix briefs](../README.md#fix-briefs) folded underneath, and on the default branch publishes the recorded baselines.
+`setup` downloads main's baselines and sets `BUTTER_BASELINE_DIR` for the rest of the job, so your config needs no changes. On a push, a schedule or a manual run on the default branch, it also sets `BUTTER_RECORD_BASELINES=1`. `report` adds the summary to the job summary, posts it on pull requests as one comment that each push updates, with any [fix briefs](../README.md#fix-briefs) folded underneath, and on the default branch publishes the recorded baselines.
 
 | Step     | Input               | Default                | Description                                                                                |
 | -------- | ------------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: npm }
       - run: npm ci
-      - uses: denodell/playwright-smoothness@v1
+      - uses: denodell/playwright-butter@v1
 ```
 
 - **Pull requests** compare with the newest baselines published from your default branch, and get the summary as a comment.
@@ -61,7 +61,7 @@ jobs:
 - **Scheduled runs** use full mode, and compare and record the same way.
 - **Every run** installs Chromium, adds the summary to the job summary, and uploads results and replays as an artifact. The job fails when the Playwright run fails.
 
-Automatic mode's history is kept in the same artifact, so tests wrapped with `withSmoothness()` need nothing extra either way.
+Automatic mode's history is kept in the same artifact, so tests wrapped with `withButter()` need nothing extra either way.
 
 | Input                   | Default                  | Description                                                                                |
 | ----------------------- | ------------------------ | ------------------------------------------------------------------------------------------ |
@@ -112,14 +112,14 @@ jobs:
         if: github.event_name == 'pull_request'
         run: npx playwright test
         env:
-          SMOOTHNESS_BASELINE_DIR: smoothness-baselines
+          BUTTER_BASELINE_DIR: smoothness-baselines
 
       - name: 'Main: compare, then record baselines'
         if: github.ref == 'refs/heads/main'
         run: npx playwright test
         env:
-          SMOOTHNESS_BASELINE_DIR: smoothness-baselines
-          SMOOTHNESS_RECORD_BASELINES: 1
+          BUTTER_BASELINE_DIR: smoothness-baselines
+          BUTTER_RECORD_BASELINES: 1
 
       - name: 'Main: publish baselines'
         if: github.ref == 'refs/heads/main'
@@ -130,11 +130,11 @@ jobs:
           retention-days: 90
 ```
 
-`SMOOTHNESS_BASELINE_DIR` sets `baselineDir` when the config doesn't, so the config needs no change. `dawidd6/action-download-artifact` is a third-party action, used because GitHub's own `actions/download-artifact` can only read artifacts from the same workflow run.
+`BUTTER_BASELINE_DIR` sets `baselineDir` when the config doesn't, so the config needs no change. `dawidd6/action-download-artifact` is a third-party action, used because GitHub's own `actions/download-artifact` can only read artifacts from the same workflow run.
 
 ### Post the summary on the pull request
 
-With the reporter in your config (`reporter: [['list'], ['playwright-smoothness/reporter']]`), each run adds the smoothness summary to the GitHub Actions job summary. Without it, `npx playwright-smoothness summary --github-summary` writes the same summary from the run's result files. This step also posts it as a comment on the pull request:
+With the reporter in your config (`reporter: [['list'], ['playwright-butter/reporter']]`), each run adds the smoothness summary to the GitHub Actions job summary. Without it, `npx playwright-butter summary --github-summary` writes the same summary from the run's result files. This step also posts it as a comment on the pull request:
 
 ```yaml
 - name: 'Pull request: comment with the summary'
@@ -158,4 +158,4 @@ A self-hosted or larger dedicated runner (`runs-on: [self-hosted, linux]`, or a 
 
 ## Recipe tests
 
-`scripts/verify-ci-recipe.sh` runs these steps against `examples/plain-site` on every pull request to this project, in the Examples workflow. It records on "main" with `SMOOTHNESS_RECORD_BASELINES`, runs as a fresh pull request with `baselineDir`, checks that every result was compared against the collected baseline, and checks that a deliberate regression fails. The one step it can't exercise is downloading an artifact from a different workflow run. The same workflow also runs the Action itself against `examples/plain-site`, so pushes to main publish that example's baselines and pull requests fetch them from an earlier run.
+`scripts/verify-ci-recipe.sh` runs these steps against `examples/plain-site` on every pull request to this project, in the Examples workflow. It records on "main" with `BUTTER_RECORD_BASELINES`, runs as a fresh pull request with `baselineDir`, checks that every result was compared against the collected baseline, and checks that a deliberate regression fails. The one step it can't exercise is downloading an artifact from a different workflow run. The same workflow also runs the Action itself against `examples/plain-site`, so pushes to main publish that example's baselines and pull requests fetch them from an earlier run.

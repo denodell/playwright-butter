@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { SmoothnessResult } from '../../packages/smoothness-core/src/types.js';
+import type { SmoothnessResult } from '../../packages/butter-core/src/types.js';
 import { files, PLAYWRIGHT_CLI } from './helpers.js';
 
 const CONFIG = 'tests/e2e/fixture-project/playwright.config.ts';
@@ -25,8 +25,8 @@ function run(env: Record<string, string>, args: string[] = []) {
     env: {
       ...clean,
       GITHUB_ACTIONS: '',
-      SMOOTHNESS_E2E_OUT: out,
-      SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
+      BUTTER_E2E_OUT: out,
+      BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots'),
       ...env,
     },
     encoding: 'utf8',

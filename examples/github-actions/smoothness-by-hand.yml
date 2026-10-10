@@ -4,8 +4,8 @@
 # - Pushes to main: compared with the previous baselines, then re-recorded and published as an artifact.
 # - Nightly: full mode (dropped frames, blank rows, CPU profile), compared, then re-recorded.
 #
-# Needs the reporter in playwright.config.ts: reporter: [['list'], ['playwright-smoothness/reporter']]
-# and smoothnessOptions: { baselineDir: process.env.SMOOTHNESS_BASELINE_DIR }.
+# Needs the reporter in playwright.config.ts: reporter: [['list'], ['playwright-butter/reporter']]
+# and butterOptions: { baselineDir: process.env.BUTTER_BASELINE_DIR }.
 name: Smoothness
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: npx playwright test
         env:
-          SMOOTHNESS_BASELINE_DIR: smoothness-baselines
+          BUTTER_BASELINE_DIR: smoothness-baselines
 
       - name: 'Pull request: comment with the summary'
         if: github.event_name == 'pull_request' && always()
@@ -57,8 +57,8 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: npx playwright test
         env:
-          SMOOTHNESS_BASELINE_DIR: smoothness-baselines
-          SMOOTHNESS_RECORD_BASELINES: 1
+          BUTTER_BASELINE_DIR: smoothness-baselines
+          BUTTER_RECORD_BASELINES: 1
 
       - name: 'Main: publish baselines'
         if: github.ref == 'refs/heads/main'

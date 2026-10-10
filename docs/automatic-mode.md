@@ -5,13 +5,13 @@ Automatic mode measures every test you already have, with one change to your fix
 ```ts
 // tests/fixtures.ts
 import { test as base } from '@playwright/test';
-import { withSmoothness } from 'playwright-smoothness';
+import { withButter } from 'playwright-butter';
 
-export const test = withSmoothness(base, { auto: true });
+export const test = withButter(base, { auto: true });
 export { expect } from '@playwright/test';
 ```
 
-Tests that import `test` from this file get `smoothness` and `smoothnessOptions` too, for explicit `measure()` and `scroll()` calls.
+Tests that import `test` from this file get `butter` and `butterOptions` too, for explicit `measure()` and `scroll()` calls.
 
 ## What's measured
 
@@ -23,13 +23,13 @@ Each test that opens a page is measured once, for its whole run, with no warm-up
 
 Tests that never open a page, such as API tests, produce no result.
 
-CPU throttling is off by default in automatic mode (`cpuThrottling: 1`), because slowing every test 4x would slow the whole suite and could break its timeouts. If the suite can take it, `withSmoothness(base, { auto: true, cpuThrottling: 4 })` turns it on.
+CPU throttling is off by default in automatic mode (`cpuThrottling: 1`), because slowing every test 4x would slow the whole suite and could break its timeouts. If the suite can take it, `withButter(base, { auto: true, cpuThrottling: 4 })` turns it on.
 
 ## Rolling history from main
 
 Each test's baseline is the median of its last 10 passing runs on the main branch (`history`). A run is compared once the history has at least 3 runs (`minHistory`). Until then, the result says "building history".
 
-- Runs are recorded on push builds of the main (or master) branch in CI. GitHub Actions, GitLab CI, Azure Pipelines and CircleCI are detected. `record: true` or `SMOOTHNESS_RECORD=1` forces recording, and `record: false` turns it off. Pull requests only compare, so they never change main's history.
+- Runs are recorded on push builds of the main (or master) branch in CI. GitHub Actions, GitLab CI, Azure Pipelines and CircleCI are detected. `record: true` or `BUTTER_RECORD=1` forces recording, and `record: false` turns it off. Pull requests only compare, so they never change main's history.
 - Only runs where the test itself passed are recorded.
 - Histories are keyed by test, project, platform, CPU model and CPU throttling, like `measure()` baselines, because hosted runners differ in speed ([measurements.md](measurements.md)).
 - Files live in `historyDir`. By default that's `baselineDir` if you set one, and otherwise `.cache/playwright-smoothness/history` in your project's `node_modules`: the nearest one from your Playwright config up to the project root, so a workspace package whose dependencies are hoisted uses the root's. Histories are rewritten while other tests are running, and a dev server that watches your project reloads its pages when a file it watches changes. Dev servers don't watch `node_modules`, so the default stays out of their way. A project with no `node_modules`, as with Yarn Plug'n'Play, keeps them in `smoothness-history` next to the config instead, and the result notes it. That folder, or a `historyDir` or `baselineDir` elsewhere in the project, needs adding to the dev server's ignored files, such as Vite's `server.watch.ignored`.

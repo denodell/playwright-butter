@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { files, PLAYWRIGHT_CLI } from './helpers.js';
 
 const CONFIG = 'tests/e2e/replay-project/playwright.config.ts';
-const REPORTER = join(process.cwd(), 'packages/playwright-smoothness/dist', 'reporter.js');
+const REPORTER = join(process.cwd(), 'packages/playwright-butter/dist', 'reporter.js');
 
 let work: string;
 test.beforeAll(() => {
@@ -26,9 +26,9 @@ function run(env: Record<string, string> = {}) {
   const child = spawnSync(process.execPath, [PLAYWRIGHT_CLI, 'test', '-c', CONFIG], {
     env: {
       ...clean,
-      SMOOTHNESS_E2E_OUT: out,
-      SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
-      SMOOTHNESS_REPORTER: REPORTER,
+      BUTTER_E2E_OUT: out,
+      BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots'),
+      BUTTER_REPORTER: REPORTER,
       ...env,
     },
     encoding: 'utf8',

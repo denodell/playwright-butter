@@ -83,10 +83,10 @@ jobs:
           comment: 'false'
       - name: Check the steps' outputs
         run: |
-          test -n "$SMOOTHNESS_BASELINE_DIR"
+          test -n "$BUTTER_BASELINE_DIR"
           test -f "examples/plain-site/${{ steps.report.outputs.summary }}"
           if [ "${{ steps.setup.outputs.record }}" = true ]; then
-            test -n "$(find "$SMOOTHNESS_BASELINE_DIR" -type f)"
+            test -n "$(find "$BUTTER_BASELINE_DIR" -type f)"
           fi
 
   react-list:

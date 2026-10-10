@@ -6,12 +6,12 @@ import { PLAYWRIGHT_CLI } from './helpers.js';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { CheckCalibration } from '../../packages/smoothness-core/src/calibrate/analyze.js';
+import type { CheckCalibration } from '../../packages/butter-core/src/calibrate/analyze.js';
 
 const CONFIG = 'tests/e2e/fixture-project/playwright.config.ts';
 const built =
-  existsSync('packages/playwright-smoothness/dist/cli.js') &&
-  existsSync('packages/playwright-smoothness/dist/reporter.js');
+  existsSync('packages/playwright-butter/dist/cli.js') &&
+  existsSync('packages/playwright-butter/dist/reporter.js');
 const clean = () => Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(TEST_|PW_)/.test(k)));
 
 let work: string;
@@ -33,14 +33,14 @@ test('the reporter writes the markdown summary and the job summary', () => {
       'test',
       '-c',
       CONFIG,
-      `--reporter=list,${join(process.cwd(), 'packages/playwright-smoothness/dist', 'reporter.js')}`,
+      `--reporter=list,${join(process.cwd(), 'packages/playwright-butter/dist', 'reporter.js')}`,
     ],
     {
       env: {
         ...clean(),
         CLICK_MS: '60',
-        SMOOTHNESS_E2E_OUT: join(work, 'out'),
-        SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
+        BUTTER_E2E_OUT: join(work, 'out'),
+        BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots'),
         GITHUB_STEP_SUMMARY: step,
         GITHUB_ACTIONS: '',
       },
@@ -63,7 +63,7 @@ test('the summary command writes the same summary from the result files alone', 
   const child = spawnSync(
     process.execPath,
     [
-      'packages/playwright-smoothness/dist/cli.js',
+      'packages/playwright-butter/dist/cli.js',
       'summary',
       '--results',
       join(work, 'out'),
@@ -87,8 +87,8 @@ test('a check that got worse writes a fix brief, and the brief command collects 
     env: {
       ...clean(),
       CLICK_MS: '300',
-      SMOOTHNESS_E2E_OUT: out,
-      SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
+      BUTTER_E2E_OUT: out,
+      BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots'),
       GITHUB_ACTIONS: '',
     },
     encoding: 'utf8',
@@ -96,7 +96,7 @@ test('a check that got worse writes a fix brief, and the brief command collects 
   expect(run.status, run.stdout + run.stderr).toBe(0);
   const child = spawnSync(
     process.execPath,
-    ['packages/playwright-smoothness/dist/cli.js', 'brief', '--results', out],
+    ['packages/playwright-butter/dist/cli.js', 'brief', '--results', out],
     { env: clean(), encoding: 'utf8' },
   );
   expect(child.status, child.stderr).toBe(0);
@@ -112,7 +112,7 @@ test('calibrate is repeatable', () => {
     const child = spawnSync(
       process.execPath,
       [
-        'packages/playwright-smoothness/dist/cli.js',
+        'packages/playwright-butter/dist/cli.js',
         'calibrate',
         '--runs',
         '3',
@@ -123,7 +123,7 @@ test('calibrate is repeatable', () => {
         CONFIG,
       ],
       {
-        env: { ...clean(), CLICK_MS: '60', SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots-cal') },
+        env: { ...clean(), CLICK_MS: '60', BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots-cal') },
         encoding: 'utf8',
       },
     );

@@ -5,25 +5,25 @@ import { test, expect } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import type { SmoothnessResult } from '../../packages/smoothness-core/src/types.js';
-import type { HistoryFile } from '../../packages/smoothness-core/src/auto/history.js';
+import type { SmoothnessResult } from '../../packages/butter-core/src/types.js';
+import type { HistoryFile } from '../../packages/butter-core/src/auto/history.js';
 import { files, PLAYWRIGHT_CLI } from './helpers.js';
 
 const repo = process.cwd();
 const project = join(repo, '.tmp-e2e', `auto-${process.pid}`);
 const PLAIN = `import { test as base } from '@playwright/test';\nexport const test = base;\nexport { expect } from '@playwright/test';\n`;
-const withSmoothness = () => {
-  const lib = relative(project, join(repo, 'packages', 'playwright-smoothness', 'src', 'index.js')).replace(
+const withButter = () => {
+  const lib = relative(project, join(repo, 'packages', 'playwright-butter', 'src', 'index.js')).replace(
     /\\/g,
     '/',
   );
   return [
     `import { test as base } from '@playwright/test';`,
-    `import { withSmoothness } from '${lib.startsWith('.') ? lib : './' + lib}';`,
-    `export const test = withSmoothness(base, {`,
+    `import { withButter } from '${lib.startsWith('.') ? lib : './' + lib}';`,
+    `export const test = withButter(base, {`,
     `  auto: true,`,
     `  minHistory: 2,`,
-    `  enforce: process.env.SMOOTHNESS_ENFORCE === 'fail' ? 'fail' : 'warn',`,
+    `  enforce: process.env.BUTTER_ENFORCE === 'fail' ? 'fail' : 'warn',`,
     `  historyDir: process.env.HISTORY_DIR,`,
     `  record: process.env.RECORD === 'yes' ? true : process.env.RECORD === 'no' ? false : undefined,`,
     `  ...(process.env.AUTO_MODE ? { mode: process.env.AUTO_MODE as 'full' } : {}),`,
@@ -36,14 +36,14 @@ const withSmoothness = () => {
 
 function run(env: Record<string, string> = {}) {
   const clean = Object.fromEntries(
-    Object.entries(process.env).filter(([k]) => !/^(TEST_|PW_|GITHUB_|SMOOTHNESS_)/.test(k)),
+    Object.entries(process.env).filter(([k]) => !/^(TEST_|PW_|GITHUB_|BUTTER_|SMOOTHNESS_)/.test(k)),
   );
   const child = spawnSync(
     process.execPath,
     [PLAYWRIGHT_CLI, 'test', '-c', join(project, 'playwright.config.ts')],
     {
       cwd: project,
-      env: { ...clean, SMOOTHNESS_TEST_PAGES: join(repo, 'test-pages'), ...env },
+      env: { ...clean, BUTTER_TEST_PAGES: join(repo, 'test-pages'), ...env },
       encoding: 'utf8',
       timeout: 120_000,
     },
@@ -80,9 +80,9 @@ test('the plain project runs, and nothing is measured', () => {
   expect(r.results).toEqual([]);
 });
 
-test('switching the fixtures file to withSmoothness', () => {
-  writeFileSync(join(project, 'fixtures.ts'), withSmoothness());
-  const r = run({ SMOOTHNESS_RECORD: '1' });
+test('switching the fixtures file to withButter', () => {
+  writeFileSync(join(project, 'fixtures.ts'), withButter());
+  const r = run({ BUTTER_RECORD: '1' });
   expect(r.code, r.output).toBe(0);
   expect(r.results).toHaveLength(3); // 'no page at all' opens no page, so it isn't measured
   const result = buy(r);
@@ -127,7 +127,7 @@ test('switching the fixtures file to withSmoothness', () => {
 
 // Two recorded runs make the history long enough; later runs are compared with its median.
 test('comparing against the history', () => {
-  expect(buyHistory(run({ SMOOTHNESS_RECORD: '1' })).entries).toHaveLength(2);
+  expect(buyHistory(run({ BUTTER_RECORD: '1' })).entries).toHaveLength(2);
   const r = run(); // not main: compare only
   expect(r.code, r.output).toBe(0);
   // Automatic mode measures once, with no repeats, so on a noisy runner one run can land more
@@ -143,7 +143,7 @@ test("a regression warns, or fails with enforce: 'fail'", () => {
   expect(buy(warned).comparison!.status).toBe('warn');
   expect(warned.output).toContain('"buy, then search" is less smooth than its baseline');
 
-  const r = run({ CLICK_MS: '400', SMOOTHNESS_ENFORCE: 'fail' });
+  const r = run({ CLICK_MS: '400', BUTTER_ENFORCE: 'fail' });
   expect(r.code, r.output).toBe(1);
   expect(r.output).toContain('"buy, then search" is less smooth than its baseline');
   expect(r.output).toContain('click on button#heavy');
@@ -153,9 +153,9 @@ test("a regression warns, or fails with enforce: 'fail'", () => {
 test('calibrating: measured, but not compared or recorded', () => {
   const r = run({
     CLICK_MS: '400',
-    SMOOTHNESS_ENFORCE: 'fail',
-    SMOOTHNESS_CALIBRATE: '1',
-    SMOOTHNESS_RECORD: '1',
+    BUTTER_ENFORCE: 'fail',
+    BUTTER_CALIBRATE: '1',
+    BUTTER_RECORD: '1',
   });
   expect(r.code, r.output).toBe(0);
   expect(buy(r).comparison!.notes).toEqual(['Calibrating: not compared.']);
@@ -171,7 +171,7 @@ test('full mode and CPU throttling in the options', () => {
 
 test('editing the spec file resets its history instead of failing', () => {
   appendFileSync(join(project, 'app.spec.ts'), '\n// An edit.\n');
-  const r = run({ CLICK_MS: '400', SMOOTHNESS_ENFORCE: 'fail', SMOOTHNESS_RECORD: '1' });
+  const r = run({ CLICK_MS: '400', BUTTER_ENFORCE: 'fail', BUTTER_RECORD: '1' });
   expect(r.code, r.output).toBe(0);
   expect(buy(r).comparison!.status).toBe('not-compared');
   expect(buy(r).comparison!.notes.join(' ')).toMatch(/spec file changed/);
@@ -180,8 +180,8 @@ test('editing the spec file resets its history instead of failing', () => {
 
 test('historyDir and record options', () => {
   const custom = join(project, 'custom-history');
-  // record: false wins over SMOOTHNESS_RECORD=1
-  run({ HISTORY_DIR: 'custom-history', RECORD: 'no', SMOOTHNESS_RECORD: '1' });
+  // record: false wins over BUTTER_RECORD=1
+  run({ HISTORY_DIR: 'custom-history', RECORD: 'no', BUTTER_RECORD: '1' });
   expect(files(custom, '.json')).toEqual([]);
   // record: true records without any main-branch or environment signal
   const r = run({ HISTORY_DIR: 'custom-history', RECORD: 'yes' });
