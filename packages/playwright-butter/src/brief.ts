@@ -1,7 +1,7 @@
 import type { TestInfo } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
 import { relative } from 'node:path';
-import { formatBrief, forwardSlashes, needsBrief, type SmoothnessResult } from 'butter-churn';
+import { formatBrief, forwardSlashes, needsBrief, type ButterResult } from 'butter-churn';
 
 const quote = (s: string) => (/^[\w./:@=-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`);
 
@@ -15,7 +15,7 @@ export async function writeBrief(
   testInfo: TestInfo,
   label: string,
   resultFile: string,
-  result: SmoothnessResult,
+  result: ButterResult,
   comparison = result.comparison,
 ) {
   if (!comparison || !needsBrief(comparison)) return;

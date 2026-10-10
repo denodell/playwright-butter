@@ -53,7 +53,7 @@ import {
   type LoafRecord,
   type ResolvedOptions,
   type ScrollRecord,
-  type SmoothnessResult,
+  type ButterResult,
   type StreamBatch,
   NameResolver,
   resolveScripts,
@@ -61,9 +61,9 @@ import {
 import { resultDir, testOf } from './testinfo.js';
 import { writeBrief } from './brief.js';
 import { browserEnvironment, contextFetcher } from './driver.js';
-import { butterFixtures, type SmoothnessFixtures, type SmoothnessOptions } from './fixture.js';
+import { butterFixtures, type ButterFixtures, type ButterOptions } from './fixture.js';
 
-export interface AutoOptions extends SmoothnessOptions {
+export interface AutoOptions extends ButterOptions {
   /** Measure every test automatically. */
   auto: true;
   /** How many recent main-branch runs each test's history keeps. Default 10. */
@@ -294,7 +294,7 @@ function autoResult(
   label: string,
   environment: BrowserEnvironment,
   resolved: ResolvedOptions,
-): SmoothnessResult {
+): ButterResult {
   const { interactions, frames, classes, errors, unmeasured } = analyzeDocs(docs);
   const count = (k: FrameClass) => classes.filter((c) => c === k).length;
   return {
@@ -363,7 +363,7 @@ interface TestHistory {
 function readTestHistory(
   testInfo: TestInfo,
   label: string,
-  result: SmoothnessResult,
+  result: ButterResult,
   historyDir: string | undefined,
 ): TestHistory {
   // Relative paths are relative to the config file's folder, whatever directory the run started in.
@@ -391,7 +391,7 @@ function readTestHistory(
  * `minHistory` of them. Not compared while calibrating.
  */
 function compareWithHistory(
-  result: SmoothnessResult,
+  result: ButterResult,
   h: TestHistory,
   resolved: ResolvedOptions,
   calibrating: boolean,
@@ -439,7 +439,7 @@ function compareWithHistory(
 function addToHistory(
   h: TestHistory,
   label: string,
-  result: SmoothnessResult,
+  result: ButterResult,
   history: number,
   comparison: Comparison,
 ): void {
@@ -468,7 +468,7 @@ function addToHistory(
 async function reportResult(
   testInfo: TestInfo,
   label: string,
-  result: SmoothnessResult,
+  result: ButterResult,
   comparison: Comparison,
 ): Promise<void> {
   result.test = testOf(testInfo);
@@ -497,7 +497,7 @@ async function reportResult(
 export function withButter<T extends object, W extends object>(
   base: TestType<T, W>,
   options: AutoOptions,
-): TestType<T & SmoothnessFixtures, W> {
+): TestType<T & ButterFixtures, W> {
   const {
     auto: _auto,
     history = DEFAULT_HISTORY,
@@ -511,7 +511,7 @@ export function withButter<T extends object, W extends object>(
     PlaywrightTestArgs & PlaywrightTestOptions,
     PlaywrightWorkerArgs & PlaywrightWorkerOptions
   >;
-  const extended = b.extend<SmoothnessFixtures & { _butterAuto: void }>({
+  const extended = b.extend<ButterFixtures & { _butterAuto: void }>({
     ...butterFixtures,
     _butterAuto: [
       async ({ context, browser, butterOptions }, use, testInfo) => {
@@ -590,5 +590,5 @@ export function withButter<T extends object, W extends object>(
       { auto: true },
     ],
   });
-  return extended as unknown as TestType<T & SmoothnessFixtures, W>;
+  return extended as unknown as TestType<T & ButterFixtures, W>;
 }

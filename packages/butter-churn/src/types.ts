@@ -1,7 +1,7 @@
 // Public types: options and the versioned result (schemaVersion 1).
 
 /** How much to measure. */
-export type SmoothnessMode = 'quick' | 'full';
+export type ButterMode = 'quick' | 'full';
 
 /** When full mode attaches a video replay. */
 export type ReplayMode = 'on-regression' | 'on' | 'off';
@@ -34,13 +34,13 @@ export interface ListOptions {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface SmoothnessOptions<P = any> {
+export interface ButterOptions<P = any> {
   /**
    * `'quick'` measures with Event Timing and Long Animation Frames. `'full'` adds a Chrome
    * trace and screenshots. Default: `BUTTER_MODE` if set, `'full'` on scheduled CI runs,
    * otherwise `'quick'` (see docs/mode-detection.md).
    */
-  mode?: SmoothnessMode;
+  mode?: ButterMode;
   /** Measured runs. The median is reported. One extra warm-up run is made first and discarded. Default 5. */
   runs?: number;
   /** CPU slowdown applied with `Emulation.setCPUThrottlingRate`. 1 disables it. Default 4. */
@@ -74,7 +74,7 @@ export interface SmoothnessOptions<P = any> {
 /** Options after defaults are applied, plus where `mode` came from. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ResolvedOptions<P = any> {
-  mode: SmoothnessMode;
+  mode: ButterMode;
   modeSource: string;
   runs: number;
   cpuThrottling: number;
@@ -233,11 +233,11 @@ export interface Spread {
   max: number;
 }
 
-export interface SmoothnessResult {
+export interface ButterResult {
   schemaVersion: 1;
   label: string;
   test?: { title: string; file: string; project: string };
-  mode: SmoothnessMode;
+  mode: ButterMode;
   /** Measured runs (the warm-up isn't counted). */
   runs: number;
   browserName: string;
@@ -353,7 +353,7 @@ export interface BaselineInfo {
   source: 'baselineDir' | 'snapshot' | 'history';
   recordedAt: string;
   browserVersion: string;
-  machine: SmoothnessResult['machine'];
+  machine: ButterResult['machine'];
 }
 
 export interface Budget {

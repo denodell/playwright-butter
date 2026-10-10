@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import type { SmoothnessResult } from '../../packages/butter-churn/src/types.js';
+import type { ButterResult } from '../../packages/butter-churn/src/types.js';
 import type { HistoryFile } from '../../packages/butter-churn/src/auto/history.js';
 import { files, PLAYWRIGHT_CLI } from './helpers.js';
 
@@ -51,7 +51,7 @@ function run(env: Record<string, string> = {}) {
   const output = `${child.stdout}\n${child.stderr}`;
   test.info().attach(`run ${JSON.stringify(env)}`, { body: output, contentType: 'text/plain' });
   const results = files(join(project, 'test-results', 'butter'), 'auto.json').map(
-    (f) => JSON.parse(readFileSync(f, 'utf8')) as SmoothnessResult,
+    (f) => JSON.parse(readFileSync(f, 'utf8')) as ButterResult,
   );
   const histories = files(join(project, 'node_modules/.cache/playwright-butter/history'), '.json').map(
     (f) => JSON.parse(readFileSync(f, 'utf8')) as HistoryFile,

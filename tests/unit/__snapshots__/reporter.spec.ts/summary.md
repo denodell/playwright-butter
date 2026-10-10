@@ -40,8 +40,8 @@ Scripts blocking the interaction:
 ### Not measured, not compared, or new
 
 - catalogue › "fast scroll" [chromium]: new baseline recorded (chromium, full mode, AMD EPYC 7763 64-Core Processor)
-- catalogue › "fast scroll" [firefox]: input unavailable: smoothness is measured in Chromium only; this is firefox
-- catalogue › "fast scroll" [firefox]: longFrames unavailable: smoothness is measured in Chromium only; this is firefox
+- catalogue › "fast scroll" [firefox]: input unavailable: playwright-butter measures in Chromium only; this is firefox
+- catalogue › "fast scroll" [firefox]: longFrames unavailable: playwright-butter measures in Chromium only; this is firefox
 - catalogue › "fast scroll" [firefox]: not compared: Nothing was measured: Chromium only.
 - menu › "open menu" [chromium]: not compared, because `toBeSmooth()` wasn't called
 

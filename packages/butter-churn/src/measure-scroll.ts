@@ -13,7 +13,7 @@ import {
   scrollPosition,
   type ResolvedScroll,
 } from './scroll.js';
-import type { SmoothnessResult } from './types.js';
+import type { ButterResult } from './types.js';
 
 /**
  * Scrolls a list (or the page) once as a warm-up and then `runs` more times, and measures it:
@@ -24,7 +24,7 @@ export async function measureScroll(
   ctx: MeasureContext,
   target: ElementTarget,
   s: ResolvedScroll,
-): Promise<SmoothnessResult> {
+): Promise<ButterResult> {
   const { page } = ctx;
   const done: Awaited<ReturnType<typeof performScroll>>[] = [];
   const cdp = await page.cdp();
@@ -78,7 +78,7 @@ export async function measureScroll(
 
 /** Adds how far the runs scrolled to the result, and what that means for its list numbers. */
 function describeScroll(
-  result: SmoothnessResult,
+  result: ButterResult,
   measured: Awaited<ReturnType<typeof performScroll>>[],
   s: ResolvedScroll,
   ctx: MeasureContext,

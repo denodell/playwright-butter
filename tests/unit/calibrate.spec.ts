@@ -4,11 +4,11 @@ import {
   stepAbove,
   formatCalibration,
 } from '../../packages/butter-churn/src/calibrate/analyze.js';
-import type { SmoothnessResult } from '../../packages/butter-churn/src/types.js';
+import type { ButterResult } from '../../packages/butter-churn/src/types.js';
 import { makeResult } from './result-factory.js';
 
 const run = (p95: number, count: number, extra: Parameters<typeof makeResult>[0] = {}) =>
-  new Map<string, SmoothnessResult>([
+  new Map<string, ButterResult>([
     [
       'checkout-1a2b/pay.json',
       makeResult({ label: 'pay', input: { p95ToPaintMs: p95 }, longFrames: { count }, ...extra }),

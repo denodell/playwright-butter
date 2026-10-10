@@ -1,9 +1,9 @@
 ---
 name: playwright-butter
-description: Fix a smoothness regression caught by playwright-butter, such as a fix brief (a .fix.md file or a "Fix brief" pasted from a pull request), a toBeSmooth() failure or butter-warning, slow input-to-paint, long animation frames, dropped frames, or blank frames in a scrolled list. Use it when asked to make an interaction, scroll, animation or drag smooth again.
+description: Fix a regression caught by playwright-butter, where scrolling or an interaction got less smooth, such as a fix brief (a .fix.md file or a "Fix brief" pasted from a pull request), a toBeSmooth() failure or butter-warning, slow input-to-paint, long animation frames, dropped frames, or blank frames in a scrolled list. Use it when asked to make an interaction, scroll, animation or drag smooth again.
 ---
 
-# Fix a smoothness regression
+# Fix a playwright-butter regression
 
 playwright-butter measures an interaction or a scroll in Chromium and compares it with a baseline. When a check gets worse, it writes a fix brief: what got worse, the code behind it, and the commands to check a fix. This skill turns a brief into a fix and proves the fix worked.
 

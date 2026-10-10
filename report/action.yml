@@ -1,5 +1,5 @@
 name: playwright-butter report
-description: 'Goes after your Playwright step, with `if: always()`. Writes the smoothness summary, comments on pull requests, and on main publishes the recorded baselines.'
+description: 'Goes after your Playwright step, with `if: always()`. Writes the butter summary, comments on pull requests, and on main publishes the recorded baselines.'
 author: Den Odell
 
 inputs:

@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, expect, withButter } from '../../packages/playwright-butter/src/index.js';
-import type { SmoothnessResult } from '../../packages/butter-churn/src/types.js';
+import type { ButterResult } from '../../packages/butter-churn/src/types.js';
 
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(120_000);
@@ -12,14 +12,14 @@ test.setTimeout(120_000);
 const history = mkdtempSync(join(tmpdir(), 'butter-fixture-edges-'));
 test.afterAll(() => rmSync(history, { recursive: true, force: true }));
 
-function resultsLabelled(label: string): SmoothnessResult[] {
-  const out: SmoothnessResult[] = [];
+function resultsLabelled(label: string): ButterResult[] {
+  const out: ButterResult[] = [];
   const walk = (dir: string) => {
     for (const f of readdirSync(dir)) {
       const p = join(dir, f);
       if (statSync(p).isDirectory()) walk(p);
       else if (p.endsWith('.json')) {
-        const r = JSON.parse(readFileSync(p, 'utf8')) as SmoothnessResult;
+        const r = JSON.parse(readFileSync(p, 'utf8')) as ButterResult;
         if (r.label === label) out.push(r);
       }
     }
@@ -74,7 +74,7 @@ noBrowser('a context with no Browser is not measured or compared', async ({ page
   await page.goto('/click.html?ms=20');
   const r = await butter.measure('click', () => page.click('#heavy'));
   expect(r.runs).toBe(0);
-  expect(r.unavailable[0]!.reason).toBe('smoothness is measured in Chromium only; this is unknown');
+  expect(r.unavailable[0]!.reason).toBe('playwright-butter measures in Chromium only; this is unknown');
   expect(r).toBeSmooth();
   expect(test.info().annotations.map((a) => a.type)).toEqual(
     expect.arrayContaining(['butter-skipped', 'butter-not-compared']),
@@ -90,10 +90,8 @@ test('a label used twice in one test throws', async ({ page, butter }) => {
 });
 
 test('toBeSmooth() needs a result, and has no .not', () => {
-  expect(() => expect({} as SmoothnessResult).toBeSmooth()).toThrow(/expects a result from butter/);
-  expect(() => expect({} as SmoothnessResult).not.toBeSmooth()).toThrow(
-    /not\.toBeSmooth\(\) is not supported/,
-  );
+  expect(() => expect({} as ButterResult).toBeSmooth()).toThrow(/expects a result from butter/);
+  expect(() => expect({} as ButterResult).not.toBeSmooth()).toThrow(/not\.toBeSmooth\(\) is not supported/);
 });
 
 const preexposed = withButter(

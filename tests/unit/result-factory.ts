@@ -1,4 +1,4 @@
-import type { SmoothnessResult } from '../../packages/butter-churn/src/types.js';
+import type { ButterResult } from '../../packages/butter-churn/src/types.js';
 
 type DeepPartial<T> = {
   [K in keyof T]?: NonNullable<T[K]> extends unknown[]
@@ -9,8 +9,8 @@ type DeepPartial<T> = {
 };
 
 /** A realistic quick-mode result, with overrides. */
-export function makeResult(overrides: DeepPartial<SmoothnessResult> = {}): SmoothnessResult {
-  const base: SmoothnessResult = {
+export function makeResult(overrides: DeepPartial<ButterResult> = {}): ButterResult {
+  const base: ButterResult = {
     schemaVersion: 1,
     label: 'open filters',
     mode: 'quick',
@@ -59,7 +59,7 @@ export function makeResult(overrides: DeepPartial<SmoothnessResult> = {}): Smoot
     unavailable: [],
     notes: [],
   };
-  return merge(base, overrides) as SmoothnessResult;
+  return merge(base, overrides) as ButterResult;
 }
 
 function merge(a: unknown, b: unknown): unknown {

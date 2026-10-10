@@ -26,7 +26,7 @@ import {
   formatCalibration,
   forwardSlashes,
   type ReportEntry,
-  type SmoothnessResult,
+  type ButterResult,
 } from 'butter-churn';
 import { PACKAGE_NAME } from './constants.js';
 import { SKILL_DIRS, initAgents } from './init-agents.js';
@@ -45,7 +45,7 @@ Run a command with --help for its options.
 const CALIBRATE_HELP = `Usage: npx ${PACKAGE_NAME} calibrate [options] [-- <playwright test arguments>]
 
 Runs your Playwright suite several times on unchanged code, and prints how much each
-smoothness check varies between runs, with a suggested maxIncrease for each.
+check varies between runs, with a suggested maxIncrease for each.
 
 Options:
   --runs <n>     How many times to run the suite (default 5, at least 2)
@@ -80,14 +80,14 @@ function latestAttempts(files: string[]): string[] {
   return [...latest.values()].flatMap(({ files }) => files.sort());
 }
 
-function collect(outputDir: string): Map<string, SmoothnessResult> {
+function collect(outputDir: string): Map<string, ButterResult> {
   const root = join(outputDir, 'butter');
-  const results = new Map<string, SmoothnessResult>();
+  const results = new Map<string, ButterResult>();
   for (const file of jsonFiles(root)) {
     const id = forwardSlashes(relative(root, file));
     if (/-retry\d+\//.test(id)) continue; // a retry is a different attempt, not another sample
     try {
-      const r = JSON.parse(readFileSync(file, 'utf8')) as SmoothnessResult;
+      const r = JSON.parse(readFileSync(file, 'utf8')) as ButterResult;
       if (r.schemaVersion === 1) results.set(id, r);
     } catch {
       // unreadable file: skipped
@@ -113,7 +113,7 @@ export function readResults(results: string): ReportEntry[] {
   const entries: ReportEntry[] = [];
   for (const file of latestAttempts(jsonFiles(join(results, 'butter')))) {
     try {
-      const r = JSON.parse(readFileSync(file, 'utf8')) as SmoothnessResult;
+      const r = JSON.parse(readFileSync(file, 'utf8')) as ButterResult;
       if (r.schemaVersion !== 1 || typeof r.label !== 'string') continue;
       entries.push({
         test: r.test?.title ?? basename(dirname(file)),
@@ -147,7 +147,7 @@ export function collectBriefs(results: string): string {
   const head =
     briefs.length === 1
       ? ''
-      : `# ${briefs.length} smoothness checks to fix\n\nEach section is one check. Fix and re-run them one at a time.\n\n`;
+      : `# ${briefs.length} butter checks to fix\n\nEach section is one check. Fix and re-run them one at a time.\n\n`;
   return (
     head +
     briefs
@@ -174,7 +174,7 @@ function brief(args: string[]): number {
   }
   const md = collectBriefs(values.results!);
   if (!md) {
-    console.error('No fix briefs: no smoothness check got worse or missed its budget in the last run.');
+    console.error('No fix briefs: no butter check got worse or missed its budget in the last run.');
     return 0;
   }
   if (values.out) {
@@ -292,7 +292,7 @@ export function main(argv: string[]): number {
     return 1;
   }
   const work = mkdtempSync(join(tmpdir(), 'butter-calibrate-'));
-  const collected: Map<string, SmoothnessResult>[] = [];
+  const collected: Map<string, ButterResult>[] = [];
   try {
     for (let i = 1; i <= runs; i++) {
       const outputDir = join(work, `run-${i}`);
@@ -311,8 +311,8 @@ export function main(argv: string[]): number {
       }
       const results = collect(outputDir);
       if (child.status !== 0)
-        console.warn(`  Run ${i}: some tests failed; their smoothness results are still used.`);
-      console.log(`  ${results.size} smoothness result(s)`);
+        console.warn(`  Run ${i}: some tests failed; their butter results are still used.`);
+      console.log(`  ${results.size} butter result(s)`);
       collected.push(results);
     }
   } finally {

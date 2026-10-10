@@ -1,9 +1,9 @@
-// playwright-butter/reporter: writes a markdown summary of every smoothness result.
+// playwright-butter/reporter: writes a markdown summary of every butter result.
 //
 //   reporter: [['list'], ['playwright-butter/reporter', { outputFile: 'butter.md' }]]
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import { buildMarkdown, forwardSlashes, type ReportEntry, type SmoothnessResult } from 'butter-churn';
+import { buildMarkdown, forwardSlashes, type ReportEntry, type ButterResult } from 'butter-churn';
 import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 
 export interface ButterReporterOptions {
@@ -36,7 +36,7 @@ export default class ButterReporter implements Reporter {
     for (const a of result.attachments) {
       if (!a.name.startsWith(ATTACHMENT_PREFIX) || !a.path || !existsSync(a.path)) continue;
       try {
-        const r = JSON.parse(readFileSync(a.path, 'utf8')) as SmoothnessResult;
+        const r = JSON.parse(readFileSync(a.path, 'utf8')) as ButterResult;
         if (r.schemaVersion !== 1) continue;
         this.entries.push({
           test: test.titlePath().slice(3).join(' › ') || test.title,

@@ -1,5 +1,5 @@
 import { isAbsolute, relative } from 'node:path';
-import type { BudgetCheck, Check, Comparison, SmoothnessResult } from '../types.js';
+import type { BudgetCheck, Check, Comparison, ButterResult } from '../types.js';
 import { round1 } from '../analysis/stats.js';
 import { forwardSlashes } from '../output.js';
 import { formatChange, formatValue, limitText, missedBudget } from './message.js';
@@ -52,7 +52,7 @@ function budgetLine(b: BudgetCheck): string {
   return `- ${b.name}: ${formatValue(b.current, b.unit)}, budget ${limitText(b)}`;
 }
 
-export function formatBrief(result: SmoothnessResult, comparison: Comparison, ctx: BriefContext): string {
+export function formatBrief(result: ButterResult, comparison: Comparison, ctx: BriefContext): string {
   const cwd = ctx.cwd ?? process.cwd();
   const worse = comparison.checks.filter((c) => c.status === 'worse');
   const missed = missedBudget(comparison);

@@ -1,4 +1,4 @@
-import type { ResolvedOptions, SmoothnessMode, SmoothnessOptions } from './types.js';
+import type { ResolvedOptions, ButterMode, ButterOptions } from './types.js';
 
 const DEFAULT_RUNS = 5;
 const DEFAULT_CPU_THROTTLING = 4;
@@ -23,10 +23,7 @@ const SCHEDULED_CI: { provider: string; variable: string; matches: (value: strin
 ];
 
 /** Picks the mode and says which rule chose it. */
-export function detectMode(
-  explicit: SmoothnessMode | undefined,
-  env: Env,
-): { mode: SmoothnessMode; source: string } {
+export function detectMode(explicit: ButterMode | undefined, env: Env): { mode: ButterMode; source: string } {
   if (explicit) return { mode: explicit, source: 'option' };
   const fromEnv = env.BUTTER_MODE?.trim().toLowerCase();
   if (fromEnv === 'quick' || fromEnv === 'full') return { mode: fromEnv, source: 'BUTTER_MODE' };
@@ -45,10 +42,10 @@ export function detectMode(
 /** Applies defaults and validates. Later sources override earlier ones. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function resolveOptions<P = any>(
-  sources: (SmoothnessOptions<P> | undefined)[],
+  sources: (ButterOptions<P> | undefined)[],
   env: Env = process.env,
 ): ResolvedOptions<P> {
-  const o: SmoothnessOptions<P> = Object.assign({}, ...sources.filter(Boolean));
+  const o: ButterOptions<P> = Object.assign({}, ...sources.filter(Boolean));
   const { mode, source } = detectMode(o.mode, env);
   const runs = o.runs ?? DEFAULT_RUNS;
   if (!Number.isInteger(runs) || runs < 1)

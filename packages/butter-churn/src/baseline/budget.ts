@@ -1,4 +1,4 @@
-import type { Budget, BudgetCheck, SmoothnessResult } from '../types.js';
+import type { Budget, BudgetCheck, ButterResult } from '../types.js';
 
 interface BudgetDef {
   key: keyof Budget;
@@ -7,7 +7,7 @@ interface BudgetDef {
   unit: BudgetCheck['unit'];
   kind: BudgetCheck['kind'];
   source: string;
-  read: (r: SmoothnessResult) => number | null | undefined;
+  read: (r: ButterResult) => number | null | undefined;
   fullOnly?: boolean;
 }
 
@@ -71,7 +71,7 @@ export function validateBudget(budget: Budget): void {
   }
 }
 
-export function checkBudget(result: SmoothnessResult, budget: Budget): BudgetCheck[] {
+export function checkBudget(result: ButterResult, budget: Budget): BudgetCheck[] {
   validateBudget(budget);
   const checks: BudgetCheck[] = [];
   for (const d of DEFS) {

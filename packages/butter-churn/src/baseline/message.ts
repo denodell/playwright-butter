@@ -1,5 +1,5 @@
 import { isAbsolute, relative } from 'node:path';
-import type { BudgetCheck, Check, Comparison, HotFunction, SmoothnessResult, TopScript } from '../types.js';
+import type { BudgetCheck, Check, Comparison, HotFunction, ButterResult, TopScript } from '../types.js';
 import { TOOL_NAME } from '../constants.js';
 import { EVENT_TIMING_MIN_MS } from './compare.js';
 import { round1 } from '../analysis/stats.js';
@@ -87,7 +87,7 @@ export function table(rows: string[][]): string[] {
  * The toBeSmooth() message. Leads with what got worse and which scripts were responsible,
  * then the numbers.
  */
-export function formatMessage(result: SmoothnessResult, comparison: Comparison, cwd = process.cwd()): string {
+export function formatMessage(result: ButterResult, comparison: Comparison, cwd = process.cwd()): string {
   const lines: string[] = [];
   const worse = comparison.checks.filter((c) => c.status === 'worse');
   const missed = missedBudget(comparison);
@@ -215,7 +215,7 @@ export function formatMessage(result: SmoothnessResult, comparison: Comparison, 
 }
 
 /** One line for annotations and GitHub warnings. */
-export function formatSummary(result: SmoothnessResult, comparison: Comparison): string {
+export function formatSummary(result: ButterResult, comparison: Comparison): string {
   const worse = comparison.checks.filter((c) => c.status === 'worse');
   const missed = missedBudget(comparison);
   if (!worse.length && !missed.length) return `"${result.label}": ${comparison.status}`;

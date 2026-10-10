@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
-import type { BaselineInfo, SmoothnessResult, Spread } from '../types.js';
+import type { BaselineInfo, ButterResult, Spread } from '../types.js';
 import { TOOL_NAME } from '../constants.js';
 import { baselineFileName, baselinePrefix, sameKey, type BaselineKey } from './key.js';
 import { metricsOf, type BaselineMetrics } from './compare.js';
@@ -15,7 +15,7 @@ export interface BaselineFile {
   key: BaselineKey;
   recordedAt: string;
   browserVersion: string;
-  machine: SmoothnessResult['machine'];
+  machine: ButterResult['machine'];
   runs: number;
   metrics: BaselineMetrics;
   spread: Record<string, Spread>;
@@ -141,7 +141,7 @@ export function loadBaseline(key: BaselineKey, where: BaselineLocation): LoadOut
 }
 
 /** Writes the baseline atomically (write then rename), so a crash can't leave half a file. */
-export function writeBaseline(path: string, key: BaselineKey, result: SmoothnessResult): BaselineInfo {
+export function writeBaseline(path: string, key: BaselineKey, result: ButterResult): BaselineInfo {
   const file: BaselineFile = {
     schemaVersion: 1,
     kind: BASELINE_KIND,

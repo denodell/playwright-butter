@@ -4,11 +4,11 @@ import type { ResetStrategy as CoreResetStrategy } from 'butter-churn';
 export { test } from './fixture.js';
 export { withButter } from './withButter.js';
 export type { AutoOptions } from './withButter.js';
-export type { ButterTestOptions, Smoothness, SmoothnessFixtures, SmoothnessOptions } from './fixture.js';
+export type { Butter, ButterFixtures, ButterTestOptions, ButterOptions } from './fixture.js';
 export { expect } from './matcher.js';
 export { PACKAGE_NAME } from './constants.js';
 export { SCHEMA_VERSION } from 'butter-churn';
-// The result and option types, from the engine. SmoothnessOptions and ResetStrategy are the
+// The result and option types, from the engine. ButterOptions and ResetStrategy are the
 // Playwright forms, which pass a Playwright Page to a reset function.
 export type {
   BaselineInfo,
@@ -33,8 +33,8 @@ export type {
   ReplayMode,
   ResolvedOptions,
   ScrollOptions,
-  SmoothnessMode,
-  SmoothnessResult,
+  ButterMode,
+  ButterResult,
   Spread,
   TargetTiming,
   TopScript,

@@ -6,7 +6,7 @@ import {
   type ReportEntry,
 } from '../../packages/butter-churn/src/reporter/markdown.js';
 import { compareMetrics, metricsOf } from '../../packages/butter-churn/src/baseline/compare.js';
-import type { Comparison, SmoothnessResult } from '../../packages/butter-churn/src/types.js';
+import type { Comparison, ButterResult } from '../../packages/butter-churn/src/types.js';
 import { makeResult } from './result-factory.js';
 
 const baseline = {
@@ -17,11 +17,7 @@ const baseline = {
   machine: { cpuModel: 'AMD EPYC 7763 64-Core Processor', cpus: 4, platform: 'linux' },
 };
 
-function compared(
-  r: SmoothnessResult,
-  before: SmoothnessResult,
-  status: Comparison['status'],
-): SmoothnessResult {
+function compared(r: ButterResult, before: ButterResult, status: Comparison['status']): ButterResult {
   return {
     ...r,
     comparison: {
@@ -33,7 +29,7 @@ function compared(
   };
 }
 
-const entry = (test: string, result: SmoothnessResult, project = 'chromium'): ReportEntry => ({
+const entry = (test: string, result: ButterResult, project = 'chromium'): ReportEntry => ({
   test,
   file: 'tests/app.spec.ts',
   project,
@@ -87,8 +83,11 @@ test('summary: a mix of results', () => {
           browserVersion: '145.0',
         }),
         unavailable: [
-          { measurement: 'input', reason: 'smoothness is measured in Chromium only; this is firefox' },
-          { measurement: 'longFrames', reason: 'smoothness is measured in Chromium only; this is firefox' },
+          { measurement: 'input', reason: 'playwright-butter measures in Chromium only; this is firefox' },
+          {
+            measurement: 'longFrames',
+            reason: 'playwright-butter measures in Chromium only; this is firefox',
+          },
         ],
         comparison: {
           status: 'not-compared',
@@ -121,7 +120,7 @@ test('summary: re-recorded baselines are counted as such, not as within baseline
 
 test('summary: nothing ran', () => {
   expect(buildMarkdown([])).toBe(
-    '## Butter\n\nNo smoothness measurements ran. Results come from `butter.measure()` and `butter.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withButter()`.\n',
+    '## Butter\n\nNothing was measured. Results come from `butter.measure()` and `butter.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withButter()`.\n',
   );
 });
 

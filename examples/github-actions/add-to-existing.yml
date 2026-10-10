@@ -1,4 +1,4 @@
-# The smoothness steps added to a Playwright workflow you already have. Explained in docs/ci.md.
+# The playwright-butter steps added to a Playwright workflow you already have. Explained in docs/ci.md.
 #
 # - Pull requests: compared with baselines from main, summary as a comment.
 # - Pushes to main: compared with the previous baselines, then re-recorded and published.

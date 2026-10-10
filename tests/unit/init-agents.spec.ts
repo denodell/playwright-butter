@@ -15,7 +15,7 @@ test('the shipped skill has the frontmatter agents read, and its recipes link re
 
 test('AGENTS.md: created, appended to, and replaced in place on a second run', () => {
   const fresh = updateAgentsMd(null, SKILL);
-  expect(fresh).toContain('## Smoothness checks');
+  expect(fresh).toContain('## Butter checks');
   expect(fresh).toContain(SKILL);
 
   const appended = updateAgentsMd('# Project\n\nUse pnpm.\n', SKILL);

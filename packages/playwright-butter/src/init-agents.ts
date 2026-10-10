@@ -22,7 +22,7 @@ export interface InitAgentsOptions {
 function agentsBlock(skillPath: string): string {
   return [
     START,
-    '## Smoothness checks',
+    '## Butter checks',
     '',
     `This project checks that interactions and scrolling stay smooth with ${PACKAGE_NAME}. To fix a check that got worse, such as a fix brief, a \`.fix.md\` file or a \`toBeSmooth()\` failure, follow \`${skillPath}\`.`,
     END,

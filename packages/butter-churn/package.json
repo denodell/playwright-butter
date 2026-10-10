@@ -1,7 +1,7 @@
 {
   "name": "butter-churn",
   "version": "1.0.0",
-  "description": "The measuring engine behind playwright-butter: frame, input and long-list smoothness checks in Chromium, driven through a small adapter interface.",
+  "description": "The measuring engine behind playwright-butter: frame, input and long-list checks in Chromium, driven through a small adapter interface.",
   "license": "MIT",
   "author": "Den Odell",
   "repository": {

@@ -23,8 +23,8 @@ import {
   type MeasureContext,
   type PageDriver,
   type ScrollOptions,
-  type SmoothnessOptions as CoreOptions,
-  type SmoothnessResult,
+  type ButterOptions as CoreOptions,
+  type ButterResult,
 } from 'butter-churn';
 import { resultDir, testOf } from './testinfo.js';
 import { writeBrief } from './brief.js';
@@ -33,9 +33,9 @@ import { writeFileSync } from 'node:fs';
 import { locatorTarget, playwrightDriver } from './driver.js';
 
 /** Options for a measurement. A `reset` function is given the Playwright page. */
-export type SmoothnessOptions = CoreOptions<Page>;
+export type ButterOptions = CoreOptions<Page>;
 
-export interface Smoothness {
+export interface Butter {
   /**
    * Measures an interaction. `action` runs once as a warm-up and then `runs` more times,
    * with the page reset (reloaded, by default) and settled before each run. The label names
@@ -45,26 +45,26 @@ export interface Smoothness {
   measure(
     label: string,
     action: () => Promise<void>,
-    options?: SmoothnessOptions & { page?: Page },
-  ): Promise<SmoothnessResult>;
+    options?: ButterOptions & { page?: Page },
+  ): Promise<ButterResult>;
   /**
    * Scrolls a list (or the page) and measures it: long frames and input in quick mode, plus
    * dropped frames and blank rows from trace screenshots in full mode. Each run reloads the page,
    * so the list starts from the top. The page is the locator's own.
    */
-  scroll(target: Locator, options?: ScrollOptions & SmoothnessOptions): Promise<SmoothnessResult>;
+  scroll(target: Locator, options?: ScrollOptions & ButterOptions): Promise<ButterResult>;
 }
 
 /**
  * The option fixture on its own, for typing `playwright.config.ts`:
  * `defineConfig<ButterTestOptions>({ use: { butterOptions: { ... } } })`.
  */
-export type ButterTestOptions = Pick<SmoothnessFixtures, 'butterOptions'>;
+export type ButterTestOptions = Pick<ButterFixtures, 'butterOptions'>;
 
-export interface SmoothnessFixtures {
+export interface ButterFixtures {
   /** Options for every measurement in the test. Set with `test.use({ butterOptions: {...} })`. */
-  butterOptions: SmoothnessOptions;
-  butter: Smoothness;
+  butterOptions: ButterOptions;
+  butter: Butter;
 }
 
 function annotateOnce(testInfo: TestInfo, type: string, description: string): void {
@@ -78,13 +78,13 @@ function warn(testInfo: TestInfo, message: string): void {
   warnInGitHubActions(message, testInfo);
 }
 
-async function createSmoothness(
+async function createButter(
   page: Page,
   driver: PageDriver,
-  defaults: SmoothnessOptions,
+  defaults: ButterOptions,
   testInfo: TestInfo,
-  outputs: Map<string, { path: string; result: SmoothnessResult }>,
-): Promise<Smoothness> {
+  outputs: Map<string, { path: string; result: ButterResult }>,
+): Promise<Butter> {
   const environment = await driver.environment();
   if (environment.browserName === 'chromium' && environment.headlessMode === 'headless-shell') {
     warn(
@@ -107,18 +107,18 @@ async function createSmoothness(
   const record = async (
     label: string,
     target: Page,
-    overrides: SmoothnessOptions | undefined,
-    run: (ctx: MeasureContext) => Promise<SmoothnessResult>,
-  ): Promise<SmoothnessResult> => {
+    overrides: ButterOptions | undefined,
+    run: (ctx: MeasureContext) => Promise<ButterResult>,
+  ): Promise<ButterResult> => {
     if (outputs.has(label)) {
       throw new Error(
         `butter: the label "${label}" is already used in this test. Labels name baselines, so each must be unique.`,
       );
     }
     const options = resolveOptions([defaults, overrides]);
-    let result: SmoothnessResult;
+    let result: ButterResult;
     if (environment.browserName !== 'chromium') {
-      const reason = `smoothness is measured in Chromium only; this is ${environment.browserName}`;
+      const reason = `playwright-butter measures in Chromium only; this is ${environment.browserName}`;
       annotateOnce(testInfo, 'butter-skipped', `${label}: ${reason}`);
       result = emptyResult({ label, options, environment }, reason);
     } else {
@@ -166,7 +166,7 @@ async function attachReplay(
   testInfo: TestInfo,
   label: string,
   path: string,
-  result: SmoothnessResult,
+  result: ButterResult,
 ) {
   const source = takeReplaySource(result);
   if (!source) return;
@@ -188,17 +188,13 @@ async function attachReplay(
 }
 
 /** The fixture definitions, shared by `test` and `withButter()`. */
-export const butterFixtures: Fixtures<
-  SmoothnessFixtures,
-  object,
-  PlaywrightTestArgs & PlaywrightTestOptions
-> = {
+export const butterFixtures: Fixtures<ButterFixtures, object, PlaywrightTestArgs & PlaywrightTestOptions> = {
   butterOptions: [{}, { option: true }],
   butter: async ({ page, butterOptions }, use, testInfo) => {
     const driver = playwrightDriver(page);
     if (page.context().browser()?.browserType().name() === 'chromium') await preparePage(driver);
-    const outputs = new Map<string, { path: string; result: SmoothnessResult }>();
-    await use(await createSmoothness(page, driver, butterOptions, testInfo, outputs));
+    const outputs = new Map<string, { path: string; result: ButterResult }>();
+    await use(await createButter(page, driver, butterOptions, testInfo, outputs));
     // Attached after the test body, so each file includes toBeSmooth()'s comparison.
     for (const [label, { path, result }] of outputs) {
       await attachReplay(driver, testInfo, label, path, result);
@@ -208,4 +204,4 @@ export const butterFixtures: Fixtures<
   },
 };
 
-export const test = base.extend<SmoothnessFixtures>(butterFixtures);
+export const test = base.extend<ButterFixtures>(butterFixtures);

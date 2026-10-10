@@ -1,4 +1,4 @@
-import type { Budget, Comparison, Enforce, SmoothnessResult } from '../types.js';
+import type { Budget, Comparison, Enforce, ButterResult } from '../types.js';
 import { baselineKey } from './key.js';
 import { compareMetrics } from './compare.js';
 import { checkBudget, validateBudget } from './budget.js';
@@ -16,7 +16,7 @@ export interface MatcherOptions {
 
 /** Loads the baseline, compares, and creates or updates it as the target's update mode says. */
 export function evaluate(
-  result: SmoothnessResult,
+  result: ButterResult,
   target: BaselineTarget,
   overrides: MatcherOptions = {},
 ): Comparison {
@@ -29,12 +29,12 @@ export function evaluate(
 }
 
 function compareWithBaseline(
-  result: SmoothnessResult,
+  result: ButterResult,
   target: BaselineTarget,
   overrides: Omit<MatcherOptions, 'budget'>,
 ): Comparison {
   const settings = { ...result.settings, ...definedOnly(overrides) };
-  const effective: SmoothnessResult = { ...result, settings };
+  const effective: ButterResult = { ...result, settings };
   const notes: string[] = [];
 
   if (result.runs === 0) {

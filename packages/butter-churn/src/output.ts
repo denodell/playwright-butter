@@ -1,6 +1,6 @@
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
-import type { SmoothnessResult } from './types.js';
+import type { ButterResult } from './types.js';
 import { labelSlug } from './baseline/key.js';
 
 /** A path as shown to people: with forward slashes on every platform, as in Markdown and on GitHub. */
@@ -9,7 +9,7 @@ export function forwardSlashes(path: string): string {
 }
 
 /** Where each result's JSON was written, so toBeSmooth() can rewrite it with the comparison. */
-const written = new WeakMap<SmoothnessResult, string>();
+const written = new WeakMap<ButterResult, string>();
 
 /** A result's JSON file in the test's result folder: `<dir>/<label>.json`. */
 export function resultPath(dir: string, label: string): string {
@@ -24,11 +24,11 @@ export function writeJsonAtomic(path: string, data: unknown): void {
   renameSync(tmp, path);
 }
 
-export function writeResult(result: SmoothnessResult, path: string): void {
+export function writeResult(result: ButterResult, path: string): void {
   writeJsonAtomic(path, result);
   written.set(result, path);
 }
 
-export function writtenPath(result: SmoothnessResult): string | undefined {
+export function writtenPath(result: ButterResult): string | undefined {
   return written.get(result);
 }

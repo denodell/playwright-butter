@@ -213,7 +213,7 @@ function fakeInfo(
 test.describe('evaluate', () => {
   let dir: string;
   test.beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'smoothness-'));
+    dir = mkdtempSync(join(tmpdir(), 'butter-'));
   });
   test.afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -361,7 +361,7 @@ test.describe('evaluate', () => {
 });
 
 test('same label, different tests: separate baselines', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'smoothness-'));
+  const dir = mkdtempSync(join(tmpdir(), 'butter-'));
   try {
     const a = evaluate(makeResult(), fakeInfo(dir));
     const b = evaluate(

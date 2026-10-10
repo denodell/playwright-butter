@@ -1,7 +1,7 @@
 // The pull-request summary: every check's change against its baseline, the scripts behind
 // anything that got worse, and everything that couldn't be measured or compared.
 import { sep } from 'node:path';
-import type { BudgetCheck, Check, SmoothnessResult } from '../types.js';
+import type { BudgetCheck, Check, ButterResult } from '../types.js';
 import { TOOL_NAME } from '../constants.js';
 import {
   describeBudget,
@@ -18,7 +18,7 @@ export interface ReportEntry {
   test: string;
   file: string;
   project: string;
-  result: SmoothnessResult;
+  result: ButterResult;
 }
 
 /** How many scripts and profile functions to name for each check that got worse. */
@@ -34,7 +34,7 @@ export function changeCell(c: Check): string {
 
 type Status = 'worse' | 'ok' | 'new' | 'updated' | 'not compared';
 
-function statusOf(r: SmoothnessResult): Status {
+function statusOf(r: ButterResult): Status {
   const s = r.comparison?.status;
   if (s === 'fail' || s === 'warn' || (r.comparison && missedBudget(r.comparison).length)) return 'worse';
   if (s === 'pass') return 'ok';
@@ -58,7 +58,7 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Butter', cwd = pr
   const lines: string[] = [`## ${title}`, ''];
   if (entries.length === 0) {
     lines.push(
-      'No smoothness measurements ran. Results come from `butter.measure()` and `butter.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withButter()`.',
+      'Nothing was measured. Results come from `butter.measure()` and `butter.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withButter()`.',
     );
     return lines.join('\n') + '\n';
   }

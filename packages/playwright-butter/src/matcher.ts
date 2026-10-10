@@ -13,14 +13,12 @@ import {
   writeResult,
   writtenPath,
   type MatcherOptions,
-  type SmoothnessResult,
+  type ButterResult,
 } from 'butter-churn';
 import { baselineTarget, resultDir } from './testinfo.js';
 
-function isResult(v: unknown): v is SmoothnessResult {
-  return (
-    !!v && typeof v === 'object' && (v as SmoothnessResult).schemaVersion === SCHEMA_VERSION && 'label' in v
-  );
+function isResult(v: unknown): v is ButterResult {
+  return !!v && typeof v === 'object' && (v as ButterResult).schemaVersion === SCHEMA_VERSION && 'label' in v;
 }
 
 export const expect = baseExpect.extend({
@@ -29,7 +27,7 @@ export const expect = baseExpect.extend({
    * `enforce: 'fail'` a regression fails the test; with `'warn'` (the default) it adds an
    * annotation and, in GitHub Actions, a `::warning` on the pull request.
    */
-  toBeSmooth(received: SmoothnessResult, options?: MatcherOptions) {
+  toBeSmooth(received: ButterResult, options?: MatcherOptions) {
     if (this.isNot) {
       throw new Error('expect(result).not.toBeSmooth() is not supported. Use toBeSmooth() with a baseline.');
     }

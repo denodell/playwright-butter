@@ -6,7 +6,7 @@
 #
 # Needs the reporter in playwright.config.ts: reporter: [['list'], ['playwright-butter/reporter']]
 # and butterOptions: { baselineDir: process.env.BUTTER_BASELINE_DIR }.
-name: Smoothness
+name: Butter
 on:
   push:
     branches: [main]

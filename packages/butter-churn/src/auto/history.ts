@@ -3,7 +3,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Check, SmoothnessResult } from '../types.js';
+import type { Check, ButterResult } from '../types.js';
 import { METRICS, metricsOf, type BaselineMetrics } from '../baseline/compare.js';
 import { median } from '../analysis/stats.js';
 import { writeJsonAtomic } from '../output.js';
@@ -42,7 +42,7 @@ export function historyPath(
   specRelative: string,
   test: string,
   project: string,
-  result: SmoothnessResult,
+  result: ButterResult,
 ): string {
   const name = [
     slug(test, 80),
@@ -90,7 +90,7 @@ export function appendHistory(
   path: string,
   base: Omit<HistoryFile, 'entries' | 'schemaVersion' | 'kind'>,
   previous: HistoryEntry[],
-  result: SmoothnessResult,
+  result: ButterResult,
   keep: number,
 ): HistoryFile {
   const commit = commitFromEnv();

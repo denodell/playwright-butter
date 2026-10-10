@@ -1,4 +1,4 @@
-import type { Check, SmoothnessResult } from '../types.js';
+import type { Check, ButterResult } from '../types.js';
 import { round1 } from '../analysis/stats.js';
 
 /** The metrics a baseline stores, keyed by result field. Null means "not measured". */
@@ -8,7 +8,7 @@ interface MetricDef {
   metric: string;
   name: string;
   unit: Check['unit'];
-  read: (r: SmoothnessResult) => number | null | undefined;
+  read: (r: ButterResult) => number | null | undefined;
   /** Which `unavailable` measurement explains a null. */
   source: string;
   /**
@@ -21,7 +21,7 @@ interface MetricDef {
    * compared relatively, or 95% → 81% would fall inside a 15% allowance.
    */
   complement?: boolean;
-  gated: (r: SmoothnessResult) => boolean;
+  gated: (r: ButterResult) => boolean;
 }
 
 /**
@@ -85,7 +85,7 @@ export const METRICS: MetricDef[] = [
 ];
 
 /** Every metric a baseline records: gated or not, so turning a gate on later has data. */
-export function metricsOf(result: SmoothnessResult): BaselineMetrics {
+export function metricsOf(result: ButterResult): BaselineMetrics {
   const out: BaselineMetrics = {};
   for (const m of METRICS) {
     const v = m.read(result);
@@ -95,7 +95,7 @@ export function metricsOf(result: SmoothnessResult): BaselineMetrics {
 }
 
 /** (max − min) / median across runs, as a percentage; undefined when unknown. */
-function spreadPercent(result: SmoothnessResult, metric: string): number | undefined {
+function spreadPercent(result: ButterResult, metric: string): number | undefined {
   const s = result.spread[metric];
   if (!s || s.median === 0) return undefined;
   return round1((100 * (s.max - s.min)) / Math.abs(s.median));
@@ -106,7 +106,7 @@ function spreadPercent(result: SmoothnessResult, metric: string): number | undef
  * Checks are returned for every gated metric that either side measured.
  */
 export function compareMetrics(
-  result: SmoothnessResult,
+  result: ButterResult,
   baseline: BaselineMetrics,
   maxIncrease: number,
 ): Check[] {

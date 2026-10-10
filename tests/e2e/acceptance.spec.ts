@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { SmoothnessResult } from '../../packages/butter-churn/src/types.js';
+import type { ButterResult } from '../../packages/butter-churn/src/types.js';
 import { files, PLAYWRIGHT_CLI } from './helpers.js';
 
 const CONFIG = 'tests/e2e/fixture-project/playwright.config.ts';
@@ -33,7 +33,7 @@ function run(env: Record<string, string>, args: string[] = []) {
     timeout: 120_000,
   });
   const [jsonPath] = files(join(out, 'butter'), 'checkout.json');
-  const result = jsonPath ? (JSON.parse(readFileSync(jsonPath, 'utf8')) as SmoothnessResult) : null;
+  const result = jsonPath ? (JSON.parse(readFileSync(jsonPath, 'utf8')) as ButterResult) : null;
   const output = `${child.stdout}\n${child.stderr}`;
   test
     .info()

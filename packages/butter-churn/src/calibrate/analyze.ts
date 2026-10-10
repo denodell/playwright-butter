@@ -1,6 +1,6 @@
 // Turns several runs of the same suite into a suggested maxIncrease per check. Pure: the CLI
 // does the running and file reading.
-import type { SmoothnessResult } from '../types.js';
+import type { ButterResult } from '../types.js';
 import { METRICS } from '../baseline/compare.js';
 import { table } from '../baseline/message.js';
 import { median } from '../analysis/stats.js';
@@ -45,11 +45,11 @@ export function stepAbove(fraction: number): number {
 }
 
 /** `runs` is one map per invocation of the suite, from result id to result. */
-export function calibrate(runs: Map<string, SmoothnessResult>[]): CheckCalibration[] {
+export function calibrate(runs: Map<string, ButterResult>[]): CheckCalibration[] {
   const ids = [...new Set(runs.flatMap((r) => [...r.keys()]))].sort();
   const out: CheckCalibration[] = [];
   for (const id of ids) {
-    const results = runs.map((r) => r.get(id)).filter((r): r is SmoothnessResult => !!r && r.runs > 0);
+    const results = runs.map((r) => r.get(id)).filter((r): r is ButterResult => !!r && r.runs > 0);
     if (results.length < 2) continue;
     const metrics: MetricCalibration[] = [];
     for (const m of METRICS) {

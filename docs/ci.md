@@ -39,7 +39,7 @@ For a new workflow, the Action can run the suite too, in one step:
 
 ```yaml
 # .github/workflows/butter.yml
-name: Smoothness
+name: Butter
 on:
   push: { branches: [main] }
   pull_request:
@@ -82,7 +82,7 @@ These are the steps the Action takes, for other CI systems or a workflow of your
 
 ```yaml
 # .github/workflows/butter.yml
-name: Smoothness
+name: Butter
 on:
   push:
     branches: [main]
@@ -134,7 +134,7 @@ jobs:
 
 ### Post the summary on the pull request
 
-With the reporter in your config (`reporter: [['list'], ['playwright-butter/reporter']]`), each run adds the smoothness summary to the GitHub Actions job summary. Without it, `npx playwright-butter summary --github-summary` writes the same summary from the run's result files. This step also posts it as a comment on the pull request:
+With the reporter in your config (`reporter: [['list'], ['playwright-butter/reporter']]`), each run adds the butter summary to the GitHub Actions job summary. Without it, `npx playwright-butter summary --github-summary` writes the same summary from the run's result files. This step also posts it as a comment on the pull request:
 
 ```yaml
 - name: 'Pull request: comment with the summary'

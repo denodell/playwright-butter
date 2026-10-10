@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
-import type { SmoothnessResult } from '../types.js';
+import type { ButterResult } from '../types.js';
 
 /** Everything a baseline must match to be comparable. */
 export interface BaselineKey {
   label: string;
   project: string;
   platform: string;
-  mode: SmoothnessResult['mode'];
+  mode: ButterResult['mode'];
   refreshRate: number;
   cpuThrottling: number;
   /** Short machine name, such as `amd-epyc-7763-4cpu`. Runner speed varies ~2x between CPU models. */
@@ -36,7 +36,7 @@ export function labelSlug(label: string): string {
 }
 
 /** `AMD EPYC 7763 64-Core Processor` with 4 CPUs → `amd-epyc-7763-4cpu`. */
-export function machineSlug(machine: SmoothnessResult['machine']): string {
+export function machineSlug(machine: ButterResult['machine']): string {
   const model = machine.cpuModel
     .replace(/\((R|TM)\)/gi, '')
     .replace(/@.*$/, '')
@@ -45,7 +45,7 @@ export function machineSlug(machine: SmoothnessResult['machine']): string {
   return `${slug(model, 40)}-${machine.cpus}cpu`;
 }
 
-export function baselineKey(result: SmoothnessResult, project: string): BaselineKey {
+export function baselineKey(result: ButterResult, project: string): BaselineKey {
   return {
     label: result.label,
     project,

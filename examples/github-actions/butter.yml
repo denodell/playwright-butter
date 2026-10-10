@@ -3,7 +3,7 @@
 # - Pull requests: quick mode, compared with baselines from main, summary on the PR.
 # - Pushes to main: baselines recorded and published.
 # - Nightly: full mode (dropped frames, blank rows, CPU profile), compared, then recorded.
-name: Smoothness
+name: Butter
 on:
   push:
     branches: [main]

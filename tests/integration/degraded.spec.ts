@@ -11,7 +11,7 @@ import {
   type CdpSession,
   type PageDriver,
   type ScratchPage,
-  type SmoothnessOptions,
+  type ButterOptions,
   type Tracer,
 } from '../../packages/butter-churn/src/index.js';
 import { locatorTarget, playwrightDriver } from '../../packages/playwright-butter/src/driver.js';
@@ -26,7 +26,7 @@ async function setUp(page: Page, url: string, change: (d: PageDriver) => Partial
   return driver;
 }
 
-async function context(driver: PageDriver, label: string, options: SmoothnessOptions) {
+async function context(driver: PageDriver, label: string, options: ButterOptions) {
   return {
     page: driver,
     label,

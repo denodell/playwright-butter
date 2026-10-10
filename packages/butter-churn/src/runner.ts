@@ -50,7 +50,7 @@ import type {
   InputResult,
   LongFramesResult,
   ResolvedOptions,
-  SmoothnessResult,
+  ButterResult,
   Spread,
   Unavailable,
 } from './types.js';
@@ -161,13 +161,13 @@ async function noteMapFailures(resolver: NameResolver, notes: string[]): Promise
 }
 
 /** Describes this machine. The browser runs locally, so it's the browser's machine too. */
-export function machine(): SmoothnessResult['machine'] {
+export function machine(): ButterResult['machine'] {
   const list = cpus();
   return { cpuModel: list[0]?.model.trim() ?? 'unknown', cpus: list.length, platform: platform() };
 }
 
 /** The options that decide how a result is compared, as recorded in the result. */
-export function settingsOf(options: ResolvedOptions): SmoothnessResult['settings'] {
+export function settingsOf(options: ResolvedOptions): ButterResult['settings'] {
   return {
     maxIncrease: options.maxIncrease,
     enforce: options.enforce,
@@ -179,7 +179,7 @@ export function settingsOf(options: ResolvedOptions): SmoothnessResult['settings
 }
 
 /** A result with nothing measured, for browsers or pages where measurement isn't possible. */
-export function emptyResult(ctx: Omit<MeasureContext, 'page'>, reason: string): SmoothnessResult {
+export function emptyResult(ctx: Omit<MeasureContext, 'page'>, reason: string): ButterResult {
   return {
     schemaVersion: SCHEMA_VERSION,
     label: ctx.label,
@@ -241,7 +241,7 @@ type Reasons = (measurement: string) => string[];
  * page before each run, and returns the median result. Only frames classified as caused by
  * the interaction count towards `longFrames`.
  */
-export async function measure(ctx: MeasureContext, action: () => Promise<void>): Promise<SmoothnessResult> {
+export async function measure(ctx: MeasureContext, action: () => Promise<void>): Promise<ButterResult> {
   const m = await prepare(ctx);
   const cdp = await PageCdp.open(ctx.page);
   if (ctx.options.cpuThrottling > 1) await checkThrottling(m, cdp, ctx.options.cpuThrottling);
@@ -592,7 +592,7 @@ async function combineRuns(
   runs: RunData[],
   supported: RunTally['supported'],
   extraReplay: ReplayInput | null,
-): Promise<SmoothnessResult> {
+): Promise<ButterResult> {
   const { ctx, notes, unavailable } = m;
   const { options } = ctx;
   const spreads: Record<string, Spread> = {};
@@ -610,7 +610,7 @@ async function combineRuns(
   const classCount = (k: FrameClass) =>
     Math.round(median(runs.map((r) => r.classes.filter((c) => c === k).length)));
 
-  const result: SmoothnessResult = {
+  const result: ButterResult = {
     schemaVersion: SCHEMA_VERSION,
     label: ctx.label,
     mode: options.mode,

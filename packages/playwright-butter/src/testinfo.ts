@@ -8,7 +8,7 @@ import {
   recordingBaselines,
   slug,
   type BaselineTarget,
-  type SmoothnessResult,
+  type ButterResult,
   type UpdateMode,
 } from 'butter-churn';
 
@@ -42,7 +42,7 @@ export function resultDir(testInfo: TestInfo): string {
   return join(testInfo.project.outputDir, 'butter', `${titleOf(testInfo)}-${id}${retry}`);
 }
 
-export function testOf(testInfo: TestInfo): NonNullable<SmoothnessResult['test']> {
+export function testOf(testInfo: TestInfo): NonNullable<ButterResult['test']> {
   return {
     title: testInfo.titlePath.slice(1).join(' › ') || testInfo.title,
     file: forwardSlashes(relative(testInfo.config.rootDir, testInfo.file)),
