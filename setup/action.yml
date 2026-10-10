@@ -5,7 +5,7 @@ author: Den Odell
 inputs:
   artifact-name:
     description: The name main's baselines are published under. Two suites in one repository need different names.
-    default: smoothness-baselines
+    default: butter-baselines
   token:
     description: "Token for reading main's baselines. Needs `actions: read`."
     default: ${{ github.token }}

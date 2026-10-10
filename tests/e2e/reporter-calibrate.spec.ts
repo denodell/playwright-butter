@@ -16,7 +16,7 @@ const clean = () => Object.fromEntries(Object.entries(process.env).filter(([k]) 
 
 let work: string;
 test.beforeAll(() => {
-  work = mkdtempSync(join(tmpdir(), 'smoothness-reporter-'));
+  work = mkdtempSync(join(tmpdir(), 'butter-reporter-'));
 });
 test.afterAll(() => rmSync(work, { recursive: true, force: true }));
 test.describe.configure({ mode: 'serial' });
@@ -48,12 +48,12 @@ test('the reporter writes the markdown summary and the job summary', () => {
     },
   );
   expect(child.status, child.stdout + child.stderr).toBe(0);
-  const md = readFileSync(join(work, 'out', 'smoothness', 'summary.md'), 'utf8');
-  expect(md).toContain('## Smoothness');
+  const md = readFileSync(join(work, 'out', 'butter', 'summary.md'), 'utf8');
+  expect(md).toContain('## Butter');
   expect(md).toContain('1 new baseline');
   expect(md).toContain('checkout click › "checkout": new baseline recorded');
   expect(readFileSync(step, 'utf8')).toBe(md + '\n');
-  expect(child.stdout).toContain('Smoothness summary:');
+  expect(child.stdout).toContain('Butter summary:');
 });
 
 test('the summary command writes the same summary from the result files alone', () => {
@@ -74,10 +74,10 @@ test('the summary command writes the same summary from the result files alone', 
     { env: { ...clean(), GITHUB_STEP_SUMMARY: step }, encoding: 'utf8' },
   );
   expect(child.status, child.stdout + child.stderr).toBe(0);
-  const fromReporter = readFileSync(join(work, 'out', 'smoothness', 'summary.md'), 'utf8');
+  const fromReporter = readFileSync(join(work, 'out', 'butter', 'summary.md'), 'utf8');
   expect(readFileSync(out, 'utf8')).toBe(fromReporter);
   expect(readFileSync(step, 'utf8')).toBe(fromReporter + '\n');
-  expect(child.stdout).toContain('Smoothness summary of 1 result(s)');
+  expect(child.stdout).toContain('Butter summary of 1 result(s)');
 });
 
 test('a check that got worse writes a fix brief, and the brief command collects it', () => {

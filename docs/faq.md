@@ -47,7 +47,7 @@ On one Windows CI run, Chrome didn't apply CPU throttling at all: 4x left the wo
 
 ## Chromium only
 
-The signals it relies on come from Chromium: Long Animation Frames, the Event Timing details it needs, Chrome's frame-level trace, and `Emulation.setCPUThrottlingRate`. In Firefox and WebKit projects, checks are skipped with a `smoothness-skipped` annotation and `null` results. They're never reported as zero or as passing.
+The signals it relies on come from Chromium: Long Animation Frames, the Event Timing details it needs, Chrome's frame-level trace, and `Emulation.setCPUThrottlingRate`. In Firefox and WebKit projects, checks are skipped with a `butter-skipped` annotation and `null` results. They're never reported as zero or as passing.
 
 ## Network access and privacy
 

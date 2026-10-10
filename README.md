@@ -38,7 +38,7 @@ Tests that import `test` from this file are measured as they run, with no other 
 ### Measure an interaction
 
 ```ts
-// tests/smoothness.spec.ts
+// tests/butter.spec.ts
 import { test, expect } from 'playwright-butter';
 
 test('filters open smoothly', async ({ page, butter }) => {
@@ -136,7 +136,7 @@ Full mode traces each run, which adds about 5–25% to its time without changing
 
 ## Warn first, then fail
 
-`enforce: 'warn'` is the default. A check that got worse adds a `smoothness-warning` annotation, prints the full report and, in GitHub Actions, a `::warning` on the pull request, but the test passes. Once you trust a check, `'fail'` makes it fail the test:
+`enforce: 'warn'` is the default. A check that got worse adds a `butter-warning` annotation, prints the full report and, in GitHub Actions, a `::warning` on the pull request, but the test passes. Once you trust a check, `'fail'` makes it fail the test:
 
 ```ts
 test.use({ butterOptions: { enforce: 'fail' } });
@@ -238,7 +238,7 @@ The mode can also come from the `BUTTER_MODE` environment variable, and schedule
 reporter: [['list'], ['playwright-butter/reporter']],
 ```
 
-The reporter writes `test-results/smoothness/summary.md`: each check's change against its baseline, such as `129ms (+20ms, +18%)`, the scripts and functions behind anything that got worse, and anything that couldn't be measured or compared. In GitHub Actions it's added to the job summary too. Its options are `outputFile`, `title` and `githubSummary`. Every result is also written as JSON (`schemaVersion: 1`) under `test-results/smoothness/` and attached to the test, so without the reporter, `npx playwright-butter summary` writes the same summary from those files afterwards.
+The reporter writes `test-results/butter/summary.md`: each check's change against its baseline, such as `129ms (+20ms, +18%)`, the scripts and functions behind anything that got worse, and anything that couldn't be measured or compared. In GitHub Actions it's added to the job summary too. Its options are `outputFile`, `title` and `githubSummary`. Every result is also written as JSON (`schemaVersion: 1`) under `test-results/butter/` and attached to the test, so without the reporter, `npx playwright-butter summary` writes the same summary from those files afterwards.
 
 ## Choose `maxIncrease`
 
@@ -246,7 +246,7 @@ The reporter writes `test-results/smoothness/summary.md`: each check's change ag
 npx playwright-butter calibrate --runs 5 -- --project=chromium
 ```
 
-`calibrate` runs your suite 5 times on unchanged code, without comparing or recording baselines, and prints how much each check moved between runs. For each check it suggests the smallest `maxIncrease`, in steps of 0.05, that covers that movement, and warns when a check needs more than the default. Arguments after `--` go to `playwright test`, and the results are also saved to `smoothness-calibration.json`. Run it on the machine that gates your builds, since that's where the noise matters.
+`calibrate` runs your suite 5 times on unchanged code, without comparing or recording baselines, and prints how much each check moved between runs. For each check it suggests the smallest `maxIncrease`, in steps of 0.05, that covers that movement, and warns when a check needs more than the default. Arguments after `--` go to `playwright test`, and the results are also saved to `butter-calibration.json`. Run it on the machine that gates your builds, since that's where the noise matters.
 
 ## CI
 
@@ -265,7 +265,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 
 ## Limitations
 
-- It measures in Chromium only. In Firefox and WebKit, measurements are skipped with a `smoothness-skipped` annotation.
+- It measures in Chromium only. In Firefox and WebKit, measurements are skipped with a `butter-skipped` annotation.
 - Long frames and scripts come from the main thread, so jank on the compositor thread isn't blamed on any script.
 - Headless Chrome runs at 60Hz, so 120Hz numbers are a prediction.
 - Event Timing doesn't report interactions under 16ms, so `input.interactions` only counts slower ones.

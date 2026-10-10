@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "kind": "playwright-smoothness-baseline",
+  "key": {
+    "label": "open filters",
+    "project": "",
+    "platform": "linux",
+    "mode": "quick",
+    "refreshRate": 60,
+    "cpuThrottling": 4,
+    "machine": "intel-xeon-2cpu"
+  },
+  "recordedAt": "2026-10-02T00:47:03.630Z",
+  "browserVersion": "141.0.7390.37",
+  "machine": {
+    "cpuModel": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "cpus": 2,
+    "platform": "linux"
+  },
+  "runs": 5,
+  "metrics": {
+    "input.p95ToPaintMs": 24,
+    "longFrames.count": 0,
+    "longFrames.totalBlockingMs": 0
+  },
+  "spread": {
+    "input.p95ToPaintMs": {
+      "min": 16,
+      "median": 24,
+      "max": 24
+    },
+    "longFrames.count": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    },
+    "longFrames.totalBlockingMs": {
+      "min": 0,
+      "median": 0,
+      "max": 0
+    }
+  }
+}

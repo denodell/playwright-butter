@@ -1,4 +1,3 @@
-import { envSetting } from './constants.js';
 import type { ResolvedOptions, SmoothnessMode, SmoothnessOptions } from './types.js';
 
 const DEFAULT_RUNS = 5;
@@ -29,11 +28,10 @@ export function detectMode(
   env: Env,
 ): { mode: SmoothnessMode; source: string } {
   if (explicit) return { mode: explicit, source: 'option' };
-  const raw = envSetting('MODE', env);
-  const fromEnv = raw?.trim().toLowerCase();
+  const fromEnv = env.BUTTER_MODE?.trim().toLowerCase();
   if (fromEnv === 'quick' || fromEnv === 'full') return { mode: fromEnv, source: 'BUTTER_MODE' };
   if (fromEnv) {
-    throw new Error(`BUTTER_MODE must be 'quick' or 'full', got '${raw}'.`);
+    throw new Error(`BUTTER_MODE must be 'quick' or 'full', got '${env.BUTTER_MODE}'.`);
   }
   for (const rule of SCHEDULED_CI) {
     const value = env[rule.variable];
@@ -54,28 +52,26 @@ export function resolveOptions<P = any>(
   const { mode, source } = detectMode(o.mode, env);
   const runs = o.runs ?? DEFAULT_RUNS;
   if (!Number.isInteger(runs) || runs < 1)
-    throw new Error(`smoothness: runs must be a positive integer, got ${runs}.`);
+    throw new Error(`butter: runs must be a positive integer, got ${runs}.`);
   const cpuThrottling = o.cpuThrottling ?? DEFAULT_CPU_THROTTLING;
   if (!(cpuThrottling >= 1))
-    throw new Error(`smoothness: cpuThrottling must be 1 or more, got ${cpuThrottling}.`);
+    throw new Error(`butter: cpuThrottling must be 1 or more, got ${cpuThrottling}.`);
   const maxIncrease = o.maxIncrease ?? DEFAULT_MAX_INCREASE;
-  if (!(maxIncrease >= 0)) throw new Error(`smoothness: maxIncrease must be 0 or more, got ${maxIncrease}.`);
+  if (!(maxIncrease >= 0)) throw new Error(`butter: maxIncrease must be 0 or more, got ${maxIncrease}.`);
   const refreshRate = o.refreshRate ?? DEFAULT_REFRESH_RATE;
   if (refreshRate !== 60 && refreshRate !== 120) {
-    throw new Error(`smoothness: refreshRate must be 60 or 120, got ${refreshRate}.`);
+    throw new Error(`butter: refreshRate must be 60 or 120, got ${refreshRate}.`);
   }
   const virtualized = o.list?.virtualized;
   if (virtualized !== undefined && virtualized !== 'auto' && typeof virtualized !== 'boolean') {
-    throw new Error(
-      `smoothness: list.virtualized must be 'auto', true or false, got '${String(virtualized)}'.`,
-    );
+    throw new Error(`butter: list.virtualized must be 'auto', true or false, got '${String(virtualized)}'.`);
   }
   if (o.replay !== undefined && !['on-regression', 'on', 'off'].includes(o.replay)) {
-    throw new Error(`smoothness: replay must be 'on-regression', 'on' or 'off', got '${String(o.replay)}'.`);
+    throw new Error(`butter: replay must be 'on-regression', 'on' or 'off', got '${String(o.replay)}'.`);
   }
   const enforce = o.enforce ?? 'warn';
   if (enforce !== 'warn' && enforce !== 'fail') {
-    throw new Error(`smoothness: enforce must be 'warn' or 'fail', got '${enforce}'.`);
+    throw new Error(`butter: enforce must be 'warn' or 'fail', got '${enforce}'.`);
   }
   return {
     mode,
@@ -85,7 +81,7 @@ export function resolveOptions<P = any>(
     maxIncrease,
     refreshRate,
     enforce,
-    baselineDir: o.baselineDir ?? (envSetting('BASELINE_DIR', env)?.trim() || undefined),
+    baselineDir: o.baselineDir ?? (env.BUTTER_BASELINE_DIR?.trim() || undefined),
     list: {
       background: o.list?.background ?? 'auto',
       placeholders: o.list?.placeholders ?? [],

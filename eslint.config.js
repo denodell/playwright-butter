@@ -14,7 +14,7 @@ export default tseslint.config(
       'examples/**/node_modules/',
       'examples/**/test-results/',
       'examples/**/playwright-report/',
-      'examples/**/smoothness-baselines/',
+      'examples/**/butter-baselines/',
       'examples/react-list/public/app.js',
       'demos/apps/kanban/dist/',
       'demos/results/',

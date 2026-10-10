@@ -1,6 +1,6 @@
 import { expect as baseExpect, test } from '@playwright/test';
 import {
-  envSetting,
+  CALIBRATE_ENV,
   RECORD_ENV,
   recordingBaselines,
   SCHEMA_VERSION,
@@ -42,7 +42,7 @@ export const expect = baseExpect.extend({
       };
     }
     const testInfo = test.info();
-    const comparison = envSetting('CALIBRATE')
+    const comparison = process.env[CALIBRATE_ENV]
       ? {
           status: 'not-compared' as const,
           checks: [],
@@ -63,25 +63,25 @@ export const expect = baseExpect.extend({
         return { pass: false, name: 'toBeSmooth', message: () => message };
       case 'warn':
         if (budgetMissed) break;
-        annotate('smoothness-warning', summary);
+        annotate('butter-warning', summary);
         console.warn(message);
         warnInGitHubActions(summary, testInfo);
         break;
       case 'baseline-created':
         annotate(
-          'smoothness-baseline-created',
+          'butter-baseline-created',
           `"${received.label}": ${comparison.notes.at(-1) ?? 'baseline recorded'}`,
         );
         break;
       case 'baseline-updated':
         annotate(
-          'smoothness-baseline-updated',
+          'butter-baseline-updated',
           `"${received.label}": baseline replaced (${recordingBaselines() ? RECORD_ENV : '--update-snapshots'})`,
         );
         break;
       case 'not-compared':
-        if (envSetting('CALIBRATE')) break;
-        annotate('smoothness-not-compared', `"${received.label}": ${comparison.notes.join(' ')}`);
+        if (process.env[CALIBRATE_ENV]) break;
+        annotate('butter-not-compared', `"${received.label}": ${comparison.notes.join(' ')}`);
         break;
       case 'pass':
         break;

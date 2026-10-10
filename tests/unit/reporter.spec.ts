@@ -10,7 +10,7 @@ import type { Comparison, SmoothnessResult } from '../../packages/butter-core/sr
 import { makeResult } from './result-factory.js';
 
 const baseline = {
-  path: '/repo/tests/a.spec.ts-snapshots/smoothness/x.json',
+  path: '/repo/tests/a.spec.ts-snapshots/butter/x.json',
   source: 'baselineDir' as const,
   recordedAt: '2026-09-20T10:00:00.000Z',
   browserVersion: '153.0.8010.12',
@@ -121,7 +121,7 @@ test('summary: re-recorded baselines are counted as such, not as within baseline
 
 test('summary: nothing ran', () => {
   expect(buildMarkdown([])).toBe(
-    '## Smoothness\n\nNo smoothness measurements ran. Results come from `butter.measure()` and `butter.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withButter()`.\n',
+    '## Butter\n\nNo smoothness measurements ran. Results come from `butter.measure()` and `butter.scroll()`, and in automatic mode from tests that load a page in Chromium, using a `test` wrapped with `withButter()`.\n',
   );
 });
 
@@ -131,20 +131,20 @@ test('summary: pipes in labels do not break the table', () => {
 });
 
 // ---- the reporter's options ----
-import SmoothnessReporter from '../../packages/playwright-butter/src/reporter.js';
+import ButterReporter from '../../packages/playwright-butter/src/reporter.js';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 function runReporter(
-  options: ConstructorParameters<typeof SmoothnessReporter>[0],
+  options: ConstructorParameters<typeof ButterReporter>[0],
   dir: string,
   env: Record<string, string> = {},
 ) {
   const saved = { ...process.env };
   Object.assign(process.env, env);
   try {
-    const reporter = new SmoothnessReporter(options);
+    const reporter = new ButterReporter(options);
     const config = { rootDir: dir, projects: [{ outputDir: join(dir, 'test-results') }] } as never;
     reporter.onBegin(config);
     const resultFile = join(dir, 'r.json');
@@ -156,7 +156,7 @@ function runReporter(
       parent: { project: () => ({ name: 'chromium' }) },
     } as never;
     reporter.onTestEnd(testCase, {
-      attachments: [{ name: 'smoothness: x', path: resultFile, contentType: 'application/json' }],
+      attachments: [{ name: 'butter: x', path: resultFile, contentType: 'application/json' }],
     } as never);
     reporter.onEnd();
   } finally {
@@ -165,12 +165,12 @@ function runReporter(
 }
 
 test('reporter: default output file, title and job summary', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'smoothness-reporter-'));
+  const dir = mkdtempSync(join(tmpdir(), 'butter-reporter-'));
   try {
     const step = join(dir, 'step.md');
     runReporter({}, dir, { GITHUB_STEP_SUMMARY: step });
-    const md = readFileSync(join(dir, 'test-results', 'smoothness', 'summary.md'), 'utf8');
-    expect(md.startsWith('## Smoothness\n')).toBe(true);
+    const md = readFileSync(join(dir, 'test-results', 'butter', 'summary.md'), 'utf8');
+    expect(md.startsWith('## Butter\n')).toBe(true);
     expect(md).toContain('a test › "x"');
     expect(readFileSync(step, 'utf8')).toBe(md + '\n');
   } finally {
@@ -179,7 +179,7 @@ test('reporter: default output file, title and job summary', () => {
 });
 
 test('reporter: outputFile, title, and githubSummary: false', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'smoothness-reporter-'));
+  const dir = mkdtempSync(join(tmpdir(), 'butter-reporter-'));
   try {
     const step = join(dir, 'step.md');
     mkdirSync(join(dir, 'out'));
@@ -207,7 +207,7 @@ test('summary: automatic mode at suite scale', () => {
         checks: [],
         baseline: null,
         notes: [
-          `Building history: 1 of 3 main-branch runs recorded. This run was added to the history (${cwd}/smoothness-history/app.spec.ts/x.json).`,
+          `Building history: 1 of 3 main-branch runs recorded. This run was added to the history (${cwd}/butter-history/app.spec.ts/x.json).`,
         ],
       },
     });
@@ -227,7 +227,7 @@ test('summary: automatic mode at suite scale', () => {
       notes: [`No baseline exists at ${cwd}/tests/x.json.`],
     },
   });
-  const md = buildMarkdown([building('a › one'), building('b › two'), passing, missing], 'Smoothness', cwd);
+  const md = buildMarkdown([building('a › one'), building('b › two'), passing, missing], 'Butter', cwd);
   // The label is the test's own title, so it's named once.
   expect(md).toContain('| OK | search › types a query |');
   expect(md).not.toContain('"search › types a query"');
@@ -243,9 +243,9 @@ test('summary: automatic mode at suite scale', () => {
 });
 
 test('reporter: a result file that cannot be read is left out', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'smoothness-reporter-'));
+  const dir = mkdtempSync(join(tmpdir(), 'butter-reporter-'));
   try {
-    const reporter = new SmoothnessReporter({ outputFile: join(dir, 'summary.md') });
+    const reporter = new ButterReporter({ outputFile: join(dir, 'summary.md') });
     expect(reporter.printsToStdio()).toBe(false);
     reporter.onBegin({ rootDir: dir, projects: [] } as never);
     const resultFile = join(dir, 'r.json');
@@ -253,7 +253,7 @@ test('reporter: a result file that cannot be read is left out', () => {
     reporter.onTestEnd(
       { title: 'a test' } as never,
       {
-        attachments: [{ name: 'smoothness: x', path: resultFile, contentType: 'application/json' }],
+        attachments: [{ name: 'butter: x', path: resultFile, contentType: 'application/json' }],
       } as never,
     );
     reporter.onEnd();
@@ -295,6 +295,6 @@ test('the full table: checks not compared or unavailable, the CPU profile, the r
   expect(md).toContain('| Unavailable |');
   expect(md).toContain('Where the time went (CPU profile):');
   expect(md).toContain('1. layoutRows');
-  expect(md).toContain('A replay of the scroll is attached to the test as `smoothness replay: scroll feed`');
+  expect(md).toContain('A replay of the scroll is attached to the test as `butter replay: scroll feed`');
   expect(md).toMatch(/varied 40% across runs, more than the allowed 15%/);
 });

@@ -1,4 +1,4 @@
-## Smoothness
+## Butter
 
 **2 got worse**, 1 within baseline, 1 new baseline, 2 not compared
 

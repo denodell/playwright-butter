@@ -25,7 +25,7 @@ export function githubWarning(
   const props = [
     where.file ? `file=${escapeProperty(where.file)}` : '',
     where.line ? `line=${where.line}` : '',
-    `title=${escapeProperty(where.title ?? 'Smoothness')}`,
+    `title=${escapeProperty(where.title ?? 'Butter')}`,
   ].filter(Boolean);
   return `::warning ${props.join(',')}::${escapeData(message)}`;
 }

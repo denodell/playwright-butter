@@ -202,10 +202,7 @@ function fakeInfo(
 ): BaselineTarget {
   return {
     path: (fileName) =>
-      join(dir, 'spec.ts-snapshots', 'smoothness', title, fileName).replace(
-        /\.json$/,
-        '-chromium-linux.json',
-      ),
+      join(dir, 'spec.ts-snapshots', 'butter', title, fileName).replace(/\.json$/, '-chromium-linux.json'),
     root: dir,
     project: 'chromium',
     update,
@@ -226,7 +223,7 @@ test.describe('evaluate', () => {
     const file = JSON.parse(readFileSync(c.baseline!.path, 'utf8'));
     expect(file).toMatchObject({
       schemaVersion: 1,
-      kind: 'playwright-smoothness-baseline',
+      kind: 'playwright-butter-baseline',
       key: { label: 'open filters', machine: 'amd-epyc-7763-4cpu' },
       metrics: { 'input.p95ToPaintMs': 112, 'longFrames.count': 1, 'longFrames.totalBlockingMs': 58 },
     });
@@ -329,12 +326,12 @@ test.describe('evaluate', () => {
     writeFileSync(path, '{"kind":"something-else"}');
     const c = evaluate(makeResult(), fakeInfo(dir));
     expect(c.status).toBe('baseline-created');
-    expect(c.notes.join(' ')).toMatch(/is not a playwright-smoothness baseline/);
+    expect(c.notes.join(' ')).toMatch(/is not a playwright-butter baseline/);
 
     writeFileSync(path, 'not json');
     expect(evaluate(makeResult(), fakeInfo(dir)).notes.join(' ')).toMatch(/could not be read: SyntaxError/);
 
-    writeFileSync(path, '{"kind":"playwright-smoothness-baseline","schemaVersion":2}');
+    writeFileSync(path, '{"kind":"playwright-butter-baseline","schemaVersion":2}');
     expect(evaluate(makeResult(), fakeInfo(dir)).notes.join(' ')).toMatch(
       /has schemaVersion 2; this version reads 1/,
     );

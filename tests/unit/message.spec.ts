@@ -11,7 +11,7 @@ import { compareMetrics, metricsOf } from '../../packages/butter-core/src/baseli
 import { makeResult } from './result-factory.js';
 
 const baseline = {
-  path: '/repo/tests/checkout.spec.ts-snapshots/smoothness/open-filters-quick-60hz-cpu4x-amd-epyc-7763-4cpu-chromium-linux.json',
+  path: '/repo/tests/checkout.spec.ts-snapshots/butter/open-filters-quick-60hz-cpu4x-amd-epyc-7763-4cpu-chromium-linux.json',
   source: 'snapshot' as const,
   recordedAt: '2026-09-20T10:00:00.000Z',
   browserVersion: '153.0.8010.12',

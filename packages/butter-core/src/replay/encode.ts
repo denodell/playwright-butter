@@ -1,7 +1,7 @@
 // Turns a measured run's trace screenshots into a WebM replay: each frame with the frame rate and
 // other stats, a chart of the whole run, and a marker on frames where a list's rows weren't drawn.
 import type { PageDriver, ScratchPage } from '../driver.js';
-import { FORMAT_NAME } from '../constants.js';
+import { TOOL_NAME } from '../constants.js';
 import { muxWebM, type EncodedFrame } from './webm.js';
 import { ARCHIVO } from './font.js';
 
@@ -477,7 +477,7 @@ export async function encodeReplay(
       .sort((a, b) => a.timeMs - b.timeMs)
       .map((c) => ({ timeMs: c.timeMs, key: c.key, data: Uint8Array.from(Buffer.from(c.data, 'base64')) }));
     if (!frames[0]?.key) return { unavailable: "the replay's first frame wasn't a key frame" };
-    return muxWebM(frames, out.width, out.height, FORMAT_NAME);
+    return muxWebM(frames, out.width, out.height, TOOL_NAME);
   } catch (err) {
     return { unavailable: `the replay couldn't be made: ${String(err).split('\n')[0]}` };
   } finally {

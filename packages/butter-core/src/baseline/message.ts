@@ -1,6 +1,6 @@
 import { isAbsolute, relative } from 'node:path';
 import type { BudgetCheck, Check, Comparison, HotFunction, SmoothnessResult, TopScript } from '../types.js';
-import { CLI_NAME } from '../constants.js';
+import { TOOL_NAME } from '../constants.js';
 import { EVENT_TIMING_MIN_MS } from './compare.js';
 import { round1 } from '../analysis/stats.js';
 import { forwardSlashes } from '../output.js';
@@ -181,7 +181,7 @@ export function formatMessage(result: SmoothnessResult, comparison: Comparison, 
     for (const c of noisy) {
       lines.push(
         `Noise: ${c.name} varied ${c.spreadPercent}% across ${result.runs} runs, more than the allowed ${round1(result.settings.maxIncrease * 100)}%. ` +
-          `A change this size can be noise. Run \`npx ${CLI_NAME} calibrate\` to choose a maxIncrease this check can meet.`,
+          `A change this size can be noise. Run \`npx ${TOOL_NAME} calibrate\` to choose a maxIncrease this check can meet.`,
       );
     }
   }

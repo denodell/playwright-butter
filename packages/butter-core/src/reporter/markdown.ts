@@ -2,7 +2,7 @@
 // anything that got worse, and everything that couldn't be measured or compared.
 import { sep } from 'node:path';
 import type { BudgetCheck, Check, SmoothnessResult } from '../types.js';
-import { CLI_NAME } from '../constants.js';
+import { TOOL_NAME } from '../constants.js';
 import {
   describeBudget,
   describeHotFunction,
@@ -46,7 +46,7 @@ function statusOf(r: SmoothnessResult): Status {
 /** Notes from automatic mode while a test has too few main-branch runs to compare against. */
 const BUILDING_HISTORY = /^Building history: (\d+) of (\d+)/;
 
-export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness', cwd = process.cwd()): string {
+export function buildMarkdown(entries: ReportEntry[], title = 'Butter', cwd = process.cwd()): string {
   // With several projects (browsers, devices), the same test appears once per project. In
   // automatic mode the label is the test's own title, so it's named once.
   const projects = new Set(entries.map((e) => e.project));
@@ -161,14 +161,14 @@ export function buildMarkdown(entries: ReportEntry[], title = 'Smoothness', cwd 
       if (r.replay) {
         lines.push(
           '',
-          `A replay of the scroll is attached to the test as \`smoothness replay: ${cell(r.label)}\` (${code(r.replay)}).`,
+          `A replay of the scroll is attached to the test as \`butter replay: ${cell(r.label)}\` (${code(r.replay)}).`,
         );
       }
       const noisy = r.comparison!.checks.filter((c) => c.noisy);
       for (const c of noisy) {
         lines.push(
           '',
-          `> ${c.name} varied ${c.spreadPercent}% across runs, more than the allowed ${Math.round(r.settings.maxIncrease * 100)}%. Run \`npx ${CLI_NAME} calibrate\`.`,
+          `> ${c.name} varied ${c.spreadPercent}% across runs, more than the allowed ${Math.round(r.settings.maxIncrease * 100)}%. Run \`npx ${TOOL_NAME} calibrate\`.`,
         );
       }
       lines.push('');

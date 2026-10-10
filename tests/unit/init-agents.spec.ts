@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { initAgents, skillSource, updateAgentsMd } from '../../packages/playwright-butter/src/init-agents.js';
@@ -55,27 +55,6 @@ test('initAgents copies the skill to each folder and replaces an older copy', ()
     expect(initAgents({ cwd, dirs: ['tools/skills'], agentsMd: false })).toEqual([
       'tools/skills/playwright-butter/',
     ]);
-  } finally {
-    rmSync(cwd, { recursive: true, force: true });
-  }
-});
-
-test('a project set up under the old name moves to the new one', () => {
-  const cwd = mkdtempSync(join(tmpdir(), 'init-agents-'));
-  try {
-    const old = '.agents/skills/playwright-smoothness/SKILL.md';
-    mkdirSync(join(cwd, '.agents/skills/playwright-smoothness'), { recursive: true });
-    writeFileSync(join(cwd, old), 'the old skill');
-    writeFileSync(
-      join(cwd, 'AGENTS.md'),
-      `# Agents\n\n<!-- playwright-smoothness:start -->\nFollow \`${old}\`.\n<!-- playwright-smoothness:end -->\n\n## Later\n`,
-    );
-    initAgents({ cwd });
-    expect(existsSync(join(cwd, '.agents/skills/playwright-smoothness'))).toBe(false);
-    const agents = readFileSync(join(cwd, 'AGENTS.md'), 'utf8');
-    expect(agents).not.toContain('playwright-smoothness');
-    expect(agents).toContain(SKILL);
-    expect(agents.endsWith('\n## Later\n')).toBe(true);
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }

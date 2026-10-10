@@ -8,7 +8,7 @@ import { makeResult } from './result-factory.js';
 const before = metricsOf(makeResult({ input: { p95ToPaintMs: 32 }, longFrames: { count: 0 } }));
 const ctx = {
   rerun: 'npx playwright test tests/filters.spec.ts:6',
-  resultFile: '/repo/test-results/smoothness/x/open-filters.json',
+  resultFile: '/repo/test-results/butter/x/open-filters.json',
   cwd: '/repo',
 };
 
@@ -78,7 +78,7 @@ test('the brief names what got worse, where, and how to check a fix', () => {
   expect(brief).not.toContain('PerformanceObserverCallback');
   expect(brief).toContain('   npx playwright test tests/filters.spec.ts:6 --update-snapshots=all');
   expect(brief).toContain('The baseline had input-to-paint (p95) 32ms.');
-  expect(brief).toContain('`test-results/smoothness/x/open-filters.json`');
+  expect(brief).toContain('`test-results/butter/x/open-filters.json`');
 });
 
 test('a missed budget is in the brief, with what the budget asks for', () => {

@@ -1,4 +1,4 @@
-# Copy to .github/workflows/smoothness.yml. The steps the Action takes, by hand. Explained in docs/ci.md.
+# Copy to .github/workflows/butter.yml. The steps the Action takes, by hand. Explained in docs/ci.md.
 #
 # - Pull requests: quick mode, compared with baselines from main, summary on the PR.
 # - Pushes to main: compared with the previous baselines, then re-recorded and published as an artifact.
@@ -20,7 +20,7 @@ permissions:
   actions: read # to download artifacts from main's runs
 
 jobs:
-  smoothness:
+  butter:
     # A dedicated runner keeps every job on the same CPU, so every check is compared.
     # On hosted runners use ubuntu-latest: baselines then build up per CPU model.
     runs-on: ubuntu-latest
@@ -34,36 +34,36 @@ jobs:
       - uses: dawidd6/action-download-artifact@v6
         continue-on-error: true # the very first run has no artifact yet
         with:
-          workflow: smoothness.yml
+          workflow: butter.yml
           branch: main
-          name: smoothness-baselines
-          path: smoothness-baselines
+          name: butter-baselines
+          path: butter-baselines
 
       - name: 'Pull request: compare with main'
         if: github.event_name == 'pull_request'
         run: npx playwright test
         env:
-          BUTTER_BASELINE_DIR: smoothness-baselines
+          BUTTER_BASELINE_DIR: butter-baselines
 
       - name: 'Pull request: comment with the summary'
         if: github.event_name == 'pull_request' && always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh pr comment ${{ github.event.pull_request.number }} --body-file test-results/smoothness/summary.md --edit-last --create-if-none
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file test-results/butter/summary.md --edit-last --create-if-none
 
       # On main, including the nightly run, each check compares with the previous baselines,
-      # then records this run's into smoothness-baselines, next to the other CPU models' files.
+      # then records this run's into butter-baselines, next to the other CPU models' files.
       - name: 'Main: compare, then record baselines'
         if: github.ref == 'refs/heads/main'
         run: npx playwright test
         env:
-          BUTTER_BASELINE_DIR: smoothness-baselines
+          BUTTER_BASELINE_DIR: butter-baselines
           BUTTER_RECORD_BASELINES: 1
 
       - name: 'Main: publish baselines'
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
-          name: smoothness-baselines
-          path: smoothness-baselines
+          name: butter-baselines
+          path: butter-baselines
           retention-days: 90

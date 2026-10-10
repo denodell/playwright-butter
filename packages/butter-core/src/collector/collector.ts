@@ -11,7 +11,7 @@
 // - Errors are counted and kept (capped), so the Node side can report them as unavailable.
 
 /** Property on window holding the collector. Unlikely to clash with page code. */
-export const COLLECTOR_KEY = '__playwrightSmoothness';
+export const COLLECTOR_KEY = '__playwrightButter';
 
 export interface CollectorConfig {
   /** Event Timing threshold. 16 is the minimum the spec allows. */
@@ -113,7 +113,7 @@ export interface CollectorApi {
 
 export function installCollector(config: CollectorConfig): void {
   // Same as COLLECTOR_KEY: this function is serialized, so it can't reference module scope.
-  const KEY = '__playwrightSmoothness';
+  const KEY = '__playwrightButter';
   const w = window as unknown as Record<string, unknown>;
   if (w[KEY]) return;
 

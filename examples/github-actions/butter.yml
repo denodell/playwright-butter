@@ -1,4 +1,4 @@
-# Copy to .github/workflows/smoothness.yml. Explained in docs/ci.md.
+# Copy to .github/workflows/butter.yml. Explained in docs/ci.md.
 #
 # - Pull requests: quick mode, compared with baselines from main, summary on the PR.
 # - Pushes to main: baselines recorded and published.
@@ -17,7 +17,7 @@ permissions:
   actions: read # to fetch baselines published from main
 
 jobs:
-  smoothness:
+  butter:
     # A dedicated runner keeps every job on the same CPU, so every check is compared.
     # On hosted runners use ubuntu-latest: baselines then build up per CPU model.
     runs-on: ubuntu-latest

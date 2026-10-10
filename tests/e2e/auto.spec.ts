@@ -36,7 +36,7 @@ const withButter = () => {
 
 function run(env: Record<string, string> = {}) {
   const clean = Object.fromEntries(
-    Object.entries(process.env).filter(([k]) => !/^(TEST_|PW_|GITHUB_|BUTTER_|SMOOTHNESS_)/.test(k)),
+    Object.entries(process.env).filter(([k]) => !/^(TEST_|PW_|GITHUB_|BUTTER_)/.test(k)),
   );
   const child = spawnSync(
     process.execPath,
@@ -50,10 +50,10 @@ function run(env: Record<string, string> = {}) {
   );
   const output = `${child.stdout}\n${child.stderr}`;
   test.info().attach(`run ${JSON.stringify(env)}`, { body: output, contentType: 'text/plain' });
-  const results = files(join(project, 'test-results', 'smoothness'), 'auto.json').map(
+  const results = files(join(project, 'test-results', 'butter'), 'auto.json').map(
     (f) => JSON.parse(readFileSync(f, 'utf8')) as SmoothnessResult,
   );
-  const histories = files(join(project, 'node_modules/.cache/playwright-smoothness/history'), '.json').map(
+  const histories = files(join(project, 'node_modules/.cache/playwright-butter/history'), '.json').map(
     (f) => JSON.parse(readFileSync(f, 'utf8')) as HistoryFile,
   );
   return { code: child.status, output, results, histories };

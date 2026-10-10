@@ -68,33 +68,33 @@ test("outsideRecentRange: worse than the median only counts outside the test's o
 });
 
 test("the default history folder: the project's nearest node_modules, else next to the config", () => {
-  const root = mkdtempSync(join(tmpdir(), 'smoothness-project-'));
+  const root = mkdtempSync(join(tmpdir(), 'butter-project-'));
   const at = (...p: string[]) => join(root, ...p);
   const make = (...p: string[]) => mkdirSync(at(...p), { recursive: true });
   try {
     make('app', 'node_modules');
     writeFileSync(at('app', 'package-lock.json'), '{}');
     expect(defaultHistoryDir(at('app'))).toEqual({
-      dir: at('app', 'node_modules', '.cache', 'playwright-smoothness', 'history'),
+      dir: at('app', 'node_modules', '.cache', 'playwright-butter', 'history'),
       watched: false,
     });
     make('mono', 'node_modules');
     make('mono', 'packages', 'web');
     writeFileSync(at('mono', 'package-lock.json'), '{}');
     expect(defaultHistoryDir(at('mono', 'packages', 'web')).dir).toBe(
-      at('mono', 'node_modules', '.cache', 'playwright-smoothness', 'history'),
+      at('mono', 'node_modules', '.cache', 'playwright-butter', 'history'),
     );
     make('node_modules');
     make('pnp');
     writeFileSync(at('pnp', 'yarn.lock'), '');
-    expect(defaultHistoryDir(at('pnp'))).toEqual({ dir: at('pnp', 'smoothness-history'), watched: true });
+    expect(defaultHistoryDir(at('pnp'))).toEqual({ dir: at('pnp', 'butter-history'), watched: true });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
 test('history files', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'smoothness-history-'));
+  const dir = mkdtempSync(join(tmpdir(), 'butter-history-'));
   try {
     const result = makeResult();
     const path = historyPath(dir, 'tests/app.spec.ts', 'buy › then search', 'chromium', result);
@@ -115,7 +115,7 @@ test('history files', () => {
     expect(file.entries[1]!.metrics['input.p95ToPaintMs']).toBe(999);
     expect(readHistory(path)).toEqual(file);
     writeFileSync(path, '{"kind":"other"}');
-    expect(readHistory(path)).toMatch(/isn't a playwright-smoothness history file/);
+    expect(readHistory(path)).toMatch(/isn't a playwright-butter history file/);
     writeFileSync(path, 'not json');
     expect(readHistory(path)).toMatch(/couldn't be read: SyntaxError/);
     expect(readHistory(join(dir, 'missing.json'))).toBeNull();
@@ -125,7 +125,7 @@ test('history files', () => {
 });
 
 test('specHash changes when the file changes', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'smoothness-spec-'));
+  const dir = mkdtempSync(join(tmpdir(), 'butter-spec-'));
   try {
     const f = join(dir, 'a.spec.ts');
     writeFileSync(f, 'test(1)');
@@ -231,9 +231,4 @@ test("analyzeDocs: inputs that aren't reported", () => {
     [1_000_960, doc({ timeOrigin: 1_000_960, page: 1 })],
   ]);
   expect(analyzeDocs(otherTab).unmeasured).toEqual([]);
-});
-
-test('withSmoothness() still works under its old name', async () => {
-  const lib = await import('../../packages/playwright-butter/src/index.js');
-  expect(lib.withSmoothness).toBe(lib.withButter);
 });

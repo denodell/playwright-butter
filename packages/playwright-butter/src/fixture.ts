@@ -61,17 +61,10 @@ export interface Smoothness {
  */
 export type ButterTestOptions = Pick<SmoothnessFixtures, 'butterOptions'>;
 
-/** @deprecated Renamed to `ButterTestOptions`. */
-export type SmoothnessTestOptions = Pick<SmoothnessFixtures, 'smoothnessOptions'>;
-
 export interface SmoothnessFixtures {
   /** Options for every measurement in the test. Set with `test.use({ butterOptions: {...} })`. */
   butterOptions: SmoothnessOptions;
-  /** @deprecated Renamed to `butterOptions`. */
-  smoothnessOptions: SmoothnessOptions;
   butter: Smoothness;
-  /** @deprecated Renamed to `butter`. */
-  smoothness: Smoothness;
 }
 
 /** Adds an annotation to the test once per type and description. */
@@ -82,14 +75,14 @@ function annotateOnce(testInfo: TestInfo, type: string, description: string): vo
 }
 
 function warn(testInfo: TestInfo, message: string): void {
-  annotateOnce(testInfo, 'smoothness-warning', message);
+  annotateOnce(testInfo, 'butter-warning', message);
   warnInGitHubActions(message, testInfo);
 }
 
 async function createSmoothness(
   page: Page,
   driver: PageDriver,
-  defaults: SmoothnessOptions[],
+  defaults: SmoothnessOptions,
   testInfo: TestInfo,
   outputs: Map<string, { path: string; result: SmoothnessResult }>,
 ): Promise<Smoothness> {
@@ -120,14 +113,14 @@ async function createSmoothness(
   ): Promise<SmoothnessResult> => {
     if (outputs.has(label)) {
       throw new Error(
-        `smoothness: the label "${label}" is already used in this test. Labels name baselines, so each must be unique.`,
+        `butter: the label "${label}" is already used in this test. Labels name baselines, so each must be unique.`,
       );
     }
-    const options = resolveOptions([...defaults, overrides]);
+    const options = resolveOptions([defaults, overrides]);
     let result: SmoothnessResult;
     if (environment.browserName !== 'chromium') {
       const reason = `smoothness is measured in Chromium only; this is ${environment.browserName}`;
-      annotateOnce(testInfo, 'smoothness-skipped', `${label}: ${reason}`);
+      annotateOnce(testInfo, 'butter-skipped', `${label}: ${reason}`);
       result = emptyResult({ label, options, environment }, reason);
     } else {
       result = await run({ page: await driverFor(target), label, options, environment });
@@ -190,7 +183,7 @@ async function attachReplay(
     const file = path.replace(/\.json$/, '.replay.webm');
     writeFileSync(file, video);
     result.replay = basename(file);
-    await testInfo.attach(`smoothness replay: ${label}`, { path: file, contentType: 'video/webm' });
+    await testInfo.attach(`butter replay: ${label}`, { path: file, contentType: 'video/webm' });
   }
   writeResult(result, path);
 }
@@ -202,20 +195,18 @@ export const smoothnessFixtures: Fixtures<
   PlaywrightTestArgs & PlaywrightTestOptions
 > = {
   butterOptions: [{}, { option: true }],
-  smoothnessOptions: [{}, { option: true }],
-  butter: async ({ page, butterOptions, smoothnessOptions }, use, testInfo) => {
+  butter: async ({ page, butterOptions }, use, testInfo) => {
     const driver = playwrightDriver(page);
     if (page.context().browser()?.browserType().name() === 'chromium') await preparePage(driver);
     const outputs = new Map<string, { path: string; result: SmoothnessResult }>();
-    await use(await createSmoothness(page, driver, [smoothnessOptions, butterOptions], testInfo, outputs));
+    await use(await createSmoothness(page, driver, butterOptions, testInfo, outputs));
     // Attached after the test body, so each file includes toBeSmooth()'s comparison.
     for (const [label, { path, result }] of outputs) {
       await attachReplay(driver, testInfo, label, path, result);
-      await testInfo.attach(`smoothness: ${label}`, { path, contentType: 'application/json' });
+      await testInfo.attach(`butter: ${label}`, { path, contentType: 'application/json' });
       await writeBrief(testInfo, label, path, result);
     }
   },
-  smoothness: async ({ butter }, use) => use(butter),
 };
 
 export const test = base.extend<SmoothnessFixtures>(smoothnessFixtures);

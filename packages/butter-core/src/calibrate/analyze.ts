@@ -28,7 +28,7 @@ export interface MetricCalibration {
 }
 
 export interface CheckCalibration {
-  /** Stable id: the result's path under test-results/smoothness/. */
+  /** Stable id: the result's path under test-results/butter/. */
   id: string;
   label: string;
   metrics: MetricCalibration[];

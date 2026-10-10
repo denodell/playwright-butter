@@ -1,35 +1,35 @@
 // playwright-butter/reporter: writes a markdown summary of every smoothness result.
 //
-//   reporter: [['list'], ['playwright-butter/reporter', { outputFile: 'smoothness.md' }]]
+//   reporter: [['list'], ['playwright-butter/reporter', { outputFile: 'butter.md' }]]
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { buildMarkdown, forwardSlashes, type ReportEntry, type SmoothnessResult } from 'butter-core';
 import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 
-export interface SmoothnessReporterOptions {
+export interface ButterReporterOptions {
   /** Where to write the markdown. Default: `smoothness/summary.md` in the first project's output directory. */
   outputFile?: string;
-  /** Heading of the summary. Default `Smoothness`. */
+  /** Heading of the summary. Default `Butter`. */
   title?: string;
   /** Also append to the GitHub Actions job summary ($GITHUB_STEP_SUMMARY). Default: true when it's set. */
   githubSummary?: boolean;
 }
 
-const ATTACHMENT_PREFIX = 'smoothness: ';
+const ATTACHMENT_PREFIX = 'butter: ';
 
-export default class SmoothnessReporter implements Reporter {
+export default class ButterReporter implements Reporter {
   private entries: ReportEntry[] = [];
   private outputFile = '';
   private rootDir = process.cwd();
 
-  constructor(private readonly options: SmoothnessReporterOptions = {}) {}
+  constructor(private readonly options: ButterReporterOptions = {}) {}
 
   onBegin(config: FullConfig): void {
     this.rootDir = config.rootDir;
     const outputDir = config.projects[0]?.outputDir ?? join(config.rootDir, 'test-results');
     this.outputFile = this.options.outputFile
       ? resolve(this.options.outputFile)
-      : join(outputDir, 'smoothness', 'summary.md');
+      : join(outputDir, 'butter', 'summary.md');
   }
 
   onTestEnd(test: TestCase, result: TestResult): void {
@@ -57,7 +57,7 @@ export default class SmoothnessReporter implements Reporter {
     writeFileSync(this.outputFile, md);
     const summary = process.env.GITHUB_STEP_SUMMARY;
     if (summary && this.options.githubSummary !== false) appendFileSync(summary, md + '\n');
-    if (this.entries.length) console.log(`Smoothness summary: ${relative(process.cwd(), this.outputFile)}`);
+    if (this.entries.length) console.log(`Butter summary: ${relative(process.cwd(), this.outputFile)}`);
   }
 
   printsToStdio(): boolean {

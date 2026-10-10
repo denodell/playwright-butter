@@ -36,7 +36,7 @@ The frame-state set is about 9x smaller than the broad set, and records the same
 
 ## Frame counting
 
-The library places `playwright-smoothness:start` and `:end` marks around the measured action, and only counts frames between them. The start mark goes in two animation frames after tracing starts.
+The library places `playwright-butter:start` and `:end` marks around the measured action, and only counts frames between them. The start mark goes in two animation frames after tracing starts.
 
 The detection suite found a dropped frame about 550ms before the first input in most traces, and worked around it by only counting frames from the first input to shortly after the last. That frame comes from a different compositor (`layer_tree_host_id` 1, frame sequence 5), which belongs to Playwright's initial `about:blank` document. The page under test is `layer_tree_host_id` 2, and the dropped frame falls outside the marks anyway.
 

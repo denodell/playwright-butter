@@ -243,9 +243,9 @@ async function playable(page: Page, file: string) {
   }, bytes);
 }
 
-/** The files a test left in test-results/smoothness/, found by the start of its title. */
+/** The files a test left in test-results/butter/, found by the start of its title. */
 async function outputOf(titleStart: string) {
-  const root = join(test.info().project.outputDir, 'smoothness');
+  const root = join(test.info().project.outputDir, 'butter');
   const dir = existsSync(root) ? readdirSync(root).find((d) => d.startsWith(titleStart)) : undefined;
   return dir ? readdirSync(join(root, dir)).map((f) => join(root, dir, f)) : [];
 }

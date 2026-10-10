@@ -155,7 +155,7 @@ test('listeners, navigation timing and installing can all fail without breaking 
     };
     const define = Object.defineProperty;
     Object.defineProperty = function (o: object, key: PropertyKey, d: PropertyDescriptor) {
-      if (o === window && key === '__playwrightSmoothness') throw new Error('blocked');
+      if (o === window && key === '__playwrightButter') throw new Error('blocked');
       return define(o, key, d);
     } as typeof Object.defineProperty;
   });

@@ -42,7 +42,7 @@ The line-counting function (`packages/butter-core/src/list/coverage.ts`) is plai
 
 ## Replays
 
-A replay is a WebM video of one extra run, made after the measured runs, and attached to the test as `smoothness replay: <label>`. The [README](../README.md#replays) covers when a replay is attached.
+A replay is a WebM video of one extra run, made after the measured runs, and attached to the test as `butter replay: <label>`. The [README](../README.md#replays) covers when a replay is attached.
 
 ![A replay frame: the empty list is outlined in black and tagged "Blank: rows not rendered yet". Below it, large type reads 60 frames per second beside a chart of the frame rate.](replay-frame.png)
 

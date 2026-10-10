@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-summary="$RESULTS_DIR/smoothness/summary.md"
+summary="$RESULTS_DIR/butter/summary.md"
 if [ -f "$summary" ] && [ -n "${STARTED:-}" ] && [ "$summary" -nt "$STARTED" ]; then
   echo "Using the reporter's summary."
 else
@@ -11,7 +11,7 @@ echo "summary=$summary" >> "$GITHUB_OUTPUT"
 
 [ "${COMMENT:-true}" = true ] && [ -n "${PR_NUMBER:-}" ] || exit 0
 
-marker='<!-- playwright-smoothness -->'
+marker='<!-- playwright-butter -->'
 body="$(printf '%s\n%s' "$marker" "$(cat "$summary")")"
 
 briefs="$(npx playwright-butter brief --results "$RESULTS_DIR" 2> /dev/null)"

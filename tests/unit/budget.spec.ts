@@ -71,7 +71,7 @@ test.describe('with a baseline', () => {
   let dir: string;
   const target = (): BaselineTarget => ({ path: (name) => join(dir, name), root: dir, project: '' });
   test.beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'smoothness-budget-'));
+    dir = mkdtempSync(join(tmpdir(), 'butter-budget-'));
   });
   test.afterEach(() => rmSync(dir, { recursive: true, force: true }));
 

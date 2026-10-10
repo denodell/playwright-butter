@@ -110,7 +110,7 @@ function makeGif(frames, dir, out) {
   ]);
 }
 
-const work = mkdtempSync(join(tmpdir(), 'smoothness-images-'));
+const work = mkdtempSync(join(tmpdir(), 'butter-images-'));
 try {
   // GIFs: each demo's slow version, with a replay attached even without a baseline.
   for (const [test, match, gif] of [

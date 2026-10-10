@@ -17,7 +17,7 @@ import type {
 import { existsSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve as resolvePath } from 'node:path';
 import {
-  envSetting,
+  CALIBRATE_ENV,
   COLLECTOR_CONFIG,
   COLLECTOR_KEY,
   SCHEMA_VERSION,
@@ -75,14 +75,14 @@ export interface AutoOptions extends SmoothnessOptions {
    * (see onMainBranch), or when BUTTER_RECORD=1. Pull requests only compare.
    */
   record?: boolean;
-  /** Where histories are kept. Default: `baselineDir` if set, else `.cache/playwright-smoothness/history` in the project's node_modules. */
+  /** Where histories are kept. Default: `baselineDir` if set, else `.cache/playwright-butter/history` in the project's node_modules. */
   historyDir?: string;
 }
 
 /** Dev servers don't watch node_modules, so rewriting a history there doesn't reload pages mid-run. */
-const CACHE_SUBDIR = '.cache/playwright-smoothness/history';
+const CACHE_SUBDIR = '.cache/playwright-butter/history';
 
-const FALLBACK_HISTORY_DIR = 'smoothness-history';
+const FALLBACK_HISTORY_DIR = 'butter-history';
 
 const PROJECT_ROOT_MARKERS = [
   '.git',
@@ -95,7 +95,7 @@ const PROJECT_ROOT_MARKERS = [
 
 const historyDirs = new Map<string, { dir: string; watched: boolean }>();
 
-/** The nearest node_modules up to the project root, else `smoothness-history` next to the config. */
+/** The nearest node_modules up to the project root, else `butter-history` next to the config. */
 export function defaultHistoryDir(configDir: string): { dir: string; watched: boolean } {
   let found = historyDirs.get(configDir);
   if (found) return found;
@@ -115,7 +115,7 @@ export function defaultHistoryDir(configDir: string): { dir: string; watched: bo
 }
 
 /** Binding the in-page collector streams records to, so they survive navigation. */
-const STREAM_BINDING = '__playwrightSmoothnessStream';
+const STREAM_BINDING = '__playwrightButterStream';
 /** After the test body, how long to wait for the last streamed batches to arrive. */
 const STREAM_DRAIN_MS = 100;
 const DEFAULT_HISTORY = 10;
@@ -277,7 +277,7 @@ async function startStreaming(
         d.lastInput = batch.lastInput;
     });
   } catch (err) {
-    annotate(testInfo, 'smoothness-warning', `automatic mode couldn't start: ${String(err).split('\n')[0]}`);
+    annotate(testInfo, 'butter-warning', `automatic mode couldn't start: ${String(err).split('\n')[0]}`);
     return null;
   }
   await context.addInitScript(installCollector, { ...COLLECTOR_CONFIG, stream: STREAM_BINDING });
@@ -381,7 +381,7 @@ function readTestHistory(
   const entries: HistoryEntry[] = reset || !historyFile ? [] : historyFile.entries;
   if (reset) {
     notes.push("The spec file changed since this test's history was recorded, so its history starts again.");
-    annotate(testInfo, 'smoothness-baseline-reset', `${label}: spec file changed; history restarts`);
+    annotate(testInfo, 'butter-baseline-reset', `${label}: spec file changed; history restarts`);
   }
   return { path, project, specHash: hash, entries, notes, watched: fallback?.watched ?? false };
 }
@@ -474,18 +474,18 @@ async function reportResult(
   result.test = testOf(testInfo);
   const out = resultPath(resultDir(testInfo), 'auto');
   writeResult(result, out);
-  await testInfo.attach('smoothness: auto', { path: out, contentType: 'application/json' });
+  await testInfo.attach('butter: auto', { path: out, contentType: 'application/json' });
   await writeBrief(testInfo, 'auto', out, result, comparison);
 
   if (comparison.status === 'warn' || comparison.status === 'fail') {
     const summary = formatSummary(result, comparison);
     const message = formatMessage(result, comparison);
     if (comparison.status === 'fail' && testInfo.status === testInfo.expectedStatus) throw new Error(message);
-    annotate(testInfo, 'smoothness-warning', summary);
+    annotate(testInfo, 'butter-warning', summary);
     console.warn(message);
     warnInGitHubActions(summary, testInfo);
   } else if (comparison.status === 'not-compared') {
-    annotate(testInfo, 'smoothness-not-compared', `${label}: ${comparison.notes.join(' ')}`);
+    annotate(testInfo, 'butter-not-compared', `${label}: ${comparison.notes.join(' ')}`);
   }
 }
 
@@ -514,19 +514,14 @@ export function withButter<T extends object, W extends object>(
   const extended = b.extend<SmoothnessFixtures & { _smoothnessAuto: void }>({
     ...smoothnessFixtures,
     _smoothnessAuto: [
-      async ({ context, browser, butterOptions, smoothnessOptions }, use, testInfo) => {
+      async ({ context, browser, butterOptions }, use, testInfo) => {
         const environment = await browserEnvironment(context.browser());
-        const resolved = resolveOptions([
-          { cpuThrottling: AUTO_CPU_THROTTLING },
-          defaults,
-          smoothnessOptions,
-          butterOptions,
-        ]);
+        const resolved = resolveOptions([{ cpuThrottling: AUTO_CPU_THROTTLING }, defaults, butterOptions]);
         const label = testInfo.titlePath.slice(1).join(' › ');
         if (environment.browserName !== 'chromium') {
           annotate(
             testInfo,
-            'smoothness-skipped',
+            'butter-skipped',
             `automatic mode measures Chromium only; this is ${environment.browserName}`,
           );
           await use();
@@ -576,7 +571,7 @@ export function withButter<T extends object, W extends object>(
 
         // Compare with, and maybe add to, the history.
         const testHistory = readTestHistory(testInfo, label, result, historyDir ?? resolved.baselineDir);
-        const calibrating = !!envSetting('CALIBRATE');
+        const calibrating = !!process.env[CALIBRATE_ENV];
         const comparison = compareWithHistory(
           result,
           testHistory,
@@ -586,7 +581,7 @@ export function withButter<T extends object, W extends object>(
           minHistory,
         );
 
-        const shouldRecord = record ?? (envSetting('RECORD') === '1' || onMainBranch());
+        const shouldRecord = record ?? (process.env.BUTTER_RECORD === '1' || onMainBranch());
         if (shouldRecord && testInfo.status === testInfo.expectedStatus && !calibrating)
           addToHistory(testHistory, label, result, history, comparison);
         result.comparison = comparison;
@@ -598,6 +593,3 @@ export function withButter<T extends object, W extends object>(
   });
   return extended as unknown as TestType<T & SmoothnessFixtures, W>;
 }
-
-/** @deprecated Renamed to `withButter()`. */
-export const withSmoothness = withButter;

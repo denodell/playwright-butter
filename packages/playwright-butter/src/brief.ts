@@ -21,5 +21,5 @@ export async function writeBrief(
   if (!comparison || !needsBrief(comparison)) return;
   const file = resultFile.replace(/\.json$/, '.fix.md');
   writeFileSync(file, formatBrief(result, comparison, { rerun: rerunCommand(testInfo), resultFile }));
-  await testInfo.attach(`smoothness fix brief: ${label}`, { path: file, contentType: 'text/markdown' });
+  await testInfo.attach(`butter fix brief: ${label}`, { path: file, contentType: 'text/markdown' });
 }

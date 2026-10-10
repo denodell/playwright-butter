@@ -5,8 +5,8 @@
 import type { Budget120Result, FramesResult, Unavailable } from '../types.js';
 
 /** performance.mark() names placed around each traced run. */
-export const MARK_START = 'playwright-smoothness:start';
-export const MARK_END = 'playwright-smoothness:end';
+export const MARK_START = 'playwright-butter:start';
+export const MARK_END = 'playwright-butter:end';
 
 export interface TraceEvent {
   name: string;

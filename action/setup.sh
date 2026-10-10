@@ -13,13 +13,13 @@ if [ "$on_default" = true ]; then
 fi
 
 temp="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
-baselines="$temp/smoothness-baselines"
+baselines="$temp/butter-baselines"
 mkdir -p "$baselines"
-started="$temp/smoothness-started"
+started="$temp/butter-started"
 touch "$started"
 
 results_artifact="${RESULTS_ARTIFACT:-}"
-[ -n "$results_artifact" ] || results_artifact="smoothness-results-${GITHUB_JOB:-job}-${GITHUB_RUN_ATTEMPT:-1}-$RANDOM$RANDOM"
+[ -n "$results_artifact" ] || results_artifact="butter-results-${GITHUB_JOB:-job}-${GITHUB_RUN_ATTEMPT:-1}-$RANDOM$RANDOM"
 
 {
   echo "record=$record"
@@ -30,9 +30,8 @@ results_artifact="${RESULTS_ARTIFACT:-}"
 
 {
   echo "BUTTER_BASELINE_DIR=$baselines"
-  echo "SMOOTHNESS_BASELINE_DIR=$baselines"
   echo "BUTTER_ACTION_STARTED=$started"
-  echo "BUTTER_ACTION_ARTIFACT=${ARTIFACT_NAME:-smoothness-baselines}"
+  echo "BUTTER_ACTION_ARTIFACT=${ARTIFACT_NAME:-butter-baselines}"
   if [ "$record" = true ]; then echo "BUTTER_RECORD_BASELINES=1"; fi
 } >> "$GITHUB_ENV"
 
