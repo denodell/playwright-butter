@@ -20,7 +20,7 @@ BUTTER_BASELINE_DIR=butter-baselines npx playwright test --update-snapshots=none
 node -e "
 const fs = require('fs'), path = require('path');
 const files = [];
-(function walk(d) { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); fs.statSync(p).isDirectory() ? walk(p) : p.endsWith('.json') && files.push(p); } })('test-results/smoothness');
+(function walk(d) { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); fs.statSync(p).isDirectory() ? walk(p) : p.endsWith('.json') && files.push(p); } })('test-results/butter');
 let bad = 0;
 for (const f of files) {
   const r = JSON.parse(fs.readFileSync(f, 'utf8'));

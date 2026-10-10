@@ -22,7 +22,7 @@ export interface MetricCalibration {
   spreadPercent: number | null;
   /** True when max − min fits within the metric's floor, so noise alone can't fail the check. */
   withinFloor: boolean;
-  /** The smallest step-multiple above the spread; null when the floor already covers it. */
+  /** The smallest step-multiple above the spread; null when the floor already covers it, or the minimum is 0. */
   suggestedMaxIncrease: number | null;
   warning?: string;
 }

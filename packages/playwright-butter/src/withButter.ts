@@ -61,7 +61,7 @@ import {
 import { resultDir, testOf } from './testinfo.js';
 import { writeBrief } from './brief.js';
 import { browserEnvironment, contextFetcher } from './driver.js';
-import { smoothnessFixtures, type SmoothnessFixtures, type SmoothnessOptions } from './fixture.js';
+import { butterFixtures, type SmoothnessFixtures, type SmoothnessOptions } from './fixture.js';
 
 export interface AutoOptions extends SmoothnessOptions {
   /** Measure every test automatically. */
@@ -511,9 +511,9 @@ export function withButter<T extends object, W extends object>(
     PlaywrightTestArgs & PlaywrightTestOptions,
     PlaywrightWorkerArgs & PlaywrightWorkerOptions
   >;
-  const extended = b.extend<SmoothnessFixtures & { _smoothnessAuto: void }>({
-    ...smoothnessFixtures,
-    _smoothnessAuto: [
+  const extended = b.extend<SmoothnessFixtures & { _butterAuto: void }>({
+    ...butterFixtures,
+    _butterAuto: [
       async ({ context, browser, butterOptions }, use, testInfo) => {
         const environment = await browserEnvironment(context.browser());
         const resolved = resolveOptions([{ cpuThrottling: AUTO_CPU_THROTTLING }, defaults, butterOptions]);
@@ -569,7 +569,6 @@ export function withButter<T extends object, W extends object>(
             );
         }
 
-        // Compare with, and maybe add to, the history.
         const testHistory = readTestHistory(testInfo, label, result, historyDir ?? resolved.baselineDir);
         const calibrating = !!process.env[CALIBRATE_ENV];
         const comparison = compareWithHistory(

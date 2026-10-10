@@ -1,7 +1,6 @@
-// What the measuring engine needs from a browser automation library. Everything outside
-// src/playwright/ (and the Playwright Test integration) talks to the browser only through these
-// interfaces, so another library can drive the same engine with its own adapter. The engine is
-// Chromium-only: it relies on the Chrome DevTools Protocol and Chrome's trace events.
+// What the measuring engine needs from a browser automation library. The engine talks to the
+// browser only through these interfaces, so another library can drive it with its own adapter.
+// The engine is Chromium-only: it relies on the Chrome DevTools Protocol and Chrome's trace events.
 import type { BrowserEnvironment } from './environment.js';
 import type { FetchText } from './sourcemap/resolve.js';
 

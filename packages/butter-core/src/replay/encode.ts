@@ -285,7 +285,6 @@ async function renderInPage(
     g.fillStyle = c.paper;
     g.fillRect(0, 0, width, height);
 
-    // The screenshot, in a rounded frame.
     g.save();
     g.beginPath();
     g.roundRect(pad, shotTop, imgW, imgH, 8);
@@ -303,7 +302,6 @@ async function renderInPage(
 
     const left = pad;
     const right = width - pad;
-    // The frame rate and its chart sit right under the recording.
     const y = shotTop + imgH;
 
     const fps = fpsAt(now);
@@ -344,7 +342,7 @@ async function renderInPage(
     });
     text('fps', fpsX + fpsWidth + 4, fpsBaseline, { size: 11, fill: c.faint });
 
-    // The frame rate across the run, drawn in as the replay plays: black at 60fps, red below
+    // The frame rate across the run, drawn in as the replay plays: black at about 60fps, red below
     // it, where frames were dropped. A gridline at 60 and 30.
     const axis = left + 104;
     const gl = axis + 22;

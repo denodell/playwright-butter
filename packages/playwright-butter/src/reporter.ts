@@ -7,7 +7,7 @@ import { buildMarkdown, forwardSlashes, type ReportEntry, type SmoothnessResult 
 import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 
 export interface ButterReporterOptions {
-  /** Where to write the markdown. Default: `smoothness/summary.md` in the first project's output directory. */
+  /** Where to write the markdown. Default: `butter/summary.md` in the first project's output directory. */
   outputFile?: string;
   /** Heading of the summary. Default `Butter`. */
   title?: string;

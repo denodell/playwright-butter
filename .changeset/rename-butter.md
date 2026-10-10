@@ -11,5 +11,6 @@ playwright-smoothness is now playwright-butter, and smoothness-core is now butte
 - set `butterOptions` (typed with `ButterTestOptions`) in place of `smoothnessOptions`
 - set `BUTTER_MODE`, `BUTTER_BASELINE_DIR`, `BUTTER_RECORD_BASELINES`, `BUTTER_RECORD` and `BUTTER_CALIBRATE` in place of their `SMOOTHNESS_` names
 - use the GitHub Action as `denodell/playwright-butter@v1`, or its `setup` and `report` steps
+- look for `butter-` annotations, results in `test-results/butter`, baselines in `<spec>-snapshots/butter`, the `butter-baselines` artifact, and the automatic-mode history in `node_modules/.cache/playwright-butter/history`
 
-The old names still work for now. `toBeSmooth()` keeps its name, existing baselines and automatic-mode histories still load, and `npx playwright-butter init-agents` replaces a skill added under the old name.
+The old names no longer work. Baselines and histories recorded by playwright-smoothness aren't read, so each check records a new baseline on its first run, and `npx playwright-butter init-agents` adds the skill under its new name. `toBeSmooth()` keeps its name.

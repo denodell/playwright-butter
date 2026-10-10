@@ -67,7 +67,6 @@ export interface SmoothnessFixtures {
   butter: Smoothness;
 }
 
-/** Adds an annotation to the test once per type and description. */
 function annotateOnce(testInfo: TestInfo, type: string, description: string): void {
   if (!testInfo.annotations.some((a) => a.type === type && a.description === description)) {
     testInfo.annotations.push({ type, description });
@@ -189,7 +188,7 @@ async function attachReplay(
 }
 
 /** The fixture definitions, shared by `test` and `withButter()`. */
-export const smoothnessFixtures: Fixtures<
+export const butterFixtures: Fixtures<
   SmoothnessFixtures,
   object,
   PlaywrightTestArgs & PlaywrightTestOptions
@@ -209,4 +208,4 @@ export const smoothnessFixtures: Fixtures<
   },
 };
 
-export const test = base.extend<SmoothnessFixtures>(smoothnessFixtures);
+export const test = base.extend<SmoothnessFixtures>(butterFixtures);

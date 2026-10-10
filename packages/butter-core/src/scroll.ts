@@ -174,8 +174,8 @@ async function watchRemovals(target: ElementTarget): Promise<void> {
     .evaluate((el) => {
       const doc = el === document.scrollingElement || el === document.documentElement || el === document.body;
       const root = doc ? document.body : el;
-      const w = window as unknown as { __smoothnessRemovals?: { n: number; mo: MutationObserver } };
-      w.__smoothnessRemovals?.mo.disconnect();
+      const w = window as unknown as { __butterRemovals?: { n: number; mo: MutationObserver } };
+      w.__butterRemovals?.mo.disconnect();
       const state = {
         n: 0,
         mo: new MutationObserver((records) => {
@@ -183,7 +183,7 @@ async function watchRemovals(target: ElementTarget): Promise<void> {
         }),
       };
       state.mo.observe(root, { childList: true, subtree: true });
-      w.__smoothnessRemovals = state;
+      w.__butterRemovals = state;
     })
     .catch(() => undefined);
 }
@@ -192,11 +192,11 @@ async function watchRemovals(target: ElementTarget): Promise<void> {
 async function removalsSeen(target: ElementTarget): Promise<number> {
   return target
     .evaluate(() => {
-      const w = window as unknown as { __smoothnessRemovals?: { n: number; mo: MutationObserver } };
-      const state = w.__smoothnessRemovals;
+      const w = window as unknown as { __butterRemovals?: { n: number; mo: MutationObserver } };
+      const state = w.__butterRemovals;
       if (!state) return 0;
       state.mo.disconnect();
-      delete w.__smoothnessRemovals;
+      delete w.__butterRemovals;
       return state.n;
     })
     .catch(() => 0);

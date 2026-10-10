@@ -1,7 +1,6 @@
 import { relative } from 'node:path';
 import { forwardSlashes } from './output.js';
 
-/** True when running inside GitHub Actions. */
 export function inGitHubActions(env: Record<string, string | undefined> = process.env): boolean {
   return env.GITHUB_ACTIONS === 'true';
 }

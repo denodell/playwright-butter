@@ -98,8 +98,6 @@ export function playwrightDriver(page: Page): PageDriver {
         detach: () => session.detach(),
       };
     },
-    // Through the browser context's request API, so cookies and HTTP credentials apply. `file:`
-    // URLs are read from disk.
     fetchText: contextFetcher(page.context()),
     // A persistent context has no Browser, and Browser.startTracing is Playwright's only tracer.
     tracer: () => {

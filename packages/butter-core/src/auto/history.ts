@@ -66,7 +66,7 @@ export function readHistory(path: string): HistoryFile | string | null {
   }
 }
 
-/** Per-metric median over the most recent entries; metrics no entry measured are left out. */
+/** Per-metric median over the most recent entries; null for a metric no entry measured. */
 export function medianMetrics(entries: HistoryEntry[]): BaselineMetrics {
   const out: BaselineMetrics = {};
   const names = new Set(entries.flatMap((e) => Object.keys(e.metrics)));

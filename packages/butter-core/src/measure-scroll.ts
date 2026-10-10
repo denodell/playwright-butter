@@ -45,8 +45,8 @@ export async function measureScroll(
       {
         ...ctx,
         ...(page.tracer() ? { list: listMeasurement(page, target, s.direction, ctx.options.list) } : {}),
-        // Chrome restores a document's scroll position on reload, so without this each run
-        // would start where the last one stopped. With reset: 'none', runs carry on instead.
+        // Each run starts where the first did, even when a reset doesn't put the list back, as
+        // with a custom reset or a page that scrolls itself. With reset: 'none', runs carry on.
         beforeRun: async (run) => {
           if (run === 0) origin = await scrollPosition(target, s);
           else if (ctx.options.reset !== 'none' && origin !== null) {

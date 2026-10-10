@@ -294,7 +294,6 @@ function parseAnimationFrames(
   };
 }
 
-/** A trace with nothing in it yet. */
 export function emptyTrace(): ParsedTrace {
   return {
     frames: null,
