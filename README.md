@@ -292,7 +292,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 
 ## Packages
 
-This repository publishes two packages. `playwright-butter` is the one to install. It depends on [`butter-core`](packages/butter-core), the measuring engine, which other browser libraries can drive through a small adapter.
+This repository publishes two packages. `playwright-butter` is the one to install. It depends on [`butter-churn`](packages/butter-churn), the measuring engine, which other browser libraries can drive through a small adapter.
 
 ## License
 

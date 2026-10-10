@@ -2,15 +2,15 @@ import { test, expect } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { checkBudget } from '../../packages/butter-core/src/baseline/budget.js';
-import { evaluate } from '../../packages/butter-core/src/baseline/evaluate.js';
+import { checkBudget } from '../../packages/butter-churn/src/baseline/budget.js';
+import { evaluate } from '../../packages/butter-churn/src/baseline/evaluate.js';
 import {
   formatMessage,
   formatSummary,
   missedBudget,
-} from '../../packages/butter-core/src/baseline/message.js';
-import { buildMarkdown } from '../../packages/butter-core/src/reporter/markdown.js';
-import type { BaselineTarget } from '../../packages/butter-core/src/baseline/store.js';
+} from '../../packages/butter-churn/src/baseline/message.js';
+import { buildMarkdown } from '../../packages/butter-churn/src/reporter/markdown.js';
+import type { BaselineTarget } from '../../packages/butter-churn/src/baseline/store.js';
 import { makeResult } from './result-factory.js';
 
 const full = (overrides: Parameters<typeof makeResult>[0] = {}) =>

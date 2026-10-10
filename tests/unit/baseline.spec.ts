@@ -8,17 +8,17 @@ import {
   machineSlug,
   slug,
   baselineFileName,
-} from '../../packages/butter-core/src/baseline/key.js';
+} from '../../packages/butter-churn/src/baseline/key.js';
 import {
   compareMetrics,
   metricsOf,
   INPUT_FLOOR_MS,
-} from '../../packages/butter-core/src/baseline/compare.js';
-import { evaluate } from '../../packages/butter-core/src/baseline/evaluate.js';
-import { formatChange } from '../../packages/butter-core/src/baseline/message.js';
-import { recordingBaselines } from '../../packages/butter-core/src/constants.js';
-import type { BaselineTarget, UpdateMode } from '../../packages/butter-core/src/baseline/store.js';
-import { writeBaseline } from '../../packages/butter-core/src/baseline/store.js';
+} from '../../packages/butter-churn/src/baseline/compare.js';
+import { evaluate } from '../../packages/butter-churn/src/baseline/evaluate.js';
+import { formatChange } from '../../packages/butter-churn/src/baseline/message.js';
+import { recordingBaselines } from '../../packages/butter-churn/src/constants.js';
+import type { BaselineTarget, UpdateMode } from '../../packages/butter-churn/src/baseline/store.js';
+import { writeBaseline } from '../../packages/butter-churn/src/baseline/store.js';
 import { makeResult } from './result-factory.js';
 
 // ---- keys ----

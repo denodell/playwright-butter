@@ -13,7 +13,7 @@ import {
   type ScratchPage,
   type SmoothnessOptions,
   type Tracer,
-} from '../../packages/butter-core/src/index.js';
+} from '../../packages/butter-churn/src/index.js';
 import { locatorTarget, playwrightDriver } from '../../packages/playwright-butter/src/driver.js';
 
 test.setTimeout(120_000);

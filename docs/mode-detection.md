@@ -21,4 +21,4 @@ The first rule that applies wins:
 
 Every result records the chosen mode as `mode`, and the rule that chose it as `settings.modeSource`.
 
-The rules are implemented in `packages/butter-core/src/options.ts` (`detectMode`) and tested in `tests/unit/options.spec.ts`.
+The rules are implemented in `packages/butter-churn/src/options.ts` (`detectMode`) and tested in `tests/unit/options.spec.ts`.

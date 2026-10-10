@@ -1,7 +1,7 @@
 import type { TestInfo } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
 import { relative } from 'node:path';
-import { formatBrief, forwardSlashes, needsBrief, type SmoothnessResult } from 'butter-core';
+import { formatBrief, forwardSlashes, needsBrief, type SmoothnessResult } from 'butter-churn';
 
 const quote = (s: string) => (/^[\w./:@=-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`);
 

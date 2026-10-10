@@ -25,7 +25,7 @@ import {
   type ScrollOptions,
   type SmoothnessOptions as CoreOptions,
   type SmoothnessResult,
-} from 'butter-core';
+} from 'butter-churn';
 import { resultDir, testOf } from './testinfo.js';
 import { writeBrief } from './brief.js';
 import { basename } from 'node:path';

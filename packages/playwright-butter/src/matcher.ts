@@ -14,7 +14,7 @@ import {
   writtenPath,
   type MatcherOptions,
   type SmoothnessResult,
-} from 'butter-core';
+} from 'butter-churn';
 import { baselineTarget, resultDir } from './testinfo.js';
 
 function isResult(v: unknown): v is SmoothnessResult {

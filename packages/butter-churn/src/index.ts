@@ -1,4 +1,4 @@
-// butter-core: the measuring engine behind playwright-butter, for adapters that drive it
+// butter-churn: the measuring engine behind playwright-butter, for adapters that drive it
 // from a browser automation library. An adapter implements PageDriver and ElementTarget
 // (driver.ts) and calls measure() or measureScroll().
 

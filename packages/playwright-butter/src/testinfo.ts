@@ -1,4 +1,4 @@
-// Where Playwright Test keeps a test's baselines and results, in the plain form butter-core takes.
+// Where Playwright Test keeps a test's baselines and results, in the plain form butter-churn takes.
 import type { TestInfo } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { join, relative } from 'node:path';
@@ -10,7 +10,7 @@ import {
   type BaselineTarget,
   type SmoothnessResult,
   type UpdateMode,
-} from 'butter-core';
+} from 'butter-churn';
 
 /** The test's title without its file: `filters opens quickly`. */
 const titleOf = (testInfo: TestInfo) => slug(testInfo.titlePath.slice(1).join(' '), 80);

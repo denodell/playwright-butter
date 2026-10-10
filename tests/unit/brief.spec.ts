@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { formatBrief, needsBrief, sourcePath } from '../../packages/butter-core/src/baseline/brief.js';
-import { compareMetrics, metricsOf } from '../../packages/butter-core/src/baseline/compare.js';
-import { checkBudget } from '../../packages/butter-core/src/baseline/budget.js';
-import type { Comparison } from '../../packages/butter-core/src/types.js';
+import { formatBrief, needsBrief, sourcePath } from '../../packages/butter-churn/src/baseline/brief.js';
+import { compareMetrics, metricsOf } from '../../packages/butter-churn/src/baseline/compare.js';
+import { checkBudget } from '../../packages/butter-churn/src/baseline/budget.js';
+import type { Comparison } from '../../packages/butter-churn/src/types.js';
 import { makeResult } from './result-factory.js';
 
 const before = metricsOf(makeResult({ input: { p95ToPaintMs: 32 }, longFrames: { count: 0 } }));

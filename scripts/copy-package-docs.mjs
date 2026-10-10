@@ -1,5 +1,5 @@
 // Copies the licence and the package's README into a package folder before `npm pack` or
-// `npm publish`. playwright-butter gets the repository's README; butter-core has its own.
+// `npm publish`. playwright-butter gets the repository's README; butter-churn has its own.
 // Run by each package's prepack script: node ../../scripts/copy-package-docs.mjs <package>
 import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

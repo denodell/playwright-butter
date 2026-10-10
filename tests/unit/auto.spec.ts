@@ -9,13 +9,13 @@ import {
   outsideRecentRange,
   readHistory,
   specHash,
-} from '../../packages/butter-core/src/auto/history.js';
+} from '../../packages/butter-churn/src/auto/history.js';
 import {
   analyzeDocs,
   defaultHistoryDir,
   type DocData,
 } from '../../packages/playwright-butter/src/withButter.js';
-import { onMainBranch } from '../../packages/butter-core/src/ci.js';
+import { onMainBranch } from '../../packages/butter-churn/src/ci.js';
 import { makeResult } from './result-factory.js';
 
 test('medianMetrics skips unmeasured runs', () => {

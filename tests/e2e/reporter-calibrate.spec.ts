@@ -6,7 +6,7 @@ import { PLAYWRIGHT_CLI } from './helpers.js';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { CheckCalibration } from '../../packages/butter-core/src/calibrate/analyze.js';
+import type { CheckCalibration } from '../../packages/butter-churn/src/calibrate/analyze.js';
 
 const CONFIG = 'tests/e2e/fixture-project/playwright.config.ts';
 const built =

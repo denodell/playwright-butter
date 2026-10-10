@@ -11,7 +11,7 @@ import {
   type PageDriver,
   type ScratchPage,
   type FetchText,
-} from 'butter-core';
+} from 'butter-churn';
 
 /** How long one script or source map fetch may take. */
 const FETCH_TIMEOUT_MS = 10_000;

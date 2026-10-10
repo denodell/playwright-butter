@@ -1,4 +1,4 @@
-# butter-core
+# butter-churn
 
 The measuring engine behind [playwright-butter](https://www.npmjs.com/package/playwright-butter). It measures how smooth a web page is in Chromium: dropped frames, slow input, long animation frames, and list rows that aren't drawn while you scroll. It then compares the numbers with a baseline.
 

@@ -14,6 +14,6 @@
     "@playwright/test": "1.63.0",
     "esbuild": "0.28.2",
     "playwright-butter": "file:../../packages/playwright-butter",
-    "butter-core": "file:../../packages/butter-core"
+    "butter-churn": "file:../../packages/butter-churn"
   }
 }

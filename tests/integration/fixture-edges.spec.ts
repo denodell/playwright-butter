@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, expect, withButter } from '../../packages/playwright-butter/src/index.js';
-import type { SmoothnessResult } from '../../packages/butter-core/src/types.js';
+import type { SmoothnessResult } from '../../packages/butter-churn/src/types.js';
 
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(120_000);

@@ -27,7 +27,7 @@ import {
   forwardSlashes,
   type ReportEntry,
   type SmoothnessResult,
-} from 'butter-core';
+} from 'butter-churn';
 import { PACKAGE_NAME } from './constants.js';
 import { SKILL_DIRS, initAgents } from './init-agents.js';
 

@@ -56,9 +56,9 @@ export default tseslint.config(
     languageOptions: { globals: { process: 'readonly', console: 'readonly', URL: 'readonly' } },
   },
   {
-    // butter-core talks to the browser only through its driver interfaces, so any automation
+    // butter-churn talks to the browser only through its driver interfaces, so any automation
     // library can drive it. Playwright belongs in playwright-butter.
-    files: ['packages/butter-core/src/**/*.ts'],
+    files: ['packages/butter-churn/src/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -66,7 +66,7 @@ export default tseslint.config(
           patterns: [
             {
               group: ['@playwright/*', 'playwright', 'playwright-core', 'playwright-core/*'],
-              message: 'butter-core must not depend on Playwright; use the interfaces in its driver.ts.',
+              message: 'butter-churn must not depend on Playwright; use the interfaces in its driver.ts.',
             },
           ],
         },

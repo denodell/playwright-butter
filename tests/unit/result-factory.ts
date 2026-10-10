@@ -1,4 +1,4 @@
-import type { SmoothnessResult } from '../../packages/butter-core/src/types.js';
+import type { SmoothnessResult } from '../../packages/butter-churn/src/types.js';
 
 type DeepPartial<T> = {
   [K in keyof T]?: NonNullable<T[K]> extends unknown[]

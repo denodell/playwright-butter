@@ -3,7 +3,7 @@
 //   reporter: [['list'], ['playwright-butter/reporter', { outputFile: 'butter.md' }]]
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import { buildMarkdown, forwardSlashes, type ReportEntry, type SmoothnessResult } from 'butter-core';
+import { buildMarkdown, forwardSlashes, type ReportEntry, type SmoothnessResult } from 'butter-churn';
 import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 
 export interface ButterReporterOptions {

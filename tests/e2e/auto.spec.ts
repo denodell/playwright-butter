@@ -5,8 +5,8 @@ import { test, expect } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import type { SmoothnessResult } from '../../packages/butter-core/src/types.js';
-import type { HistoryFile } from '../../packages/butter-core/src/auto/history.js';
+import type { SmoothnessResult } from '../../packages/butter-churn/src/types.js';
+import type { HistoryFile } from '../../packages/butter-churn/src/auto/history.js';
 import { files, PLAYWRIGHT_CLI } from './helpers.js';
 
 const repo = process.cwd();

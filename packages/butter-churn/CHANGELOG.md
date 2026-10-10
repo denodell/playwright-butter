@@ -1,4 +1,4 @@
-# butter-core
+# butter-churn
 
 ## 1.0.0
 

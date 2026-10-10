@@ -5,9 +5,9 @@ import {
   formatMessage,
   formatSummary,
   shortSource,
-} from '../../packages/butter-core/src/baseline/message.js';
-import type { Comparison } from '../../packages/butter-core/src/types.js';
-import { compareMetrics, metricsOf } from '../../packages/butter-core/src/baseline/compare.js';
+} from '../../packages/butter-churn/src/baseline/message.js';
+import type { Comparison } from '../../packages/butter-churn/src/types.js';
+import { compareMetrics, metricsOf } from '../../packages/butter-churn/src/baseline/compare.js';
 import { makeResult } from './result-factory.js';
 
 const baseline = {

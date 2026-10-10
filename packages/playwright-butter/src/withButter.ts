@@ -57,7 +57,7 @@ import {
   type StreamBatch,
   NameResolver,
   resolveScripts,
-} from 'butter-core';
+} from 'butter-churn';
 import { resultDir, testOf } from './testinfo.js';
 import { writeBrief } from './brief.js';
 import { browserEnvironment, contextFetcher } from './driver.js';

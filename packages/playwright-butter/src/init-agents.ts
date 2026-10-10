@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { forwardSlashes } from 'butter-core';
+import { forwardSlashes } from 'butter-churn';
 import { PACKAGE_NAME } from './constants.js';
 
 export const SKILL_DIRS = ['.claude/skills', '.agents/skills'];

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import type { ResetStrategy as CoreResetStrategy } from 'butter-core';
+import type { ResetStrategy as CoreResetStrategy } from 'butter-churn';
 
 export { test } from './fixture.js';
 export { withButter } from './withButter.js';
@@ -7,7 +7,7 @@ export type { AutoOptions } from './withButter.js';
 export type { ButterTestOptions, Smoothness, SmoothnessFixtures, SmoothnessOptions } from './fixture.js';
 export { expect } from './matcher.js';
 export { PACKAGE_NAME } from './constants.js';
-export { SCHEMA_VERSION } from 'butter-core';
+export { SCHEMA_VERSION } from 'butter-churn';
 // The result and option types, from the engine. SmoothnessOptions and ResetStrategy are the
 // Playwright forms, which pass a Playwright Page to a reset function.
 export type {
@@ -39,5 +39,5 @@ export type {
   TargetTiming,
   TopScript,
   Unavailable,
-} from 'butter-core';
+} from 'butter-churn';
 export type ResetStrategy = CoreResetStrategy<Page>;

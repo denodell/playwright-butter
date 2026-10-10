@@ -1,9 +1,9 @@
 ---
 'playwright-butter': minor
-'butter-core': minor
+'butter-churn': minor
 ---
 
-playwright-smoothness is now playwright-butter, and smoothness-core is now butter-core. To move over, install `playwright-butter` in place of `playwright-smoothness`, then:
+playwright-smoothness is now playwright-butter, and smoothness-core is now butter-churn. To move over, install `playwright-butter` in place of `playwright-smoothness`, then:
 
 - import from `playwright-butter`, and use `playwright-butter/reporter` and `npx playwright-butter`
 - use `withButter()` in place of `withSmoothness()`

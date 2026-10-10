@@ -4,9 +4,9 @@ import {
   buildMarkdown,
   changeCell,
   type ReportEntry,
-} from '../../packages/butter-core/src/reporter/markdown.js';
-import { compareMetrics, metricsOf } from '../../packages/butter-core/src/baseline/compare.js';
-import type { Comparison, SmoothnessResult } from '../../packages/butter-core/src/types.js';
+} from '../../packages/butter-churn/src/reporter/markdown.js';
+import { compareMetrics, metricsOf } from '../../packages/butter-churn/src/baseline/compare.js';
+import type { Comparison, SmoothnessResult } from '../../packages/butter-churn/src/types.js';
 import { makeResult } from './result-factory.js';
 
 const baseline = {
