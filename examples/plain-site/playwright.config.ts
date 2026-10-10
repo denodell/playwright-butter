@@ -15,8 +15,8 @@ export default defineConfig<ButterTestOptions>({
     channel: 'chromium', // new headless: closer to real Chrome than the headless shell
     butterOptions: {
       // Baselines downloaded from main (see ../../docs/ci.md); unset locally.
-      baselineDir: process.env.SMOOTHNESS_BASELINE_DIR,
-      enforce: process.env.SMOOTHNESS_ENFORCE === 'fail' ? 'fail' : 'warn',
+      baselineDir: process.env.BUTTER_BASELINE_DIR,
+      enforce: process.env.BUTTER_ENFORCE === 'fail' ? 'fail' : 'warn',
     },
   },
   webServer: {

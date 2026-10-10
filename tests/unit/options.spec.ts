@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { detectMode, resolveOptions } from '../../packages/butter-core/src/options.js';
+import { envSetting, recordingBaselines } from '../../packages/butter-core/src/constants.js';
 
 test('defaults', () => {
   expect(resolveOptions([], {})).toEqual({
@@ -18,12 +19,12 @@ test('defaults', () => {
   });
 });
 
-test('baselineDir comes from SMOOTHNESS_BASELINE_DIR unless an option sets it', () => {
-  expect(resolveOptions([], { SMOOTHNESS_BASELINE_DIR: 'from-env' }).baselineDir).toBe('from-env');
-  expect(resolveOptions([{ baselineDir: 'set' }], { SMOOTHNESS_BASELINE_DIR: 'from-env' }).baselineDir).toBe(
+test('baselineDir comes from BUTTER_BASELINE_DIR unless an option sets it', () => {
+  expect(resolveOptions([], { BUTTER_BASELINE_DIR: 'from-env' }).baselineDir).toBe('from-env');
+  expect(resolveOptions([{ baselineDir: 'set' }], { BUTTER_BASELINE_DIR: 'from-env' }).baselineDir).toBe(
     'set',
   );
-  expect(resolveOptions([], { SMOOTHNESS_BASELINE_DIR: '  ' }).baselineDir).toBeUndefined();
+  expect(resolveOptions([], { BUTTER_BASELINE_DIR: '  ' }).baselineDir).toBeUndefined();
 });
 
 test('later sources override earlier ones', () => {
@@ -79,11 +80,11 @@ test('invalid values are rejected with a clear message', () => {
   expect(() => resolveOptions([{ replay: 'sometimes' as 'on' }], {})).toThrow(/replay must be/);
 });
 
-// The option, then SMOOTHNESS_MODE, then scheduled CI, then the default.
+// The option, then BUTTER_MODE, then scheduled CI, then the default.
 test('mode: which setting wins', () => {
-  const env = { SMOOTHNESS_MODE: 'quick', GITHUB_EVENT_NAME: 'schedule' };
+  const env = { BUTTER_MODE: 'quick', GITHUB_EVENT_NAME: 'schedule' };
   expect(detectMode('full', env)).toEqual({ mode: 'full', source: 'option' });
-  expect(detectMode(undefined, env)).toEqual({ mode: 'quick', source: 'SMOOTHNESS_MODE' });
+  expect(detectMode(undefined, env)).toEqual({ mode: 'quick', source: 'BUTTER_MODE' });
   expect(detectMode(undefined, { GITHUB_EVENT_NAME: 'schedule' }).mode).toBe('full');
   expect(detectMode(undefined, { GITHUB_EVENT_NAME: 'pull_request' })).toEqual({
     mode: 'quick',
@@ -91,9 +92,9 @@ test('mode: which setting wins', () => {
   });
 });
 
-test('SMOOTHNESS_MODE is case-insensitive and rejects other values', () => {
-  expect(detectMode(undefined, { SMOOTHNESS_MODE: ' FULL ' }).mode).toBe('full');
-  expect(() => detectMode(undefined, { SMOOTHNESS_MODE: 'fast' })).toThrow(/'quick' or 'full'/);
+test('BUTTER_MODE is case-insensitive and rejects other values', () => {
+  expect(detectMode(undefined, { BUTTER_MODE: ' FULL ' }).mode).toBe('full');
+  expect(() => detectMode(undefined, { BUTTER_MODE: 'fast' })).toThrow(/'quick' or 'full'/);
 });
 
 for (const [variable, value] of [
@@ -108,3 +109,11 @@ for (const [variable, value] of [
     expect(source).toContain(`${variable}=${value}`);
   });
 }
+
+test('settings are read from BUTTER_ variables, or their 1.0 SMOOTHNESS_ names', () => {
+  expect(envSetting('MODE', { BUTTER_MODE: 'full' })).toBe('full');
+  expect(envSetting('MODE', { SMOOTHNESS_MODE: 'quick' })).toBe('quick');
+  expect(envSetting('MODE', { BUTTER_MODE: 'full', SMOOTHNESS_MODE: 'quick' })).toBe('full');
+  expect(envSetting('MODE', {})).toBeUndefined();
+  expect(recordingBaselines({ SMOOTHNESS_RECORD_BASELINES: '1' })).toBe(true);
+});

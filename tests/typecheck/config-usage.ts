@@ -9,6 +9,6 @@ export const plain = defineConfig({
 export const withOptions = defineConfig<ButterTestOptions>({
   use: {
     channel: 'chromium',
-    butterOptions: { baselineDir: process.env.SMOOTHNESS_BASELINE_DIR, enforce: 'fail' },
+    butterOptions: { baselineDir: process.env.BUTTER_BASELINE_DIR, enforce: 'fail' },
   },
 });

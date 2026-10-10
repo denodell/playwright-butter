@@ -37,7 +37,7 @@ export interface ListOptions {
 export interface SmoothnessOptions<P = any> {
   /**
    * `'quick'` measures with Event Timing and Long Animation Frames. `'full'` adds a Chrome
-   * trace and screenshots. Default: `SMOOTHNESS_MODE` if set, `'full'` on scheduled CI runs,
+   * trace and screenshots. Default: `BUTTER_MODE` if set, `'full'` on scheduled CI runs,
    * otherwise `'quick'` (see docs/mode-detection.md).
    */
   mode?: SmoothnessMode;
@@ -51,7 +51,7 @@ export interface SmoothnessOptions<P = any> {
   refreshRate?: 60 | 120;
   /** `'warn'` annotates the test and lets it pass; `'fail'` fails it. Default `'warn'`. */
   enforce?: Enforce;
-  /** Directory of baselines downloaded from the main branch, checked before the snapshot path. Default: `SMOOTHNESS_BASELINE_DIR`. */
+  /** Directory of baselines downloaded from the main branch, checked before the snapshot path. Default: `BUTTER_BASELINE_DIR`. */
   baselineDir?: string;
   /** Options for `butter.scroll()` blank-row detection. */
   list?: ListOptions;

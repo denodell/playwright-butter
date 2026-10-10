@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs the steps of docs/ci.md against examples/plain-site on one machine:
-#   1. "main": record baselines with SMOOTHNESS_RECORD_BASELINES into the folder that's published;
+#   1. "main": record baselines with BUTTER_RECORD_BASELINES into the folder that's published;
 #   2. "pull request": a fresh checkout (no local baselines) with baselineDir → every check
 #      must be compared against the collected baseline, and pass;
 #   3. a regression (SLOW=80, enforce fail) → the run must fail, blaming the filters handler.
@@ -10,13 +10,13 @@ cd "$(dirname "$0")/../examples/plain-site"
 rm -rf smoothness-baselines test-results tests/*-snapshots
 
 echo "== main: record baselines"
-SMOOTHNESS_BASELINE_DIR=smoothness-baselines SMOOTHNESS_RECORD_BASELINES=1 npx playwright test
+BUTTER_BASELINE_DIR=smoothness-baselines BUTTER_RECORD_BASELINES=1 npx playwright test
 test -n "$(find smoothness-baselines -type f)" || { echo 'no baselines were recorded'; exit 1; }
 find smoothness-baselines -type f
 
 echo "== pull request: compare against main's baselines"
 rm -rf tests/*-snapshots
-SMOOTHNESS_BASELINE_DIR=smoothness-baselines npx playwright test --update-snapshots=none
+BUTTER_BASELINE_DIR=smoothness-baselines npx playwright test --update-snapshots=none
 node -e "
 const fs = require('fs'), path = require('path');
 const files = [];
@@ -33,7 +33,7 @@ if (files.length !== 2 || bad) { console.error('expected 2 results compared agai
 "
 
 echo "== regression: must fail"
-if SLOW=80 SMOOTHNESS_ENFORCE=fail SMOOTHNESS_BASELINE_DIR=smoothness-baselines npx playwright test --update-snapshots=none -g 'filters' > regression.log 2>&1; then
+if SLOW=80 BUTTER_ENFORCE=fail BUTTER_BASELINE_DIR=smoothness-baselines npx playwright test --update-snapshots=none -g 'filters' > regression.log 2>&1; then
   cat regression.log; echo 'the regression passed, but should have failed'; exit 1
 fi
 grep -q 'is less smooth than its baseline' regression.log

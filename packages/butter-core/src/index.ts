@@ -73,6 +73,7 @@ export {
   FORMAT_NAME,
   RECORD_ENV,
   SCHEMA_VERSION,
+  envSetting,
   recordingBaselines,
 } from './constants.js';
 export type * from './types.js';

@@ -17,7 +17,7 @@ import type {
 import { existsSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve as resolvePath } from 'node:path';
 import {
-  CALIBRATE_ENV,
+  envSetting,
   COLLECTOR_CONFIG,
   COLLECTOR_KEY,
   SCHEMA_VERSION,
@@ -72,7 +72,7 @@ export interface AutoOptions extends SmoothnessOptions {
   minHistory?: number;
   /**
    * Add this run to the history. Default: on a push build of the main branch in CI
-   * (see onMainBranch), or when SMOOTHNESS_RECORD=1. Pull requests only compare.
+   * (see onMainBranch), or when BUTTER_RECORD=1. Pull requests only compare.
    */
   record?: boolean;
   /** Where histories are kept. Default: `baselineDir` if set, else `.cache/playwright-smoothness/history` in the project's node_modules. */
@@ -576,7 +576,7 @@ export function withButter<T extends object, W extends object>(
 
         // Compare with, and maybe add to, the history.
         const testHistory = readTestHistory(testInfo, label, result, historyDir ?? resolved.baselineDir);
-        const calibrating = !!process.env[CALIBRATE_ENV];
+        const calibrating = !!envSetting('CALIBRATE');
         const comparison = compareWithHistory(
           result,
           testHistory,
@@ -586,7 +586,7 @@ export function withButter<T extends object, W extends object>(
           minHistory,
         );
 
-        const shouldRecord = record ?? (process.env.SMOOTHNESS_RECORD === '1' || onMainBranch());
+        const shouldRecord = record ?? (envSetting('RECORD') === '1' || onMainBranch());
         if (shouldRecord && testInfo.status === testInfo.expectedStatus && !calibrating)
           addToHistory(testHistory, label, result, history, comparison);
         result.comparison = comparison;

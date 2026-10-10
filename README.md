@@ -229,7 +229,7 @@ export default defineConfig<ButterTestOptions>({
 | `replay`            | `'on-regression'`                                               | Full mode: when to attach a replay (`'on'`, `'off'`).                                        |
 | `refreshRate`       | `60`                                                            | `120` adds a 120Hz prediction in full mode that's reported but never gated.                  |
 
-The mode can also come from the `SMOOTHNESS_MODE` environment variable, and scheduled CI runs use full mode by default ([mode detection](docs/mode-detection.md)).
+The mode can also come from the `BUTTER_MODE` environment variable, and scheduled CI runs use full mode by default ([mode detection](docs/mode-detection.md)).
 
 ## Reporter
 
@@ -259,7 +259,7 @@ On GitHub, two steps go around the step that already runs your Playwright tests,
   if: always()
 ```
 
-Pull requests compare against baselines recorded on main and get the summary as a comment. Pushes to main compare with the previous baselines, then record and publish new ones, and scheduled runs switch to full mode. For a new workflow, `uses: denodell/playwright-butter@v1` does the same in one step and runs the tests itself. On other CI systems, setting `SMOOTHNESS_RECORD_BASELINES=1` on main makes each check record its result into `baselineDir` after comparing, ready to upload.
+Pull requests compare against baselines recorded on main and get the summary as a comment. Pushes to main compare with the previous baselines, then record and publish new ones, and scheduled runs switch to full mode. For a new workflow, `uses: denodell/playwright-butter@v1` does the same in one step and runs the tests itself. On other CI systems, setting `BUTTER_RECORD_BASELINES=1` on main makes each check record its result into `baselineDir` after comparing, ready to upload.
 
 The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the steps it takes for other CI systems. [`examples/github-actions`](examples/github-actions) has workflows ready to copy: the two steps added to an existing workflow, the Action on its own, and the steps by hand.
 

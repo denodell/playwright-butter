@@ -6,8 +6,8 @@ const PORT = 4174;
 
 export default defineConfig({
   testDir: '.',
-  outputDir: process.env.SMOOTHNESS_E2E_OUT,
-  snapshotDir: process.env.SMOOTHNESS_E2E_SNAPSHOTS,
+  outputDir: process.env.BUTTER_E2E_OUT,
+  snapshotDir: process.env.BUTTER_E2E_SNAPSHOTS,
   workers: 1,
   reporter: 'list',
   use: { baseURL: `http://localhost:${PORT}`, browserName: 'chromium', channel: 'chromium', headless: true },

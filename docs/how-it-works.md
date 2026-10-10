@@ -51,7 +51,7 @@ Event Timing reports the element that was actually clicked, which is often a `sp
 - Percentages are compared on the bad share. `frames.onTimePercent` is compared as 100 − value, so a fall from 95% to 81% on time can't hide inside a 15% relative allowance.
 - Total blocking time is only gated with `gateTotalBlocking: true` because it's the noisiest number.
 - Warn mode doesn't use `expect.soft`, because a soft assertion still fails the test.
-- While calibrating (`SMOOTHNESS_CALIBRATE=1`, which the CLI sets), nothing is compared or written. Calibrate measures how much the medians vary from run to run, since that's the variation a baseline comparison actually sees, and suggests the smallest 0.05 step above the worst case.
+- While calibrating (`BUTTER_CALIBRATE=1`, which the CLI sets), nothing is compared or written. Calibrate measures how much the medians vary from run to run, since that's the variation a baseline comparison actually sees, and suggests the smallest 0.05 step above the worst case.
 
 ## Packages and the driver interface
 

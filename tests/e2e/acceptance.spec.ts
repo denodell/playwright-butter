@@ -25,8 +25,8 @@ function run(env: Record<string, string>, args: string[] = []) {
     env: {
       ...clean,
       GITHUB_ACTIONS: '',
-      SMOOTHNESS_E2E_OUT: out,
-      SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
+      BUTTER_E2E_OUT: out,
+      BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots'),
       ...env,
     },
     encoding: 'utf8',

@@ -12,7 +12,7 @@ export default defineConfig<ButterTestOptions>({
     channel: 'chromium',
     viewport: { width: 600, height: 600 },
     hasTouch: true, // the tests swipe with touch input
-    butterOptions: { baselineDir: process.env.SMOOTHNESS_BASELINE_DIR },
+    butterOptions: { baselineDir: process.env.BUTTER_BASELINE_DIR },
   },
   webServer: {
     command: 'node build.mjs && node server.mjs',

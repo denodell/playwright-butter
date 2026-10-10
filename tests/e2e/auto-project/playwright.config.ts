@@ -10,7 +10,7 @@ export default defineConfig({
   reporter: 'list',
   use: { baseURL: `http://localhost:${PORT}`, browserName: 'chromium', channel: 'chromium', headless: true },
   webServer: {
-    command: `node ${process.env.SMOOTHNESS_TEST_PAGES}/server.mjs`,
+    command: `node ${process.env.BUTTER_TEST_PAGES}/server.mjs`,
     url: `http://localhost:${PORT}`,
     env: { PORT: String(PORT) },
     reuseExistingServer: true,

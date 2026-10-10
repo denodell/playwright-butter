@@ -1,3 +1,4 @@
+import { envSetting } from './constants.js';
 import type { ResolvedOptions, SmoothnessMode, SmoothnessOptions } from './types.js';
 
 const DEFAULT_RUNS = 5;
@@ -28,10 +29,11 @@ export function detectMode(
   env: Env,
 ): { mode: SmoothnessMode; source: string } {
   if (explicit) return { mode: explicit, source: 'option' };
-  const fromEnv = env.SMOOTHNESS_MODE?.trim().toLowerCase();
-  if (fromEnv === 'quick' || fromEnv === 'full') return { mode: fromEnv, source: 'SMOOTHNESS_MODE' };
+  const raw = envSetting('MODE', env);
+  const fromEnv = raw?.trim().toLowerCase();
+  if (fromEnv === 'quick' || fromEnv === 'full') return { mode: fromEnv, source: 'BUTTER_MODE' };
   if (fromEnv) {
-    throw new Error(`SMOOTHNESS_MODE must be 'quick' or 'full', got '${env.SMOOTHNESS_MODE}'.`);
+    throw new Error(`BUTTER_MODE must be 'quick' or 'full', got '${raw}'.`);
   }
   for (const rule of SCHEDULED_CI) {
     const value = env[rule.variable];
@@ -83,7 +85,7 @@ export function resolveOptions<P = any>(
     maxIncrease,
     refreshRate,
     enforce,
-    baselineDir: o.baselineDir ?? (env.SMOOTHNESS_BASELINE_DIR?.trim() || undefined),
+    baselineDir: o.baselineDir ?? (envSetting('BASELINE_DIR', env)?.trim() || undefined),
     list: {
       background: o.list?.background ?? 'auto',
       placeholders: o.list?.placeholders ?? [],

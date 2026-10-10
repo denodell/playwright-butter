@@ -391,11 +391,11 @@ test('blank frames are only gated on a virtualized list', () => {
   expect(gated(false)).toBe(false);
 });
 
-test('SMOOTHNESS_RECORD_BASELINES turns recording on unless it is empty, 0 or false', () => {
+test('BUTTER_RECORD_BASELINES turns recording on unless it is empty, 0 or false', () => {
   expect(recordingBaselines({})).toBe(false);
-  expect(recordingBaselines({ SMOOTHNESS_RECORD_BASELINES: '' })).toBe(false);
-  expect(recordingBaselines({ SMOOTHNESS_RECORD_BASELINES: '0' })).toBe(false);
-  expect(recordingBaselines({ SMOOTHNESS_RECORD_BASELINES: 'False' })).toBe(false);
-  expect(recordingBaselines({ SMOOTHNESS_RECORD_BASELINES: '1' })).toBe(true);
-  expect(recordingBaselines({ SMOOTHNESS_RECORD_BASELINES: 'true' })).toBe(true);
+  expect(recordingBaselines({ BUTTER_RECORD_BASELINES: '' })).toBe(false);
+  expect(recordingBaselines({ BUTTER_RECORD_BASELINES: '0' })).toBe(false);
+  expect(recordingBaselines({ BUTTER_RECORD_BASELINES: 'False' })).toBe(false);
+  expect(recordingBaselines({ BUTTER_RECORD_BASELINES: '1' })).toBe(true);
+  expect(recordingBaselines({ BUTTER_RECORD_BASELINES: 'true' })).toBe(true);
 });

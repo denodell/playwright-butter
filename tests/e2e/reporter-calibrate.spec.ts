@@ -39,8 +39,8 @@ test('the reporter writes the markdown summary and the job summary', () => {
       env: {
         ...clean(),
         CLICK_MS: '60',
-        SMOOTHNESS_E2E_OUT: join(work, 'out'),
-        SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
+        BUTTER_E2E_OUT: join(work, 'out'),
+        BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots'),
         GITHUB_STEP_SUMMARY: step,
         GITHUB_ACTIONS: '',
       },
@@ -87,8 +87,8 @@ test('a check that got worse writes a fix brief, and the brief command collects 
     env: {
       ...clean(),
       CLICK_MS: '300',
-      SMOOTHNESS_E2E_OUT: out,
-      SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
+      BUTTER_E2E_OUT: out,
+      BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots'),
       GITHUB_ACTIONS: '',
     },
     encoding: 'utf8',
@@ -123,7 +123,7 @@ test('calibrate is repeatable', () => {
         CONFIG,
       ],
       {
-        env: { ...clean(), CLICK_MS: '60', SMOOTHNESS_E2E_SNAPSHOTS: join(work, 'snapshots-cal') },
+        env: { ...clean(), CLICK_MS: '60', BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots-cal') },
         encoding: 'utf8',
       },
     );

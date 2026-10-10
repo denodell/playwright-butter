@@ -12,11 +12,18 @@ export const CLI_NAME = 'playwright-butter';
 export const SCHEMA_VERSION = 1;
 
 /** Tells toBeSmooth() and automatic mode not to compare or write baselines while calibrating. */
-export const CALIBRATE_ENV = 'SMOOTHNESS_CALIBRATE';
+export const CALIBRATE_ENV = 'BUTTER_CALIBRATE';
 
-export const RECORD_ENV = 'SMOOTHNESS_RECORD_BASELINES';
+export const RECORD_ENV = 'BUTTER_RECORD_BASELINES';
+
+export function envSetting(
+  name: string,
+  env: Record<string, string | undefined> = process.env,
+): string | undefined {
+  return env[`BUTTER_${name}`] ?? env[`SMOOTHNESS_${name}`];
+}
 
 export function recordingBaselines(env: Record<string, string | undefined> = process.env): boolean {
-  const v = env[RECORD_ENV]?.trim().toLowerCase();
+  const v = envSetting('RECORD_BASELINES', env)?.trim().toLowerCase();
   return !!v && v !== '0' && v !== 'false';
 }

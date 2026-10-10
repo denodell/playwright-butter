@@ -31,14 +31,14 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.token }}
         RESULTS_DIR: ${{ inputs.results-dir }}
-        STARTED: ${{ env.SMOOTHNESS_ACTION_STARTED }}
+        STARTED: ${{ env.BUTTER_ACTION_STARTED }}
         COMMENT: ${{ inputs.comment }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
       run: bash "$GITHUB_ACTION_PATH/../action/report.sh"
 
     - name: Collect baselines
       id: collect
-      if: env.SMOOTHNESS_RECORD_BASELINES == '1'
+      if: env.BUTTER_RECORD_BASELINES == '1'
       shell: bash
       run: bash "$GITHUB_ACTION_PATH/../action/collect.sh"
 
@@ -46,7 +46,7 @@ runs:
       if: steps.collect.outputs.collected == 'true'
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.SMOOTHNESS_ACTION_ARTIFACT }}
-        path: ${{ env.SMOOTHNESS_BASELINE_DIR }}
+        name: ${{ env.BUTTER_ACTION_ARTIFACT }}
+        path: ${{ env.BUTTER_BASELINE_DIR }}
         include-hidden-files: true
         retention-days: 90

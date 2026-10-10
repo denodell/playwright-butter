@@ -1,6 +1,6 @@
 import { expect as baseExpect, test } from '@playwright/test';
 import {
-  CALIBRATE_ENV,
+  envSetting,
   RECORD_ENV,
   recordingBaselines,
   SCHEMA_VERSION,
@@ -42,7 +42,7 @@ export const expect = baseExpect.extend({
       };
     }
     const testInfo = test.info();
-    const comparison = process.env[CALIBRATE_ENV]
+    const comparison = envSetting('CALIBRATE')
       ? {
           status: 'not-compared' as const,
           checks: [],
@@ -80,7 +80,7 @@ export const expect = baseExpect.extend({
         );
         break;
       case 'not-compared':
-        if (process.env[CALIBRATE_ENV]) break;
+        if (envSetting('CALIBRATE')) break;
         annotate('smoothness-not-compared', `"${received.label}": ${comparison.notes.join(' ')}`);
         break;
       case 'pass':

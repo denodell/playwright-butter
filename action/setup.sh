@@ -29,10 +29,11 @@ results_artifact="${RESULTS_ARTIFACT:-}"
 } >> "$GITHUB_OUTPUT"
 
 {
+  echo "BUTTER_BASELINE_DIR=$baselines"
   echo "SMOOTHNESS_BASELINE_DIR=$baselines"
-  echo "SMOOTHNESS_ACTION_STARTED=$started"
-  echo "SMOOTHNESS_ACTION_ARTIFACT=${ARTIFACT_NAME:-smoothness-baselines}"
-  if [ "$record" = true ]; then echo "SMOOTHNESS_RECORD_BASELINES=1"; fi
+  echo "BUTTER_ACTION_STARTED=$started"
+  echo "BUTTER_ACTION_ARTIFACT=${ARTIFACT_NAME:-smoothness-baselines}"
+  if [ "$record" = true ]; then echo "BUTTER_RECORD_BASELINES=1"; fi
 } >> "$GITHUB_ENV"
 
 if [ "$record" = true ]; then
